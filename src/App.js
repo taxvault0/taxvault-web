@@ -6,6 +6,12 @@ console.log('Checking for object rendering issues...');
 import Header from './components/Common/Layout/Header';
 import Sidebar from './components/Common/Layout/Sidebar';
 import DemoNav from './components/Common/Layout/DemoNav';
+import LifeEventsHub from './features/life-events/pages/LifeEventsHub';
+import MaritalStatusUpdate from './features/life-events/pages/MaritalStatusUpdate';
+import SeparationDivorce from './features/life-events/pages/SeparationDivorce';
+import AddDependent from './features/life-events/pages/AddDependent';
+import ChangeAddress from './features/life-events/pages/ChangeAddress';
+import LegacyContact from './features/life-events/pages/LegacyContact';
 
 // Auth Pages
 import Login from './pages/auth/Login';
@@ -108,6 +114,7 @@ const AppContent = () => {
         <Route path="/accounts" element={<AccountDocuments />} />
         <Route path="/tax-checklist" element={<TaxChecklist />} />
         <Route path="/find-ca" element={<FindCA />} />
+        {/* Life events routes removed from public section */}
       </Routes>
     );
   }
@@ -149,6 +156,11 @@ const AppContent = () => {
                   <TaxChecklist />
                 </PrivateRoute>
               } />
+              <Route path="/find-ca" element={
+                <PrivateRoute allowedRoles={['user']}>
+                  <FindCA />
+                </PrivateRoute>
+              } />
               <Route path="/mileage" element={
                 <PrivateRoute allowedRoles={['user']}>
                   <Mileage />
@@ -177,6 +189,38 @@ const AppContent = () => {
               <Route path="/settings" element={
                 <PrivateRoute allowedRoles={['user', 'ca']}>
                   <Settings />
+                </PrivateRoute>
+              } />
+              
+              {/* Life Events Routes - Protected */}
+              <Route path="/life-events" element={
+                <PrivateRoute allowedRoles={['user', 'ca']}>
+                  <LifeEventsHub />
+                </PrivateRoute>
+              } />
+              <Route path="/life-events/marriage" element={
+                <PrivateRoute allowedRoles={['user', 'ca']}>
+                  <MaritalStatusUpdate />
+                </PrivateRoute>
+              } />
+              <Route path="/life-events/separation" element={
+                <PrivateRoute allowedRoles={['user', 'ca']}>
+                  <SeparationDivorce />
+                </PrivateRoute>
+              } />
+              <Route path="/life-events/add-dependent" element={
+                <PrivateRoute allowedRoles={['user', 'ca']}>
+                  <AddDependent />
+                </PrivateRoute>
+              } />
+              <Route path="/life-events/change-address" element={
+                <PrivateRoute allowedRoles={['user', 'ca']}>
+                  <ChangeAddress />
+                </PrivateRoute>
+              } />
+              <Route path="/life-events/legacy-contact" element={
+                <PrivateRoute allowedRoles={['user', 'ca']}>
+                  <LegacyContact />
                 </PrivateRoute>
               } />
               
@@ -270,6 +314,7 @@ const AppContent = () => {
                   <ClientSearch />
                 </PrivateRoute>
               } />
+              
               {/* Default redirect based on role */}
               <Route path="/" element={
                 <Navigate to={user?.role === 'ca' ? '/ca/dashboard' : '/dashboard'} />

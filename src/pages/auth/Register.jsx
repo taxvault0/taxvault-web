@@ -160,7 +160,9 @@ const Register = () => {
     maritalStatus: '',
     spouseName: '',
     spouseSin: '',
+    spouseDob: '',
     spouseIncome: '',
+    shareWithSpouse: false,
     children: [],
     
     // Previous Tax Year
@@ -283,6 +285,14 @@ const Register = () => {
       if (!formData.userType) newErrors.userType = 'User type is required';
       if (!formData.employmentStatus) newErrors.employmentStatus = 'Employment status is required';
       if (!formData.taxFilingStatus) newErrors.taxFilingStatus = 'Tax filing status is required';
+      if (!formData.maritalStatus) newErrors.maritalStatus = 'Marital status is required';
+      
+      // Validate spouse info if married/common-law
+      if (formData.maritalStatus === 'Married' || formData.maritalStatus === 'Common-Law') {
+        if (!formData.spouseName) newErrors.spouseName = 'Spouse name is required';
+        if (!formData.spouseSin) newErrors.spouseSin = 'Spouse SIN is required';
+        if (!formData.spouseDob) newErrors.spouseDob = 'Spouse date of birth is required';
+      }
     }
 
     if (currentStep === 7) {
@@ -314,12 +324,22 @@ const Register = () => {
 
     setLoading(true);
     try {
-      // Register user with all form data
+      // Register user with all form data including life events
       const result = await register({
         name: `${formData.firstName} ${formData.lastName}`,
         email: formData.email,
         password: formData.password,
         userType: formData.userType,
+        // Add life events data
+        maritalStatus: formData.maritalStatus,
+        spouseInfo: (formData.maritalStatus === 'Married' || formData.maritalStatus === 'Common-Law') ? {
+          name: formData.spouseName,
+          sin: formData.spouseSin,
+          dateOfBirth: formData.spouseDob,
+          income: formData.spouseIncome,
+          shareAccess: formData.shareWithSpouse || false
+        } : null,
+        dependents: formData.children,
         profile: formData,
         termsAccepted: true,
         privacyAccepted: true,
@@ -462,7 +482,7 @@ const Register = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Password <span className="text-warning-500">*</span>
+                        Password <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -472,7 +492,7 @@ const Register = () => {
                           value={formData.password}
                           onChange={handleChange}
                           className={`w-full pl-10 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                            errors.password ? 'border-warning-500' : 'border-gray-300'
+                            errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'
                           }`}
                         />
                         <button
@@ -480,11 +500,11 @@ const Register = () => {
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute right-3 top-1/2 transform -translate-y-1/2"
                         >
-                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          {showPassword ? <EyeOff size={18} className="text-gray-400" /> : <Eye size={18} className="text-gray-400" />}
                         </button>
                       </div>
                       {errors.password && (
-                        <p className="text-xs text-warning-500 mt-1">{errors.password}</p>
+                        <p className="text-xs text-red-500 mt-1">{errors.password}</p>
                       )}
                       <p className="text-xs text-gray-500 mt-1">
                         Minimum 8 characters with at least one letter and one number
@@ -493,7 +513,7 @@ const Register = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Confirm Password <span className="text-warning-500">*</span>
+                        Confirm Password <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -503,7 +523,7 @@ const Register = () => {
                           value={formData.confirmPassword}
                           onChange={handleChange}
                           className={`w-full pl-10 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                            errors.confirmPassword ? 'border-warning-500' : 'border-gray-300'
+                            errors.confirmPassword ? 'border-red-500 bg-red-50' : 'border-gray-300'
                           }`}
                         />
                         <button
@@ -511,11 +531,11 @@ const Register = () => {
                           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                           className="absolute right-3 top-1/2 transform -translate-y-1/2"
                         >
-                          {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          {showConfirmPassword ? <EyeOff size={18} className="text-gray-400" /> : <Eye size={18} className="text-gray-400" />}
                         </button>
                       </div>
                       {errors.confirmPassword && (
-                        <p className="text-xs text-warning-500 mt-1">{errors.confirmPassword}</p>
+                        <p className="text-xs text-red-500 mt-1">{errors.confirmPassword}</p>
                       )}
                     </div>
                   </div>
@@ -576,12 +596,12 @@ const Register = () => {
                     />
                   </div>
 
-                  <div className="bg-warning-50 p-4 rounded-lg mb-4">
+                  <div className="bg-yellow-50 p-4 rounded-lg mb-4">
                     <div className="flex items-start">
-                      <AlertCircle className="text-warning-500 mr-3 flex-shrink-0 mt-1" size={20} />
+                      <AlertCircle className="text-yellow-600 mr-3 flex-shrink-0 mt-1" size={20} />
                       <div>
-                        <p className="text-sm font-medium text-warning-700">Your SIN is encrypted</p>
-                        <p className="text-xs text-warning-600 mt-1">
+                        <p className="text-sm font-medium text-yellow-800">Your SIN is encrypted</p>
+                        <p className="text-xs text-yellow-600 mt-1">
                           Your SIN is required for tax filing and will be encrypted using AES-256. 
                           We never store it in plain text and only share with your CA if you authorize access.
                         </p>
@@ -615,7 +635,7 @@ const Register = () => {
                       value={formData.province}
                       onChange={handleChange}
                       className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                        errors.province ? 'border-warning-500' : 'border-gray-300'
+                        errors.province ? 'border-red-500' : 'border-gray-300'
                       }`}
                     >
                       <option value="">Province</option>
@@ -652,7 +672,7 @@ const Register = () => {
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
-                      I am a: <span className="text-warning-500">*</span>
+                      I am a: <span className="text-red-500">*</span>
                     </label>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       {userTypes.map(type => (
@@ -678,21 +698,21 @@ const Register = () => {
                       ))}
                     </div>
                     {errors.userType && (
-                      <p className="text-xs text-warning-500 mt-2">{errors.userType}</p>
+                      <p className="text-xs text-red-500 mt-2">{errors.userType}</p>
                     )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Employment Status <span className="text-warning-500">*</span>
+                        Employment Status <span className="text-red-500">*</span>
                       </label>
                       <select
                         name="employmentStatus"
                         value={formData.employmentStatus}
                         onChange={handleChange}
                         className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.employmentStatus ? 'border-warning-500' : 'border-gray-300'
+                          errors.employmentStatus ? 'border-red-500' : 'border-gray-300'
                         }`}
                       >
                         <option value="">Select status</option>
@@ -701,20 +721,20 @@ const Register = () => {
                         ))}
                       </select>
                       {errors.employmentStatus && (
-                        <p className="text-xs text-warning-500 mt-1">{errors.employmentStatus}</p>
+                        <p className="text-xs text-red-500 mt-1">{errors.employmentStatus}</p>
                       )}
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Tax Filing Status <span className="text-warning-500">*</span>
+                        Tax Filing Status <span className="text-red-500">*</span>
                       </label>
                       <select
                         name="taxFilingStatus"
                         value={formData.taxFilingStatus}
                         onChange={handleChange}
                         className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.taxFilingStatus ? 'border-warning-500' : 'border-gray-300'
+                          errors.taxFilingStatus ? 'border-red-500' : 'border-gray-300'
                         }`}
                       >
                         <option value="">Select status</option>
@@ -723,10 +743,128 @@ const Register = () => {
                         ))}
                       </select>
                       {errors.taxFilingStatus && (
-                        <p className="text-xs text-warning-500 mt-1">{errors.taxFilingStatus}</p>
+                        <p className="text-xs text-red-500 mt-1">{errors.taxFilingStatus}</p>
                       )}
                     </div>
                   </div>
+
+                  {/* Marital Status - MOVED HERE FROM STEP 6 */}
+                  <div className="mt-4 pt-4 border-t">
+                    <h4 className="font-medium text-gray-700 mb-3">Family Status</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {['Single', 'Married', 'Common-Law', 'Separated', 'Divorced', 'Widowed'].map((status) => (
+                        <label
+                          key={status}
+                          className={`flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${
+                            formData.maritalStatus === status
+                              ? 'border-primary-500 bg-primary-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="maritalStatus"
+                            value={status}
+                            checked={formData.maritalStatus === status}
+                            onChange={handleChange}
+                            className="sr-only"
+                          />
+                          <span className="text-sm">{status}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {errors.maritalStatus && (
+                      <p className="text-xs text-red-500 mt-2">{errors.maritalStatus}</p>
+                    )}
+                  </div>
+
+                  {/* Spouse Information - Show only if Married or Common-Law */}
+                  {(formData.maritalStatus === 'Married' || formData.maritalStatus === 'Common-Law') && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                        <Heart size={16} className="text-pink-500 mr-2" />
+                        Spouse/Partner Information
+                      </h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Spouse's Full Name <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            name="spouseName"
+                            value={formData.spouseName}
+                            onChange={handleChange}
+                            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                              errors.spouseName ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                            }`}
+                            placeholder="Full legal name"
+                          />
+                          {errors.spouseName && <p className="text-xs text-red-500 mt-1">{errors.spouseName}</p>}
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Spouse's SIN <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="password"
+                            name="spouseSin"
+                            value={formData.spouseSin}
+                            onChange={handleChange}
+                            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                              errors.spouseSin ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                            }`}
+                            placeholder="123 456 789"
+                          />
+                          {errors.spouseSin && <p className="text-xs text-red-500 mt-1">{errors.spouseSin}</p>}
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Spouse's Date of Birth <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="date"
+                            name="spouseDob"
+                            value={formData.spouseDob}
+                            onChange={handleChange}
+                            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                              errors.spouseDob ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                            }`}
+                          />
+                          {errors.spouseDob && <p className="text-xs text-red-500 mt-1">{errors.spouseDob}</p>}
+                        </div>
+                        
+                        <Input
+                          label="Spouse's Annual Income (approx)"
+                          name="spouseIncome"
+                          value={formData.spouseIncome}
+                          onChange={handleChange}
+                          icon={<DollarSign size={18} />}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      
+                      {/* Privacy Setting for Spouse Access */}
+                      <div className="mt-4 pt-3 border-t">
+                        <label className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-sm">Share access with spouse</p>
+                            <p className="text-xs text-gray-500">Allow spouse to view your tax documents</p>
+                          </div>
+                          <input
+                            type="checkbox"
+                            name="shareWithSpouse"
+                            checked={formData.shareWithSpouse || false}
+                            onChange={handleChange}
+                            className="ml-4 w-5 h-5 text-primary-600 rounded"
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-6">
                     <label className="flex items-center">
@@ -1274,59 +1412,11 @@ const Register = () => {
                 </div>
               )}
 
-              {/* Step 6: Family Information */}
+              {/* Step 6: Family Information (Now only Children/Dependents) */}
               {currentStep === 6 && (
                 <div className="space-y-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-6">Family Information</h3>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-6">Children & Dependents</h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Marital Status
-                      </label>
-                      <select
-                        name="maritalStatus"
-                        value={formData.maritalStatus}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      >
-                        <option value="">Select status</option>
-                        {maritalStatuses.map(status => (
-                          <option key={status} value={status}>{status}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {formData.maritalStatus === 'Married' || formData.maritalStatus === 'Common-Law' ? (
-                      <>
-                        <Input
-                          label="Spouse/Partner's Full Name"
-                          name="spouseName"
-                          value={formData.spouseName}
-                          onChange={handleChange}
-                        />
-                        
-                        <Input
-                          label="Spouse/Partner's SIN"
-                          name="spouseSin"
-                          value={formData.spouseSin}
-                          onChange={handleChange}
-                          placeholder="123 456 789"
-                          type="password"
-                        />
-                        
-                        <Input
-                          label="Spouse/Partner's Annual Income"
-                          name="spouseIncome"
-                          value={formData.spouseIncome}
-                          onChange={handleChange}
-                          placeholder="Approximate amount"
-                          icon={<DollarSign size={18} />}
-                        />
-                      </>
-                    ) : null}
-                  </div>
-
                   <div className="border-t border-gray-200 pt-6">
                     <h4 className="font-medium text-gray-700 mb-4">Children/Dependents</h4>
                     
@@ -1351,11 +1441,11 @@ const Register = () => {
                             const newChildren = formData.children.filter((_, i) => i !== index);
                             setFormData(prev => ({ ...prev, children: newChildren }));
                           }}
-                          className="absolute top-2 right-2 text-gray-400 hover:text-warning-500"
+                          className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
                         >
                           ×
                         </button>
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <Input
                             label="Full Name"
                             value={child.name}
@@ -1439,6 +1529,10 @@ const Register = () => {
                         <p><span className="text-gray-500">User Type:</span> {getSelectedUserType()?.label}</p>
                         <p><span className="text-gray-500">Employment Status:</span> {formData.employmentStatus}</p>
                         <p><span className="text-gray-500">Filing Status:</span> {formData.taxFilingStatus}</p>
+                        <p><span className="text-gray-500">Marital Status:</span> {formData.maritalStatus}</p>
+                        {formData.maritalStatus === 'Married' || formData.maritalStatus === 'Common-Law' ? (
+                          <p><span className="text-gray-500">Spouse:</span> {formData.spouseName}</p>
+                        ) : null}
                       </Card.Body>
                     </Card>
 
@@ -1533,7 +1627,7 @@ const Register = () => {
                       </span>
                     </label>
                     {errors.confirmAccuracy && (
-                      <p className="text-xs text-warning-500 ml-7">{errors.confirmAccuracy}</p>
+                      <p className="text-xs text-red-500 ml-7">{errors.confirmAccuracy}</p>
                     )}
                   </div>
 
@@ -1634,4 +1728,3 @@ const Register = () => {
 };
 
 export default Register;
-

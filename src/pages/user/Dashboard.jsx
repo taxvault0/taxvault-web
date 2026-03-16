@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { 
   Camera, 
   MapPin, 
@@ -26,6 +27,7 @@ import Badge from '../../components/ui/Badge';
 import StatsCard from '../../components/ui/StatsCard';
 import Avatar from '../../components/ui/Avatar';
 import { useAuth } from '../../context/AuthContext';
+import { HeartPulse } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -201,6 +203,29 @@ const Dashboard = () => {
               subtitle="5% rate"
             />
           </div>
+          
+          {/* Life Events Quick Access */}
+          <Card className="mb-6 bg-gradient-to-r from-pink-50 to-purple-50 border-pink-200">
+            <Card.Body>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <HeartPulse className="text-pink-600 mr-3" size={28} />
+                  <div>
+                    <h3 className="font-semibold text-gray-800">Life Events</h3>
+                    <p className="text-sm text-gray-600">
+                      Major life changes affect your taxes. Update your status.
+                    </p>
+                  </div>
+                </div>
+                <Link 
+                  to="/life-events" 
+                  className="btn-outline btn-sm"
+                >
+                  Manage Life Events
+                </Link>
+              </div>
+            </Card.Body>
+          </Card>
 
           {/* Recent receipts section */}
           <div className="grid lg:grid-cols-3 gap-8">

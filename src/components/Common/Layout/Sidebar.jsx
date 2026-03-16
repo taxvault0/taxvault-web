@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { UserPlus } from 'lucide-react';
+import { HeartPulse } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
@@ -39,6 +40,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { path: '/accounts', icon: PiggyBank, label: 'Accounts', badge: 2 },
     { path: '/profile', icon: Users, label: 'Profile' },
     { path: '/find-ca', icon: UserPlus, label: 'Find a CA', badge: 3 },
+     { path: '/life-events', icon: HeartPulse, label: 'Life Events' },
 
   ];
 
