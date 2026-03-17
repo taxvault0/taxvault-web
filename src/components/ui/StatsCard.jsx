@@ -2,7 +2,7 @@ import React from 'react';
 import Card from './Card';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
-const StatsCard = ({ title, value, icon, trend, color = 'primary', subtitle }) => {
+const StatsCard = ({ title, value, icon: Icon, trend, color = 'primary', subtitle }) => {
   const colorClasses = {
     primary: 'text-primary-500 bg-primary-50',
     success: 'text-success-500 bg-green-50',
@@ -25,9 +25,9 @@ const StatsCard = ({ title, value, icon, trend, color = 'primary', subtitle }) =
           {subtitle && <p className="text-xs text-gray-400 mt-1">{subtitle}</p>}
         </div>
         
-        {icon && (
+        {Icon && (  // ← Changed from icon to Icon
           <div className={`p-3 rounded-lg ${colorClasses[color]?.split(' ')[1] || 'bg-gray-50'}`}>
-            <span className={`text-xl ${colorClasses[color]?.split(' ')[0] || 'text-gray-500'}`}>{icon}</span>
+            <Icon className={`text-2xl ${colorClasses[color]?.split(' ')[0] || 'text-gray-500'}`} />
           </div>
         )}
       </div>
