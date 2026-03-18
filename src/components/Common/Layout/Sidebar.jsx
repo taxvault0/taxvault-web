@@ -21,11 +21,15 @@ import {
   Package,
   DollarSign,
   PiggyBank,
-  Search
+  BarChart3,
+  Calendar,
+  Video,
+  Search,
+  CalendarClock,
+  UserPlus,
+  HeartPulse
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-import { UserPlus } from 'lucide-react';
-import { HeartPulse } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
@@ -40,8 +44,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     { path: '/accounts', icon: PiggyBank, label: 'Accounts', badge: 2 },
     { path: '/profile', icon: Users, label: 'Profile' },
     { path: '/find-ca', icon: UserPlus, label: 'Find a CA', badge: 3 },
-     { path: '/life-events', icon: HeartPulse, label: 'Life Events' },
-
+    { path: '/life-events', icon: HeartPulse, label: 'Life Events' },
+    { path: '/consultations', icon: Video, label: 'Consultations', badge: 2 }, // Using Video icon for consultations
   ];
 
   // Gig worker specific items
@@ -60,12 +64,28 @@ const Sidebar = ({ isOpen, onClose }) => {
     { path: '/shop/rent-utilities', icon: Home, label: 'Rent & Bills' },
   ];
 
-  // CA navigation items
+  // CA navigation items - CLEANED UP (removed duplicates)
   const caNavItems = [
     { path: '/ca/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/ca/search', icon: Search, label: 'Find Client' },
+    { path: '/ca/analytics', icon: BarChart3, label: 'Analytics' },
+    { 
+      path: '/ca/requests', 
+      icon: Clock, 
+      label: 'Consultation Requests', 
+      badge: 8, 
+      badgeColor: 'warning' 
+    },
+    { path: '/ca/calendar', icon: Calendar, label: 'Calendar' },
     { path: '/ca/clients', icon: Users, label: 'Clients', badge: 12 },
-    { path: '/ca/reviews', icon: Clock, label: 'Pending Reviews', badge: 5, badgeColor: 'warning' },
+    { path: '/ca/search', icon: Search, label: 'Find Client' },
+    { 
+      path: '/ca/reviews', 
+      icon: Clock, 
+      label: 'Pending Reviews', 
+      badge: 5, 
+      badgeColor: 'warning' 
+    },
+    { path: '/ca/earnings', icon: DollarSign, label: 'Earnings' },
     { path: '/ca/reports', icon: TrendingUp, label: 'Reports' },
   ];
 

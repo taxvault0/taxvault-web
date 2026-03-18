@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 console.log('Checking for object rendering issues...');
+
 // Common Components
 import Header from './components/Common/Layout/Header';
 import Sidebar from './components/Common/Layout/Sidebar';
@@ -58,6 +59,19 @@ import ClientDetail from './pages/ca/ClientDetail';
 import ClientDocuments from './pages/ca/ClientDocuments';
 import ClientTaxSummary from './pages/ca/ClientTaxSummary';
 import ClientSearch from './pages/ca/ClientSearch';
+import CAAnalyticsDashboard from './pages/ca/CAAnalyticsDashboard';
+
+// User consultation routes
+import Consultations from './pages/user/Consultations';
+import ConsultationDetail from './pages/consultation/ConsultationDetail';
+import ConsultationRequest from './pages/user/ConsultationRequest';
+import CAAvailability from './pages/consultation/CAAvailability';
+
+// CA consultation routes
+import CARequestDashboard from './pages/ca/CARequestDashboard';
+import CARequestDetail from './pages/ca/CARequestDetail';
+import CACalendar from './pages/ca/CACalendar';
+import CAEarnings from './pages/ca/CAEarnings';
 
 // Styles
 import './styles/globals.css';
@@ -312,6 +326,55 @@ const AppContent = () => {
               <Route path="/ca/search" element={
                 <PrivateRoute allowedRoles={['ca']}>
                   <ClientSearch />
+                </PrivateRoute>
+              } />
+              <Route path="/ca/analytics" element={
+                <PrivateRoute allowedRoles={['ca']}>
+                  <CAAnalyticsDashboard />
+                </PrivateRoute>
+              } />
+
+              {/* User Consultation Routes */}
+              <Route path="/consultations" element={
+                <PrivateRoute allowedRoles={['user']}>
+                  <Consultations />
+                </PrivateRoute>
+              } />
+              <Route path="/consultations/request/:caId" element={
+                <PrivateRoute allowedRoles={['user']}>
+                  <ConsultationRequest />
+                </PrivateRoute>
+              } />
+              <Route path="/consultations/:id" element={
+                <PrivateRoute allowedRoles={['user']}>
+                  <ConsultationDetail />
+                </PrivateRoute>
+              } />
+              <Route path="/ca-availability/:caId" element={
+                <PrivateRoute allowedRoles={['user']}>
+                  <CAAvailability />
+                </PrivateRoute>
+              } />
+
+              {/* CA Consultation Routes */}
+              <Route path="/ca/requests" element={
+                <PrivateRoute allowedRoles={['ca']}>
+                  <CARequestDashboard />
+                </PrivateRoute>
+              } />
+              <Route path="/ca/requests/:id" element={
+                <PrivateRoute allowedRoles={['ca']}>
+                  <CARequestDetail />
+                </PrivateRoute>
+              } />
+              <Route path="/ca/calendar" element={
+                <PrivateRoute allowedRoles={['ca']}>
+                  <CACalendar />
+                </PrivateRoute>
+              } />
+              <Route path="/ca/earnings" element={
+                <PrivateRoute allowedRoles={['ca']}>
+                  <CAEarnings />
                 </PrivateRoute>
               } />
               
