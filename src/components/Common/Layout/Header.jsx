@@ -1,16 +1,47 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, User, LogOut, Menu } from 'lucide-react';
+import { Bell, User, LogOut, Menu, MessageCircle } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import { useChat } from '../../../context/ChatContext';
 import Button from '../../ui/Button';
 
 const Header = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
+  
+  // Safely get chat context
+  let chatContext;
+  try {
+    chatContext = useChat();
+  } catch (error) {
+    console.log('Chat context not available yet');
+    chatContext = {};
+  }
+  
+  const { openChat, unreadCount = 0 } = chatContext;
+  
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const handleChatClick = () => {
+    try {
+      if (openChat) {
+        // Call openChat without any parameters to just open the chat list
+        openChat();
+      } else {
+        // If chat is not available, navigate to messages page
+        if (user?.role === 'ca') {
+          navigate('/ca/messages');
+        } else {
+          navigate('/messages');
+        }
+      }
+    } catch (error) {
+      console.error('Error opening chat:', error);
+    }
   };
 
   return (
@@ -47,6 +78,19 @@ const Header = ({ onMenuClick }) => {
 
           {/* Right side */}
           <div className="flex items-center space-x-4">
+            {/* Chat Button */}
+            <button
+              onClick={handleChatClick}
+              className="relative p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-full"
+            >
+              <MessageCircle size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
             {/* Notifications */}
             <button className="relative p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-full">
               <Bell size={20} />
@@ -54,21 +98,19 @@ const Header = ({ onMenuClick }) => {
             </button>
 
             {/* User menu */}
-            <div className="relative">
-              <button
-                onClick={() => navigate('/profile')}
-                className="flex items-center space-x-3 focus:outline-none"
-              >
-                <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
-                  <span className="text-sm font-medium text-primary-700">
-                    {user?.name?.charAt(0) || 'U'}
-                  </span>
-                </div>
-                <span className="hidden md:block text-sm font-medium text-gray-700">
-                  {user?.name}
+            <button
+              onClick={() => navigate('/profile')}
+              className="flex items-center space-x-3 focus:outline-none"
+            >
+              <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
+                <span className="text-sm font-medium text-primary-700">
+                  {user?.name?.charAt(0) || 'U'}
                 </span>
-              </button>
-            </div>
+              </div>
+              <span className="hidden md:block text-sm font-medium text-gray-700">
+                {user?.name}
+              </span>
+            </button>
 
             {/* Logout button */}
             <Button

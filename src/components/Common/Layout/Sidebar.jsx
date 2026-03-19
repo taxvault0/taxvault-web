@@ -27,12 +27,16 @@ import {
   Search,
   CalendarClock,
   UserPlus,
-  HeartPulse
+  HeartPulse,
+  MessageCircle
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
+
+  // Define unreadCount - you can replace this with real data from context/API later
+  const unreadCount = 3; // Temporary value
 
   // Regular user navigation items
   const userNavItems = [
@@ -45,7 +49,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     { path: '/profile', icon: Users, label: 'Profile' },
     { path: '/find-ca', icon: UserPlus, label: 'Find a CA', badge: 3 },
     { path: '/life-events', icon: HeartPulse, label: 'Life Events' },
-    { path: '/consultations', icon: Video, label: 'Consultations', badge: 2 }, // Using Video icon for consultations
+    { path: '/consultations', icon: Video, label: 'Consultations', badge: 2 },
+    { path: '/messages', icon: MessageCircle, label: 'Messages', badge: unreadCount }
   ];
 
   // Gig worker specific items
@@ -64,7 +69,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { path: '/shop/rent-utilities', icon: Home, label: 'Rent & Bills' },
   ];
 
-  // CA navigation items - CLEANED UP (removed duplicates)
+  // CA navigation items 
   const caNavItems = [
     { path: '/ca/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/ca/analytics', icon: BarChart3, label: 'Analytics' },
@@ -78,15 +83,10 @@ const Sidebar = ({ isOpen, onClose }) => {
     { path: '/ca/calendar', icon: Calendar, label: 'Calendar' },
     { path: '/ca/clients', icon: Users, label: 'Clients', badge: 12 },
     { path: '/ca/search', icon: Search, label: 'Find Client' },
-    { 
-      path: '/ca/reviews', 
-      icon: Clock, 
-      label: 'Pending Reviews', 
-      badge: 5, 
-      badgeColor: 'warning' 
-    },
+    { path: '/ca/reviews', icon: Clock, label: 'Pending Reviews', badge: 5, badgeColor: 'warning' },
     { path: '/ca/earnings', icon: DollarSign, label: 'Earnings' },
     { path: '/ca/reports', icon: TrendingUp, label: 'Reports' },
+    { path: '/ca/messages', icon: MessageCircle, label: 'Client Messages', badge: unreadCount }
   ];
 
   // Bottom navigation items (always shown)
@@ -158,57 +158,63 @@ const Sidebar = ({ isOpen, onClose }) => {
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto py-4">
             <div className="px-3 space-y-1">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={({ isActive }) =>
-                    `flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      isActive
-                        ? 'bg-primary-50 text-primary-700'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`
-                  }
-                  onClick={onClose}
-                >
-                  <item.icon size={18} className="mr-3" />
-                  <span className="flex-1">{item.label}</span>
-                  {item.badge && (
-                    <span
-                      className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                        item.badgeColor === 'warning'
-                          ? 'bg-warning-100 text-warning-600'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      {item.badge}
-                    </span>
-                  )}
-                </NavLink>
-              ))}
+              {navItems.map((item) => {
+                const IconComponent = item.icon;
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        isActive
+                          ? 'bg-primary-50 text-primary-700'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`
+                    }
+                    onClick={onClose}
+                  >
+                    <IconComponent size={18} className="mr-3" />
+                    <span className="flex-1">{item.label}</span>
+                    {item.badge !== undefined && (
+                      <span
+                        className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                          item.badgeColor === 'warning'
+                            ? 'bg-warning-100 text-warning-600'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </NavLink>
+                );
+              })}
             </div>
           </nav>
 
           {/* Bottom navigation */}
           <div className="p-3 border-t border-gray-200 bg-white">
             <div className="space-y-1">
-              {bottomNavItems.map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={({ isActive }) =>
-                    `flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      isActive
-                        ? 'bg-primary-50 text-primary-700'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`
-                  }
-                  onClick={onClose}
-                >
-                  <item.icon size={18} className="mr-3" />
-                  {item.label}
-                </NavLink>
-              ))}
+              {bottomNavItems.map((item) => {
+                const IconComponent = item.icon;
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        isActive
+                          ? 'bg-primary-50 text-primary-700'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`
+                    }
+                    onClick={onClose}
+                  >
+                    <IconComponent size={18} className="mr-3" />
+                    {item.label}
+                  </NavLink>
+                );
+              })}
               <button
                 onClick={logout}
                 className="w-full flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"

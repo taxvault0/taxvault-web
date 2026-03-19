@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ChatProvider } from './context/ChatContext';
 console.log('Checking for object rendering issues...');
 
 // Common Components
 import Header from './components/Common/Layout/Header';
 import Sidebar from './components/Common/Layout/Sidebar';
 import DemoNav from './components/Common/Layout/DemoNav';
+
+// Life Events Features
 import LifeEventsHub from './features/life-events/pages/LifeEventsHub';
 import MaritalStatusUpdate from './features/life-events/pages/MaritalStatusUpdate';
 import SeparationDivorce from './features/life-events/pages/SeparationDivorce';
@@ -37,6 +40,20 @@ import AccountDocuments from './pages/user/AccountDocuments';
 import TaxChecklist from './pages/user/TaxChecklist';
 import FindCA from './pages/user/FindCA';
 
+// User Consultation Pages
+import Consultations from './pages/user/Consultations';
+import ConsultationRequest from './pages/user/ConsultationRequest';
+import ConsultationDetail from './pages/user/ConsultationDetail';
+import CAAvailability from './pages/consultation/CAAvailability';
+
+// User Messaging Pages
+import Messages from './pages/user/Messages';
+import Conversation from './pages/user/Conversation';
+
+// CA Messaging Pages
+import CAMessages from './pages/ca/CAMessages';
+import CAConversation from './pages/ca/CAConversation';
+
 // Gig Worker Pages
 import GSTDashboard from './pages/gig/GSTDashboard';
 import BusinessUseCalculator from './pages/gig/BusinessUseCalculator';
@@ -61,17 +78,14 @@ import ClientTaxSummary from './pages/ca/ClientTaxSummary';
 import ClientSearch from './pages/ca/ClientSearch';
 import CAAnalyticsDashboard from './pages/ca/CAAnalyticsDashboard';
 
-// User consultation routes
-import Consultations from './pages/user/Consultations';
-import ConsultationDetail from './pages/consultation/ConsultationDetail';
-import ConsultationRequest from './pages/user/ConsultationRequest';
-import CAAvailability from './pages/consultation/CAAvailability';
-
-// CA consultation routes
+// CA Consultation Pages
 import CARequestDashboard from './pages/ca/CARequestDashboard';
 import CARequestDetail from './pages/ca/CARequestDetail';
 import CACalendar from './pages/ca/CACalendar';
 import CAEarnings from './pages/ca/CAEarnings';
+
+// Chat Components
+import ChatButton from './components/chat/ChatButton';
 
 // Styles
 import './styles/globals.css';
@@ -108,6 +122,7 @@ const PrivateRoute = ({ children, allowedRoles = ['user', 'ca'] }) => {
 const AppContent = () => {
   console.log('🔍 AppContent rendering');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false); // Control chat drawer visibility
   const { isAuthenticated, user } = useAuth();
 
   console.log('🔍 Auth state:', { isAuthenticated, user });
@@ -124,11 +139,10 @@ const AppContent = () => {
         <Route path="/register/user" element={<Register />} />
         <Route path="/register/ca" element={<RegisterCA />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="*" element={<Navigate to="/" />} />
         <Route path="/accounts" element={<AccountDocuments />} />
         <Route path="/tax-checklist" element={<TaxChecklist />} />
         <Route path="/find-ca" element={<FindCA />} />
-        {/* Life events routes removed from public section */}
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     );
   }
@@ -139,7 +153,7 @@ const AppContent = () => {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
       <div className="flex-1 flex flex-col">
-        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <Header onMenuClick={() => setSidebarOpen(true)} onChatClick={() => setChatOpen(true)} />
         
         <main className="flex-1 p-6">
           <div className="container mx-auto">
@@ -206,7 +220,7 @@ const AppContent = () => {
                 </PrivateRoute>
               } />
               
-              {/* Life Events Routes - Protected */}
+              {/* Life Events Routes */}
               <Route path="/life-events" element={
                 <PrivateRoute allowedRoles={['user', 'ca']}>
                   <LifeEventsHub />
@@ -377,6 +391,30 @@ const AppContent = () => {
                   <CAEarnings />
                 </PrivateRoute>
               } />
+
+              {/* User Messaging Routes */}
+              <Route path="/messages" element={
+                <PrivateRoute allowedRoles={['user']}>
+                  <Messages />
+                </PrivateRoute>
+              } />
+              <Route path="/messages/:caId" element={
+                <PrivateRoute allowedRoles={['user']}>
+                  <Conversation />
+                </PrivateRoute>
+              } />
+
+              {/* CA Messaging Routes */}
+              <Route path="/ca/messages" element={
+                <PrivateRoute allowedRoles={['ca']}>
+                  <CAMessages />
+                </PrivateRoute>
+              } />
+              <Route path="/ca/messages/:clientId" element={
+                <PrivateRoute allowedRoles={['ca']}>
+                  <CAConversation />
+                </PrivateRoute>
+              } />
               
               {/* Default redirect based on role */}
               <Route path="/" element={
@@ -390,6 +428,11 @@ const AppContent = () => {
         </main>
       </div>
       
+      {/* Only show ChatDrawer when explicitly opened and not on message pages */}
+      {chatOpen && !window.location.pathname.includes('/messages') && (
+        <ChatDrawer isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+      )}
+      
       {/* {process.env.NODE_ENV === 'development' && <DemoNav />} */}
     </div>
   );
@@ -399,7 +442,11 @@ function App() {
   console.log('🔍 App rendering');
   return (
     <AuthProvider>
-      <AppContent />
+      <ChatProvider>
+        <AppContent />
+        {/* Add ChatButton here - it will show for all authenticated users */}
+        <ChatButton />
+      </ChatProvider>
     </AuthProvider>
   );
 }
