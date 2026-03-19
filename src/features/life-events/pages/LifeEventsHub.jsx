@@ -4,7 +4,7 @@ import {
   Heart, Users, Baby, MapPin, Shield, AlertTriangle, ChevronRight 
 } from 'lucide-react';
 import Card from '../../../components/ui/Card';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuth } from '../../auth/context/AuthContext';
 
 const LifeEventsHub = () => {
   const navigate = useNavigate();
@@ -152,3 +152,10 @@ const LifeEventsHub = () => {
 };
 
 export default LifeEventsHub;
+
+
+
+
+
+
+

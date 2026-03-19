@@ -50,3 +50,5 @@ const StatsCard = ({ title, value, icon: Icon, trend, color = 'primary', subtitl
 };
 
 export default StatsCard;
+
+

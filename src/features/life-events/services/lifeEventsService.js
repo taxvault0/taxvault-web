@@ -24,3 +24,10 @@ export const lifeEventsService = {
   // Get Life Events History
   getLifeEventHistory: () => api.get('/users/life-events/history'),
 };
+
+
+
+
+
+
+

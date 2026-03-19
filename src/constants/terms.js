@@ -210,3 +210,5 @@ export const PRIVACY_POLICY = {
     <p><strong>Last Updated:</strong> March 15, 2024</p>
   `
 };
+
+

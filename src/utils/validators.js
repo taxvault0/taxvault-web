@@ -50,3 +50,5 @@ export const tripSchema = Yup.object({
   startLocation: Yup.string().required('Start location is required'),
   endLocation: Yup.string().required('End location is required')
 });
+
+

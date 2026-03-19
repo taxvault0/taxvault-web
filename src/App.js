@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { ChatProvider } from './context/ChatContext';
+import { AuthProvider, useAuth } from './features/auth/context/AuthContext';
+import { ChatProvider } from './features/chat/context/ChatContext';
 console.log('Checking for object rendering issues...');
 
 // Common Components
-import Header from './components/Common/Layout/Header';
-import Sidebar from './components/Common/Layout/Sidebar';
-import DemoNav from './components/Common/Layout/DemoNav';
+import Header from './components/layout/Header';
+import Sidebar from './components/layout/Sidebar';
+import DemoNav from './components/layout/DemoNav';
 
 // Life Events Features
 import LifeEventsHub from './features/life-events/pages/LifeEventsHub';
@@ -18,74 +18,72 @@ import ChangeAddress from './features/life-events/pages/ChangeAddress';
 import LegacyContact from './features/life-events/pages/LegacyContact';
 
 // Auth Pages
-import Login from './pages/auth/Login';
-import LoginUser from './pages/auth/LoginUser';
-import LoginCA from './pages/auth/LoginCA';
-import Register from './pages/auth/Register';
-import RegisterCA from './pages/ca/RegisterCA';
-import RoleSelect from './pages/auth/RoleSelect';
-import ForgotPassword from './pages/auth/ForgotPassword';
+import Login from './features/auth/pages/Login';
+import LoginUser from './features/auth/pages/LoginUser';
+import LoginCA from './features/auth/pages/LoginCA';
+import Register from './features/auth/pages/Register';
+import RegisterCA from './features/auth/pages/RegisterCA';
+import RoleSelect from './features/auth/pages/RoleSelect';
+import ForgotPassword from './features/auth/pages/ForgotPassword';
 
 // User Pages
-import Dashboard from './pages/user/Dashboard';
-import Receipts from './pages/user/Receipts';
-import ReceiptDetail from './pages/user/ReceiptDetail';
-import Mileage from './pages/user/Mileage';
-import MileageTracker from './pages/user/MileageTracker';
-import TripDetail from './pages/user/TripDetail';
-import Documents from './pages/user/Documents';
-import Profile from './pages/user/Profile';
-import Settings from './pages/user/Settings';
-import AccountDocuments from './pages/user/AccountDocuments';
-import TaxChecklist from './pages/user/TaxChecklist';
-import FindCA from './pages/user/FindCA';
+import Dashboard from './features/dashboard/pages/Dashboard';
+import Receipts from './features/documents/pages/Receipts';
+import ReceiptDetail from './features/documents/pages/ReceiptDetail';
+import Mileage from './features/mileage/pages/Mileage';
+import MileageTracker from './features/mileage/pages/MileageTracker';
+import TripDetail from './features/mileage/pages/TripDetail';
+import Documents from './features/documents/pages/Documents';
+import Profile from './features/profile/pages/Profile';
+import Settings from './features/profile/pages/Settings';
+import AccountDocuments from './features/documents/pages/AccountDocuments';
+import TaxChecklist from './features/tax/pages/TaxChecklist';
+import FindCA from './features/directory/pages/FindCA';
 
 // User Consultation Pages
-import Consultations from './pages/user/Consultations';
-import ConsultationRequest from './pages/user/ConsultationRequest';
-import ConsultationDetail from './pages/user/ConsultationDetail';
-import CAAvailability from './pages/consultation/CAAvailability';
+import Consultations from './features/consultations/pages/Consultations';
+import ConsultationRequest from './features/consultations/pages/ConsultationRequest';
+import ConsultationDetail from './features/consultations/pages/ConsultationDetail';
+import CAAvailability from './features/consultations/pages/CAAvailability';
 
 // User Messaging Pages
-import Messages from './pages/user/Messages';
-import Conversation from './pages/user/Conversation';
 
 // CA Messaging Pages
-import CAMessages from './pages/ca/CAMessages';
-import CAConversation from './pages/ca/CAConversation';
+import CAMessages from './features/chat/pages/CAMessages';
+import CAConversation from './features/chat/pages/CAConversation';
 
 // Gig Worker Pages
-import GSTDashboard from './pages/gig/GSTDashboard';
-import BusinessUseCalculator from './pages/gig/BusinessUseCalculator';
-import T2125Form from './pages/gig/T2125Form';
+import GSTDashboard from './features/dashboard/pages/GSTDashboard';
+import BusinessUseCalculator from './features/tax/pages/BusinessUseCalculator';
+import T2125Form from './features/tax/pages/T2125Form';
 
 // Shop Owner Pages
-import ShopDashboard from './pages/shop/ShopDashboard';
-import ShopBusinessInfo from './pages/shop/ShopBusinessInfo';
-import ShopSalesIncome from './pages/shop/ShopSalesIncome';
-import ShopRentUtilities from './pages/shop/ShopRentUtilities';
-import ShopPayroll from './pages/shop/ShopPayroll';
-import ShopFranchise from './pages/shop/ShopFranchise';
-import ShopInventory from './pages/shop/ShopInventory';
-import ShopGSTRecords from './pages/shop/ShopGSTRecords';
+import ShopDashboard from './features/dashboard/pages/ShopDashboard';
+import ShopBusinessInfo from './features/shop/pages/ShopBusinessInfo';
+import ShopSalesIncome from './features/shop/pages/ShopSalesIncome';
+import ShopRentUtilities from './features/shop/pages/ShopRentUtilities';
+import ShopPayroll from './features/shop/pages/ShopPayroll';
+import ShopFranchise from './features/shop/pages/ShopFranchise';
+import ShopInventory from './features/shop/pages/ShopInventory';
+import ShopGSTRecords from './features/shop/pages/ShopGSTRecords';
 
 // CA Pages
-import CADashboard from './pages/ca/CADashboard';
-import Clients from './pages/ca/Clients';
-import ClientDetail from './pages/ca/ClientDetail';
-import ClientDocuments from './pages/ca/ClientDocuments';
-import ClientTaxSummary from './pages/ca/ClientTaxSummary';
-import ClientSearch from './pages/ca/ClientSearch';
-import CAAnalyticsDashboard from './pages/ca/CAAnalyticsDashboard';
+import CADashboard from './features/dashboard/pages/CADashboard';
+import Clients from './features/clients/pages/Clients';
+import ClientDetail from './features/clients/pages/ClientDetail';
+import ClientDocuments from './features/clients/pages/ClientDocuments';
+import ClientTaxSummary from './features/clients/pages/ClientTaxSummary';
+import ClientSearch from './features/clients/pages/ClientSearch';
+import CAAnalyticsDashboard from './features/dashboard/pages/CAAnalyticsDashboard';
 
 // CA Consultation Pages
-import CARequestDashboard from './pages/ca/CARequestDashboard';
-import CARequestDetail from './pages/ca/CARequestDetail';
-import CACalendar from './pages/ca/CACalendar';
-import CAEarnings from './pages/ca/CAEarnings';
+import CARequestDashboard from './features/dashboard/pages/CARequestDashboard';
+import CARequestDetail from './features/ca/pages/CARequestDetail';
+import CACalendar from './features/ca/pages/CACalendar';
+import CAEarnings from './features/ca/pages/CAEarnings';
 
 // Chat Components
-import ChatButton from './components/chat/ChatButton';
+import ChatButton from './features/chat/components/ChatButton';
 
 // Styles
 import './styles/globals.css';
@@ -390,21 +388,7 @@ const AppContent = () => {
                 <PrivateRoute allowedRoles={['ca']}>
                   <CAEarnings />
                 </PrivateRoute>
-              } />
-
-              {/* User Messaging Routes */}
-              <Route path="/messages" element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <Messages />
-                </PrivateRoute>
-              } />
-              <Route path="/messages/:caId" element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <Conversation />
-                </PrivateRoute>
-              } />
-
-              {/* CA Messaging Routes */}
+              } />              {/* CA Messaging Routes */}
               <Route path="/ca/messages" element={
                 <PrivateRoute allowedRoles={['ca']}>
                   <CAMessages />
@@ -452,3 +436,7 @@ function App() {
 }
 
 export default App;
+
+
+
+

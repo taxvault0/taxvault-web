@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { lifeEventsService } from '../services/lifeEventsService';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuth } from '../../auth/context/AuthContext';
 
 export const useLifeEvents = () => {
   const { user } = useAuth();
@@ -121,3 +121,9 @@ export const useLifeEvents = () => {
     setLegacyContact
   };
 };
+
+
+
+
+
+
