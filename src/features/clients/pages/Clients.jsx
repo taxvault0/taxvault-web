@@ -19,13 +19,13 @@ import {
   Clock,
   AlertCircle
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
-import Badge from '../../../components/ui/Badge';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Input from 'components/ui/Input';
+import Badge from 'components/ui/Badge';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useAuth } from '../../auth/context/AuthContext';
-import { caAPI } from '../../../services/api';
+import { caAPI } from 'services/api';
 import axios from 'axios';
 
 const Clients = () => {
@@ -554,6 +554,7 @@ const Clients = () => {
 };
 
 export default Clients;
+
 
 
 

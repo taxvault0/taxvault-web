@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Calendar, Clock, MapPin, Video, Phone, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
 
 const CAAvailability = () => {
   const { caId } = useParams();
@@ -240,6 +240,7 @@ const CAAvailability = () => {
 };
 
 export default CAAvailability;
+
 
 
 

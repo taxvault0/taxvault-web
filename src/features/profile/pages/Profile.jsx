@@ -14,8 +14,8 @@ import {
   Settings,
   LogOut
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
 import { useAuth } from '../../auth/context/AuthContext';
 import { QRCodeCanvas } from 'qrcode.react';
 
@@ -244,6 +244,7 @@ const Profile = () => {
 };
 
 export default Profile;
+
 
 
 

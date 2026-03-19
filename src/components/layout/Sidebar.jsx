@@ -30,7 +30,7 @@ import {
   HeartPulse,
   MessageCircle
 } from 'lucide-react';
-import { useAuth } from '../../features/auth/context/AuthContext';
+import { useAuth } from 'features/auth/context/AuthContext';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
@@ -231,6 +231,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 };
 
 export default Sidebar;
+
 
 
 

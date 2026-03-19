@@ -48,3 +48,4 @@ const Table = ({ columns, data, onRowClick, className = '' }) => {
 export default Table;
 
 
+

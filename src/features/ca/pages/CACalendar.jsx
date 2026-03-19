@@ -8,9 +8,9 @@ import {
   Users,
   Filter
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
 
 const CACalendar = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -224,6 +224,7 @@ const CACalendar = () => {
 };
 
 export default CACalendar;
+
 
 
 

@@ -16,9 +16,9 @@ import {
   ChevronRight,
   Loader
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
 import { consultationService } from '../services/consultationService';
 import { useAuth } from '../../auth/context/AuthContext';
 
@@ -218,6 +218,7 @@ const Consultations = () => {
 };
 
 export default Consultations;
+
 
 
 

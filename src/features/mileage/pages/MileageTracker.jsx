@@ -11,11 +11,11 @@ import {
   AlertCircle,
   Save
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
-import Badge from '../../../components/ui/Badge';
-import { PROVINCES } from '../../../constants/provinces';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Input from 'components/ui/Input';
+import Badge from 'components/ui/Badge';
+import { PROVINCES } from 'constants/provinces';
 
 const MileageTracker = () => {
   const navigate = useNavigate();
@@ -328,6 +328,7 @@ const MileageTracker = () => {
 };
 
 export default MileageTracker;
+
 
 
 

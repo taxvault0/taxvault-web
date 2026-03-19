@@ -17,9 +17,9 @@ import {
   CheckCircle,
   Clock
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
 
 const AccountDocuments = () => {
   const [selectedYear, setSelectedYear] = useState(2024);
@@ -353,6 +353,7 @@ const AccountDocuments = () => {
 };
 
 export default AccountDocuments;
+
 
 
 

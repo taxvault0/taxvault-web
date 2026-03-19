@@ -27,9 +27,9 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
 
 const CAEarnings = () => {
   const [period, setPeriod] = useState('month');
@@ -359,6 +359,7 @@ const CAEarnings = () => {
 };
 
 export default CAEarnings;
+
 
 
 

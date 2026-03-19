@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, ArrowLeft, Eye, EyeOff, User, Briefcase, Store, Car } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
 import { useAuth } from '../context/AuthContext';
 
 const LoginUser = () => {
@@ -341,6 +341,7 @@ const LoginUser = () => {
 };
 
 export default LoginUser;
+
 
 
 

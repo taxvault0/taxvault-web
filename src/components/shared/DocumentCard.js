@@ -115,3 +115,4 @@ const DocumentCard = ({ document, onVerify, onReject, onDownload }) => {
 export default DocumentCard;
 
 
+

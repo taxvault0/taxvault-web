@@ -33,12 +33,12 @@ import {
   CheckSquare,
   Square
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
-import Badge from '../../../components/ui/Badge';
-import TermsModal from '../../../components/shared/TermsModal';
-import { USER_TERMS, PRIVACY_POLICY } from '../../../constants/terms';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Input from 'components/ui/Input';
+import Badge from 'components/ui/Badge';
+import TermsModal from 'components/shared/TermsModal';
+import { USER_TERMS, PRIVACY_POLICY } from 'constants/terms';
 import { useAuth } from '../context/AuthContext';
 
 const Register = () => {
@@ -1728,6 +1728,7 @@ const Register = () => {
 };
 
 export default Register;
+
 
 
 

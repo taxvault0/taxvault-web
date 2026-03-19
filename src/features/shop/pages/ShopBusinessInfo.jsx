@@ -15,11 +15,11 @@ import {
   Download,
   Edit
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
-import Input from '../../../components/ui/Input';
-import { PROVINCES } from '../../../constants/provinces';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
+import Input from 'components/ui/Input';
+import { PROVINCES } from 'constants/provinces';
 
 const ShopBusinessInfo = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -376,6 +376,7 @@ const ShopBusinessInfo = () => {
 };
 
 export default ShopBusinessInfo;
+
 
 
 

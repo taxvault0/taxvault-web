@@ -1,9 +1,9 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Calendar, Clock, User, DollarSign, MessageCircle, Video, ArrowLeft } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
 
 const ConsultationDetail = () => {
   const { id } = useParams();
@@ -188,6 +188,7 @@ const ConsultationDetail = () => {
 };
 
 export default ConsultationDetail;
+
 
 
 

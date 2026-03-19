@@ -31,9 +31,9 @@ import {
   Shield,
   Sparkles
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
 import {
   LineChart as RechartsLineChart,
   BarChart,
@@ -824,6 +824,7 @@ const CAAnalyticsDashboard = () => {
 };
 
 export default CAAnalyticsDashboard;
+
 
 
 

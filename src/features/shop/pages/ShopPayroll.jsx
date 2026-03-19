@@ -12,11 +12,11 @@ import {
   Clock,
   TrendingUp
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
-import Badge from '../../../components/ui/Badge';
-import { PROVINCES } from '../../../constants/provinces';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Input from 'components/ui/Input';
+import Badge from 'components/ui/Badge';
+import { PROVINCES } from 'constants/provinces';
 
 const ShopPayroll = () => {
   const [selectedYear, setSelectedYear] = useState(2024);
@@ -374,6 +374,7 @@ const ShopPayroll = () => {
 };
 
 export default ShopPayroll;
+
 
 
 

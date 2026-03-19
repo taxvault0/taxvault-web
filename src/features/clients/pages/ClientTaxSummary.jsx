@@ -24,9 +24,9 @@ import {
   Share2,
   FileSpreadsheet
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
 
 const ClientTaxSummary = () => {
   const { id } = useParams();
@@ -437,6 +437,7 @@ Balance Due/Refund: $${clientData.summary.balanceDue.toFixed(2)}
 };
 
 export default ClientTaxSummary;
+
 
 
 

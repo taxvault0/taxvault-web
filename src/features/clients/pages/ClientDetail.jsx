@@ -9,9 +9,9 @@ import {
   EnvelopeIcon,
   CloudArrowDownIcon
 } from '@heroicons/react/24/outline';
-import { caAPI } from '../../../services/api';
-import StatsCard from '../../../components/shared/StatsCard';
-import DocumentCard from '../../../components/shared/DocumentCard';
+import { caAPI } from 'services/api';
+import StatsCard from 'components/shared/StatsCard';
+import DocumentCard from 'components/shared/DocumentCard';
 
 const ClientDetail = () => {
   const { id } = useParams();
@@ -195,6 +195,7 @@ const ClientDetail = () => {
 };
 
 export default ClientDetail;
+
 
 
 

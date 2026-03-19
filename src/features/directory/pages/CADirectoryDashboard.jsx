@@ -13,9 +13,9 @@ import {
   ToggleLeft,
   ToggleRight
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
 import axios from 'axios';
 
 const CADirectoryDashboard = () => {
@@ -311,6 +311,7 @@ const CADirectoryDashboard = () => {
 };
 
 export default CADirectoryDashboard;
+
 
 
 

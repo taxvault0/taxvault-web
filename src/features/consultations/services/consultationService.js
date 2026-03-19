@@ -1,5 +1,5 @@
 // src/services/consultationService.js
-import api from '../../../services/api';
+import api from 'services/api';
 
 export const consultationService = {
   // Client endpoints
@@ -24,6 +24,7 @@ export const consultationService = {
   generateMeetingLink: (id, provider) => api.post(`/consultations/${id}/meeting`, { provider }),
   sendReminders: (id) => api.post(`/consultations/${id}/remind`),
 };
+
 
 
 

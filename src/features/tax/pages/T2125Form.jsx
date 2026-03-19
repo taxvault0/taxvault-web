@@ -17,11 +17,11 @@ import {
   CheckCircle,
   Calculator
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
-import Badge from '../../../components/ui/Badge';
-import { PROVINCES, calculateTax, getTaxRateDisplay } from '../../../constants/provinces';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Input from 'components/ui/Input';
+import Badge from 'components/ui/Badge';
+import { PROVINCES, calculateTax, getTaxRateDisplay } from 'constants/provinces';
 
 const T2125Form = () => {
   const [selectedYear, setSelectedYear] = useState(2024);
@@ -643,6 +643,7 @@ const T2125Form = () => {
 };
 
 export default T2125Form;
+
 
 
 

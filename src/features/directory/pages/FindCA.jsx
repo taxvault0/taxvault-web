@@ -14,9 +14,9 @@ import {
   Navigation,
   X
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
 
 const FindCA = () => {
   const [location, setLocation] = useState({ lat: null, lng: null });
@@ -512,6 +512,7 @@ const FindCA = () => {
 };
 
 export default FindCA;
+
 
 
 

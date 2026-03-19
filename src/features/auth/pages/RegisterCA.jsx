@@ -89,11 +89,11 @@ import {
   CheckSquare,
   Square
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
-import TermsModal from '../../../components/shared/TermsModal';
-import { USER_TERMS, PRIVACY_POLICY, CA_TERMS } from '../../../constants/terms';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Input from 'components/ui/Input';
+import TermsModal from 'components/shared/TermsModal';
+import { USER_TERMS, PRIVACY_POLICY, CA_TERMS } from 'constants/terms';
 import { useAuth } from '../context/AuthContext';
 
 // Error display components
@@ -2683,6 +2683,7 @@ const RegisterCA = () => {
 };
 
 export default RegisterCA;
+
 
 
 

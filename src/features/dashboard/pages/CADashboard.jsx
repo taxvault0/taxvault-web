@@ -11,8 +11,8 @@ import {
   UserCircleIcon,
   DocumentTextIcon
 } from '@heroicons/react/24/outline';
-import StatsCard from '../../../components/shared/StatsCard';
-import ClientTable from '../../../components/shared/ClientTable';
+import StatsCard from 'components/shared/StatsCard';
+import ClientTable from 'components/shared/ClientTable';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -359,6 +359,7 @@ const CADashboard = () => {
 };
 
 export default CADashboard;
+
 
 
 

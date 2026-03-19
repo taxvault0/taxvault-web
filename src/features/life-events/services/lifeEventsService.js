@@ -1,4 +1,4 @@
-import api from '../../../services/api';
+import api from 'services/api';
 
 export const lifeEventsService = {
   // Marital Status
@@ -24,6 +24,7 @@ export const lifeEventsService = {
   // Get Life Events History
   getLifeEventHistory: () => api.get('/users/life-events/history'),
 };
+
 
 
 

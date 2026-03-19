@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, User, Mail, Phone, Users, CheckCircle, ArrowLeft, AlertCircle } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Input from 'components/ui/Input';
 import { useLifeEvents } from '../hooks/useLifeEvents';
 
 const LegacyContact = () => {
@@ -181,6 +181,7 @@ const LegacyContact = () => {
 };
 
 export default LegacyContact;
+
 
 
 

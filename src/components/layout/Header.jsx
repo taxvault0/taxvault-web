@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, User, LogOut, Menu, MessageCircle } from 'lucide-react';
-import { useAuth } from '../../features/auth/context/AuthContext';
-import { useChat } from '../../features/chat/context/ChatContext';
+import { useAuth } from 'features/auth/context/AuthContext';
+import { useChat } from 'features/chat/context/ChatContext';
 import Button from '../ui/Button';
 
 const Header = ({ onMenuClick }) => {
@@ -130,6 +130,7 @@ const Header = ({ onMenuClick }) => {
 };
 
 export default Header;
+
 
 
 

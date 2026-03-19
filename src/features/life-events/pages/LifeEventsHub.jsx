@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Heart, Users, Baby, MapPin, Shield, AlertTriangle, ChevronRight 
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
+import Card from 'components/ui/Card';
 import { useAuth } from '../../auth/context/AuthContext';
 
 const LifeEventsHub = () => {
@@ -152,6 +152,7 @@ const LifeEventsHub = () => {
 };
 
 export default LifeEventsHub;
+
 
 
 

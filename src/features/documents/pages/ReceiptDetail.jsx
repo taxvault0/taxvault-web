@@ -15,10 +15,10 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
-import { PROVINCES, calculateTax, getTaxRateDisplay } from '../../../constants/provinces';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
+import { PROVINCES, calculateTax, getTaxRateDisplay } from 'constants/provinces';
 
 const ReceiptDetail = () => {
   const { id } = useParams();
@@ -288,6 +288,7 @@ const ReceiptDetail = () => {
 };
 
 export default ReceiptDetail;
+
 
 
 

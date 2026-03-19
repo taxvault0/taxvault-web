@@ -35,3 +35,4 @@ const StatsCard = ({ title, value, change, icon: Icon, trend = 'up' }) => {
 export default StatsCard;
 
 
+

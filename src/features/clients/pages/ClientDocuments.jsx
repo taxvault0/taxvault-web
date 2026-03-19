@@ -20,11 +20,11 @@ import {
   Image,
   FileSpreadsheet
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
-import Input from '../../../components/ui/Input';
-import Avatar from '../../../components/ui/Avatar';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
+import Input from 'components/ui/Input';
+import Avatar from 'components/ui/Avatar';
 
 const ClientDocuments = () => {
   const { id } = useParams();
@@ -427,6 +427,7 @@ const ClientDocuments = () => {
 };
 
 export default ClientDocuments;
+
 
 
 

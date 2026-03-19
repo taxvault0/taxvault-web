@@ -27,10 +27,10 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
-import Input from '../../../components/ui/Input';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
+import Input from 'components/ui/Input';
 import { useAuth } from '../../auth/context/AuthContext';
 
 const CARequestDetail = () => {
@@ -543,6 +543,7 @@ const CARequestDetail = () => {
 };
 
 export default CARequestDetail;
+
 
 
 

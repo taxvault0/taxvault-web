@@ -19,7 +19,7 @@ import {
 import { useChat } from '../context/ChatContext';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
-import { messageService } from '../../../services/messageService';
+import { messageService } from 'services/messageService';
 
 const ChatWindow = () => {
   const {
@@ -257,6 +257,7 @@ const ChatWindow = () => {
 };
 
 export default ChatWindow;
+
 
 
 

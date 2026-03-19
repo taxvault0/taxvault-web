@@ -20,9 +20,9 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../../auth/context/AuthContext';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
 
 // Import gig worker components
 // import GSTDashboard from '../gig/GSTDashboard'; // Commented out - Quarterly breakdown removed
@@ -527,6 +527,7 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
 
 
 

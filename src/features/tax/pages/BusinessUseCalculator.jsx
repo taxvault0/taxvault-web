@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Calculator, Percent, Car, AlertCircle, Save, MapPin } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
-import { PROVINCES } from '../../../constants/provinces';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Input from 'components/ui/Input';
+import { PROVINCES } from 'constants/provinces';
 
 const BusinessUseCalculator = () => {
   const [method, setMethod] = useState('estimate');
@@ -274,6 +274,7 @@ const BusinessUseCalculator = () => {
 };
 
 export default BusinessUseCalculator;
+
 
 
 

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, Briefcase, Award } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
-import Checkbox from '../../../components/ui/Checkbox';
-import Badge from '../../../components/ui/Badge';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Input from 'components/ui/Input';
+import Checkbox from 'components/ui/Checkbox';
+import Badge from 'components/ui/Badge';
 import { useAuth } from '../context/AuthContext';
 
 const LoginCA = () => {
@@ -265,6 +265,7 @@ const LoginCA = () => {
 };
 
 export default LoginCA;
+
 
 
 

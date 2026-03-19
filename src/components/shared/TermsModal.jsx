@@ -43,3 +43,4 @@ const TermsModal = ({ isOpen, onClose, title, content, onAccept }) => {
 export default TermsModal;
 
 
+

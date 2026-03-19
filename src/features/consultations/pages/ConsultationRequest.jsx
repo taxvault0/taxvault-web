@@ -15,12 +15,12 @@ import {
   Shield,
   Star
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
-import Badge from '../../../components/ui/Badge';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Input from 'components/ui/Input';
+import Badge from 'components/ui/Badge';
 import { consultationService } from '../services/consultationService';
-import { documentAPI } from '../../../services/api';
+import { documentAPI } from 'services/api';
 import { useAuth } from '../../auth/context/AuthContext';
 
 const ConsultationRequest = () => {
@@ -427,6 +427,7 @@ const ConsultationRequest = () => {
 };
 
 export default ConsultationRequest;
+
 
 
 

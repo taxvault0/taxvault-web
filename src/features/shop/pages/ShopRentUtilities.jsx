@@ -15,10 +15,10 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
-import { PROVINCES } from '../../../constants/provinces';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
+import { PROVINCES } from 'constants/provinces';
 
 const ShopRentUtilities = () => {
   const [selectedYear, setSelectedYear] = useState(2024);
@@ -329,6 +329,7 @@ const ShopRentUtilities = () => {
 };
 
 export default ShopRentUtilities;
+
 
 
 

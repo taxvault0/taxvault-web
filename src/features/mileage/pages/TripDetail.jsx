@@ -12,10 +12,10 @@ import {
   Home,
   User
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
-import { PROVINCES } from '../../../constants/provinces';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
+import { PROVINCES } from 'constants/provinces';
 
 const TripDetail = () => {
   const { id } = useParams();
@@ -262,6 +262,7 @@ const TripDetail = () => {
 };
 
 export default TripDetail;
+
 
 
 

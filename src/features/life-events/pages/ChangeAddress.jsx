@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, Home, Bell, CheckCircle, ArrowLeft } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
-import { PROVINCES } from '../../../constants/provinces';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Input from 'components/ui/Input';
+import { PROVINCES } from 'constants/provinces';
 import { useLifeEvents } from '../hooks/useLifeEvents';
 
 const ChangeAddress = () => {
@@ -177,6 +177,7 @@ const ChangeAddress = () => {
 };
 
 export default ChangeAddress;
+
 
 
 

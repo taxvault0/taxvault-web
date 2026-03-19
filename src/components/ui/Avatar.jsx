@@ -43,3 +43,4 @@ const Avatar = ({ src, name, size = 'md', className = '' }) => {
 export default Avatar;
 
 
+

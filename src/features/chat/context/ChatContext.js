@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '../../auth/context/AuthContext';
-import { messageService } from '../../../services/messageService';
+import { messageService } from 'services/messageService';
 import { io } from 'socket.io-client';
 
 const ChatContext = createContext();
@@ -203,6 +203,7 @@ export const ChatProvider = ({ children }) => {
   );
   
 };
+
 
 
 

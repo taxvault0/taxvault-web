@@ -51,11 +51,11 @@ import {
   Mountain,
   Compass
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
+import Card from 'components/ui/Card';
+import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
 import { useAuth } from '../../auth/context/AuthContext';
-import { PROVINCES, getTaxRateDisplay } from '../../../constants/provinces';
+import { PROVINCES, getTaxRateDisplay } from 'constants/provinces';
 
 // Province Change Modal
 const ProvinceChangeModal = ({ onClose, currentProvince, onUpdate }) => {
@@ -1037,6 +1037,7 @@ const DeadlineItem = ({ task, daysLeft, variant }) => {
 };
 
 export default TaxChecklist;
+
 
 
 
