@@ -1,19 +1,15 @@
-// src/pages/user/ConsultationRequest.jsx
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
-  Calendar,
-  Clock,
-  DollarSign,
   FileText,
-  AlertCircle,
   Check,
   ChevronLeft,
-  Video,
-  MessageCircle,
-  Zap,
   Shield,
-  Star
+  Star,
+  Briefcase,
+  Car,
+  Building2,
+  Calendar,
 } from 'lucide-react';
 import Card from 'components/ui/Card';
 import Button from 'components/ui/Button';
@@ -23,23 +19,44 @@ import { consultationService } from '../services/consultationService';
 import { documentAPI } from 'services/api';
 import { useAuth } from '../../auth/context/AuthContext';
 
+const getUserTaxProfile = (user) => {
+  if (user?.taxProfile) return user.taxProfile;
+
+  return {
+    employment: user?.userType === 'employee' || user?.userType === 'regular' || !user?.userType,
+    gigWork: user?.userType === 'gig-worker',
+    selfEmployment: user?.userType === 'self-employed' || user?.userType === 'contractor',
+    incorporatedBusiness:
+      user?.userType === 'shop-owner' ||
+      user?.userType === 'small-business' ||
+      user?.userType === 'business',
+  };
+};
+
 const ConsultationRequest = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { caId } = useParams();
   const { user } = useAuth();
+
+  const taxProfile = getUserTaxProfile(user);
+
   const [loading, setLoading] = useState(false);
   const [caProfile, setCaProfile] = useState(null);
   const [step, setStep] = useState(1);
   const [availableDocs, setAvailableDocs] = useState([]);
+
   const [formData, setFormData] = useState({
     type: '',
     duration: 30,
     urgency: 'medium',
     topic: '',
     description: '',
-    preferredDates: [],
+    preferredDates: location.state?.date ? [location.state.date] : [],
+    selectedDate: location.state?.date || '',
+    selectedTime: location.state?.time || '',
     attachments: [],
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
 
   useEffect(() => {
@@ -49,7 +66,6 @@ const ConsultationRequest = () => {
 
   const loadCAProfile = async () => {
     try {
-      // Mock CA data - replace with API call
       setCaProfile({
         id: caId,
         name: 'David Chen, CPA',
@@ -57,6 +73,7 @@ const ConsultationRequest = () => {
         rating: 4.9,
         reviewCount: 124,
         rates: {
+          'employment-review': 120,
           'tax-planning': 150,
           'audit-support': 200,
           'business-structure': 175,
@@ -65,8 +82,8 @@ const ConsultationRequest = () => {
           'investment-tax': 160,
           'estate-planning': 180,
           'cross-border': 220,
-          'general-advice': 100
-        }
+          'general-advice': 100,
+        },
       });
     } catch (error) {
       console.error('Error loading CA profile:', error);
@@ -76,39 +93,81 @@ const ConsultationRequest = () => {
   const loadDocuments = async () => {
     try {
       const response = await documentAPI.getDocuments();
-      setAvailableDocs(response.data);
+      setAvailableDocs(response.data || []);
     } catch (error) {
       console.error('Error loading documents:', error);
+      setAvailableDocs([]);
     }
   };
 
-  const consultationTypes = [
-    { value: 'tax-planning', label: 'Tax Planning & Strategy', icon: '💰' },
-    { value: 'audit-support', label: 'Audit Support', icon: '🔍' },
-    { value: 'business-structure', label: 'Business Structure Advice', icon: '🏢' },
-    { value: 'gst-hst-advice', label: 'GST/HST Advice', icon: '📊' },
-    { value: 'payroll-support', label: 'Payroll Support', icon: '👥' },
-    { value: 'investment-tax', label: 'Investment Tax Planning', icon: '📈' },
-    { value: 'estate-planning', label: 'Estate Planning', icon: '📜' },
-    { value: 'cross-border', label: 'Cross-Border Taxation', icon: '🌍' },
-    { value: 'general-advice', label: 'General Tax Advice', icon: '💬' }
-  ];
+  const consultationTypes = useMemo(() => {
+    const base = [
+      { value: 'tax-planning', label: 'Tax Planning & Strategy', icon: '💰' },
+      { value: 'audit-support', label: 'Audit Support', icon: '🔍' },
+      { value: 'investment-tax', label: 'Investment Tax Planning', icon: '📈' },
+      { value: 'estate-planning', label: 'Estate Planning', icon: '📜' },
+      { value: 'cross-border', label: 'Cross-Border Taxation', icon: '🌍' },
+      { value: 'general-advice', label: 'General Tax Advice', icon: '💬' },
+    ];
+
+    if (taxProfile.employment) {
+      base.unshift({
+        value: 'employment-review',
+        label: 'Employment Return Review',
+        icon: '🧾',
+      });
+    }
+
+    if (taxProfile.gigWork || taxProfile.selfEmployment) {
+      base.push({
+        value: 'gst-hst-advice',
+        label: 'GST/HST Advice',
+        icon: '📊',
+      });
+    }
+
+    if (taxProfile.incorporatedBusiness) {
+      base.push({
+        value: 'business-structure',
+        label: 'Business Structure Advice',
+        icon: '🏢',
+      });
+      base.push({
+        value: 'payroll-support',
+        label: 'Payroll Support',
+        icon: '👥',
+      });
+    }
+
+    return base;
+  }, [taxProfile]);
 
   const durations = [15, 30, 45, 60, 90];
 
   const calculateTotal = () => {
-    if (!caProfile || !formData.type) return 0;
+    if (!caProfile || !formData.type) {
+      return { subtotal: 0, fee: 0, total: 0 };
+    }
+
     const rate = caProfile.rates[formData.type] || 100;
     const durationRate = rate * (formData.duration / 60);
-    const platformFee = durationRate * 0.10; // 10% platform fee
+    const platformFee = durationRate * 0.1;
+
     return {
       subtotal: durationRate,
       fee: platformFee,
-      total: durationRate + platformFee
+      total: durationRate + platformFee,
     };
   };
 
   const pricing = calculateTotal();
+
+  const profileSummary = [
+    taxProfile.employment && 'Employment',
+    taxProfile.gigWork && 'Gig Work',
+    taxProfile.selfEmployment && 'Self-Employment',
+    taxProfile.incorporatedBusiness && 'Business / Corporation',
+  ].filter(Boolean);
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -116,11 +175,14 @@ const ConsultationRequest = () => {
       const requestData = {
         ...formData,
         caId,
-        estimatedTotal: pricing.total
+        estimatedTotal: pricing.total,
+        taxProfile,
+        businessName: user?.businessName || '',
+        clientName: user?.name || '',
       };
-      
+
       const response = await consultationService.createRequest(requestData);
-      navigate(`/consultations/${response.data.id}`);
+      navigate(`/consultations/${response?.data?.id || 'new-request'}`);
     } catch (error) {
       console.error('Error creating request:', error);
     } finally {
@@ -131,21 +193,22 @@ const ConsultationRequest = () => {
   const Step1 = () => (
     <div className="space-y-6">
       <h3 className="text-lg font-medium">Select Consultation Type</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {consultationTypes.map((type) => (
           <button
             key={type.value}
             onClick={() => setFormData({ ...formData, type: type.value })}
-            className={`p-4 border-2 rounded-lg text-left transition-all ${
+            className={`rounded-lg border-2 p-4 text-left transition-all ${
               formData.type === type.value
                 ? 'border-primary-500 bg-primary-50'
                 : 'border-gray-200 hover:border-primary-300'
             }`}
           >
-            <span className="text-2xl mb-2 block">{type.icon}</span>
+            <span className="mb-2 block text-2xl">{type.icon}</span>
             <h4 className="font-medium">{type.label}</h4>
             {caProfile?.rates[type.value] && (
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="mt-1 text-sm text-gray-600">
                 ${caProfile.rates[type.value]}/hour
               </p>
             )}
@@ -154,7 +217,7 @@ const ConsultationRequest = () => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="mb-2 block text-sm font-medium text-gray-700">
           Duration
         </label>
         <div className="flex flex-wrap gap-2">
@@ -162,7 +225,7 @@ const ConsultationRequest = () => {
             <button
               key={d}
               onClick={() => setFormData({ ...formData, duration: d })}
-              className={`px-4 py-2 rounded-lg font-medium ${
+              className={`rounded-lg px-4 py-2 font-medium ${
                 formData.duration === d
                   ? 'bg-primary-500 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -175,7 +238,7 @@ const ConsultationRequest = () => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="mb-2 block text-sm font-medium text-gray-700">
           Urgency
         </label>
         <div className="flex space-x-2">
@@ -183,18 +246,18 @@ const ConsultationRequest = () => {
             { value: 'low', label: 'Low', icon: '😊' },
             { value: 'medium', label: 'Medium', icon: '😐' },
             { value: 'high', label: 'High', icon: '😟' },
-            { value: 'urgent', label: 'Urgent', icon: '🚨' }
+            { value: 'urgent', label: 'Urgent', icon: '🚨' },
           ].map((u) => (
             <button
               key={u.value}
               onClick={() => setFormData({ ...formData, urgency: u.value })}
-              className={`flex-1 p-3 rounded-lg border-2 ${
+              className={`flex-1 rounded-lg border-2 p-3 ${
                 formData.urgency === u.value
                   ? 'border-primary-500 bg-primary-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
-              <span className="block text-center mb-1">{u.icon}</span>
+              <span className="mb-1 block text-center">{u.icon}</span>
               <span className="text-sm font-medium">{u.label}</span>
             </button>
           ))}
@@ -206,36 +269,67 @@ const ConsultationRequest = () => {
   const Step2 = () => (
     <div className="space-y-6">
       <h3 className="text-lg font-medium">Describe Your Question</h3>
-      
+
+      <Card className="border-primary-100 bg-primary-50">
+        <Card.Body>
+          <p className="text-sm font-medium text-primary-800">Your tax profile</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {profileSummary.map((item) => (
+              <Badge key={item} variant="info">
+                {item}
+              </Badge>
+            ))}
+          </div>
+          {user?.businessName && (
+            <p className="mt-3 text-sm text-primary-700">
+              Business: {user.businessName}
+            </p>
+          )}
+        </Card.Body>
+      </Card>
+
       <Input
         label="Topic / Subject"
-        placeholder="e.g., 2024 Tax Planning for Gig Income"
+        placeholder="e.g., Employment + gig income planning for 2026"
         value={formData.topic}
         onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
       />
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="mb-1 block text-sm font-medium text-gray-700">
           Detailed Description
         </label>
         <textarea
           rows="5"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          placeholder="Provide details about what you'd like to discuss..."
+          className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          placeholder="Describe your question, tax situation, deadlines, and what help you need..."
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
         />
       </div>
 
+      {(formData.selectedDate || formData.selectedTime) && (
+        <Card className="border-green-100 bg-green-50">
+          <Card.Body>
+            <div className="flex items-center">
+              <Calendar size={16} className="mr-2 text-green-600" />
+              <p className="text-sm text-green-700">
+                Selected slot: {formData.selectedDate || '—'} {formData.selectedTime || ''}
+              </p>
+            </div>
+          </Card.Body>
+        </Card>
+      )}
+
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="mb-2 block text-sm font-medium text-gray-700">
           Attach Relevant Documents (Optional)
         </label>
-        <div className="space-y-2 max-h-48 overflow-y-auto">
+        <div className="max-h-48 space-y-2 overflow-y-auto">
           {availableDocs.map((doc) => (
             <label
               key={doc.id}
-              className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
+              className="flex cursor-pointer items-center rounded-lg border p-3 hover:bg-gray-50"
             >
               <input
                 type="checkbox"
@@ -244,11 +338,12 @@ const ConsultationRequest = () => {
                 onChange={(e) => {
                   const newAttachments = e.target.checked
                     ? [...formData.attachments, doc.id]
-                    : formData.attachments.filter(id => id !== doc.id);
+                    : formData.attachments.filter((id) => id !== doc.id);
+
                   setFormData({ ...formData, attachments: newAttachments });
                 }}
               />
-              <FileText size={16} className="text-gray-400 mr-2" />
+              <FileText size={16} className="mr-2 text-gray-400" />
               <span className="text-sm">{doc.name}</span>
             </label>
           ))}
@@ -261,11 +356,11 @@ const ConsultationRequest = () => {
     <div className="space-y-6">
       <h3 className="text-lg font-medium">Review & Confirm</h3>
 
-      <Card className="bg-primary-50 border-primary-200">
+      <Card className="border-primary-200 bg-primary-50">
         <Card.Body>
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-100">
                 <span className="text-xl font-bold text-primary-600">
                   {caProfile?.name?.charAt(0)}
                 </span>
@@ -273,9 +368,11 @@ const ConsultationRequest = () => {
               <div className="ml-3">
                 <h4 className="font-semibold">{caProfile?.name}</h4>
                 <p className="text-sm text-gray-600">{caProfile?.firm}</p>
-                <div className="flex items-center mt-1">
-                  <Star size={14} className="text-gold fill-current" />
-                  <span className="text-xs ml-1">{caProfile?.rating} ({caProfile?.reviewCount} reviews)</span>
+                <div className="mt-1 flex items-center">
+                  <Star size={14} className="fill-current text-gold" />
+                  <span className="ml-1 text-xs">
+                    {caProfile?.rating} ({caProfile?.reviewCount} reviews)
+                  </span>
                 </div>
               </div>
             </div>
@@ -286,7 +383,7 @@ const ConsultationRequest = () => {
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Consultation Type:</span>
               <span className="font-medium">
-                {consultationTypes.find(t => t.value === formData.type)?.label}
+                {consultationTypes.find((t) => t.value === formData.type)?.label}
               </span>
             </div>
             <div className="flex justify-between text-sm">
@@ -296,6 +393,10 @@ const ConsultationRequest = () => {
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Urgency:</span>
               <span className="font-medium capitalize">{formData.urgency}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Profiles:</span>
+              <span className="font-medium">{profileSummary.join(', ')}</span>
             </div>
             {formData.topic && (
               <div className="flex justify-between text-sm">
@@ -307,36 +408,39 @@ const ConsultationRequest = () => {
         </Card.Body>
       </Card>
 
-      {/* Pricing Breakdown */}
       <Card>
         <Card.Header>
           <h4 className="font-medium">Price Breakdown</h4>
         </Card.Header>
         <Card.Body className="space-y-3">
           <div className="flex justify-between">
-            <span className="text-gray-600">CA Fee ({formData.duration} min @ ${caProfile?.rates[formData.type]}/hr)</span>
+            <span className="text-gray-600">
+              CA Fee ({formData.duration} min @ ${caProfile?.rates?.[formData.type]}/hr)
+            </span>
             <span className="font-medium">${pricing.subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Platform Fee (10%)</span>
             <span className="font-medium">${pricing.fee.toFixed(2)}</span>
           </div>
-          <div className="border-t pt-3 mt-3">
+          <div className="mt-3 border-t pt-3">
             <div className="flex justify-between">
               <span className="font-semibold">Total</span>
-              <span className="text-xl font-bold text-primary-600">${pricing.total.toFixed(2)}</span>
+              <span className="text-xl font-bold text-primary-600">
+                ${pricing.total.toFixed(2)}
+              </span>
             </div>
           </div>
         </Card.Body>
       </Card>
 
-      <div className="bg-blue-50 p-4 rounded-lg">
+      <div className="rounded-lg bg-blue-50 p-4">
         <div className="flex items-start">
-          <Shield className="text-blue-600 mr-3 flex-shrink-0 mt-1" size={18} />
+          <Shield className="mr-3 mt-1 flex-shrink-0 text-blue-600" size={18} />
           <div>
             <p className="text-sm font-medium text-blue-700">Secure Payment</p>
-            <p className="text-xs text-blue-600 mt-1">
-              You won't be charged yet. Payment is only processed after the CA accepts your request.
+            <p className="mt-1 text-xs text-blue-600">
+              You will only be charged after the CA accepts your consultation request.
             </p>
           </div>
         </div>
@@ -345,11 +449,10 @@ const ConsultationRequest = () => {
   );
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      {/* Header */}
+    <div className="mx-auto max-w-3xl space-y-6">
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center text-gray-600 hover:text-primary-600 mb-4"
+        className="mb-4 flex items-center text-gray-600 hover:text-primary-600"
       >
         <ChevronLeft size={20} className="mr-1" />
         Back
@@ -358,28 +461,25 @@ const ConsultationRequest = () => {
       <Card>
         <Card.Header>
           <h2 className="text-2xl font-bold">Request Consultation</h2>
-          <p className="text-gray-500 mt-1">
+          <p className="mt-1 text-gray-500">
             Schedule a paid consultation with {caProfile?.name}
           </p>
         </Card.Header>
 
         <Card.Body>
-          {/* Progress Steps */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="mb-8 flex items-center justify-between">
             {[1, 2, 3].map((s) => (
               <div key={s} className="flex items-center">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    step >= s
-                      ? 'bg-primary-500 text-white'
-                      : 'bg-gray-200 text-gray-500'
+                  className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                    step >= s ? 'bg-primary-500 text-white' : 'bg-gray-200 text-gray-500'
                   }`}
                 >
                   {step > s ? <Check size={16} /> : s}
                 </div>
                 {s < 3 && (
                   <div
-                    className={`w-16 h-1 mx-2 ${
+                    className={`mx-2 h-1 w-16 ${
                       step > s ? 'bg-primary-500' : 'bg-gray-200'
                     }`}
                   />
@@ -388,13 +488,11 @@ const ConsultationRequest = () => {
             ))}
           </div>
 
-          {/* Step Content */}
           {step === 1 && <Step1 />}
           {step === 2 && <Step2 />}
           {step === 3 && <Step3 />}
 
-          {/* Navigation */}
-          <div className="flex justify-between mt-8 pt-6 border-t">
+          <div className="mt-8 flex justify-between border-t pt-6">
             {step > 1 && (
               <Button variant="outline" onClick={() => setStep(step - 1)}>
                 Previous
@@ -427,8 +525,3 @@ const ConsultationRequest = () => {
 };
 
 export default ConsultationRequest;
-
-
-
-
-

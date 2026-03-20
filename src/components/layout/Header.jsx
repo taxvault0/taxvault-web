@@ -1,14 +1,43 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, User, LogOut, Menu, MessageCircle } from 'lucide-react';
+import { Bell, LogOut, Menu, MessageCircle, ChevronDown } from 'lucide-react';
 import { useAuth } from 'features/auth/context/AuthContext';
 import { useChat } from 'features/chat/context/ChatContext';
 import Button from '../ui/Button';
 
+const getAssignedCAId = (user) => {
+  if (!user) return null;
+
+  if (
+    typeof user.assignedCAId === 'string' ||
+    typeof user.assignedCAId === 'number'
+  ) {
+    return user.assignedCAId;
+  }
+
+  if (typeof user.caId === 'string' || typeof user.caId === 'number') {
+    return user.caId;
+  }
+
+  if (
+    typeof user.assignedCA === 'string' ||
+    typeof user.assignedCA === 'number'
+  ) {
+    return user.assignedCA;
+  }
+
+  if (user.assignedCA && typeof user.assignedCA === 'object') {
+    return user.assignedCA.id || user.assignedCA._id || null;
+  }
+
+  return null;
+};
+
 const Header = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
-  
-  // Safely get chat context
+  const navigate = useNavigate();
+  const assignedCAId = getAssignedCAId(user);
+
   let chatContext;
   try {
     chatContext = useChat();
@@ -16,10 +45,8 @@ const Header = ({ onMenuClick }) => {
     console.log('Chat context not available yet');
     chatContext = {};
   }
-  
-  const { openChat, unreadCount = 0 } = chatContext;
-  
-  const navigate = useNavigate();
+
+  const { unreadCount = 0 } = chatContext;
 
   const handleLogout = () => {
     logout();
@@ -28,91 +55,122 @@ const Header = ({ onMenuClick }) => {
 
   const handleChatClick = () => {
     try {
-      if (openChat) {
-        // Call openChat without any parameters to just open the chat list
-        openChat();
-      } else {
-        // If chat is not available, navigate to messages page
-        if (user?.role === 'ca') {
-          navigate('/ca/messages');
-        } else {
-          navigate('/messages');
-        }
+      if (user?.role === 'ca') {
+        navigate('/ca/messages');
+        return;
       }
+
+      if (assignedCAId) {
+        navigate(`/messages/${assignedCAId}`);
+        return;
+      }
+
+      navigate('/find-ca');
     } catch (error) {
       console.error('Error opening chat:', error);
     }
   };
 
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
+
+  const getUserBadge = () => {
+    if (user?.role === 'ca') {
+      return (
+        <span className="ml-2 rounded-full bg-secondary-500 px-2 py-1 text-xs font-medium text-white">
+          CA
+        </span>
+      );
+    }
+
+    return null;
+  };
+
+  const getAccountSubtitle = () => {
+    if (user?.role === 'ca') {
+      return 'Chartered Accountant';
+    }
+
+    return assignedCAId ? 'CA Assigned' : 'Personal Account';
+  };
+
+  const getChatTitle = () => {
+    if (user?.role === 'ca') return 'Open client messages';
+    if (assignedCAId) return 'Chat with your assigned CA';
+    return 'Find a CA to start chat';
+  };
+
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+    <header className="sticky top-0 z-30 border-b border-gray-200 bg-white">
       <div className="px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Left side */}
-          <div className="flex items-center">
+        <div className="flex h-16 items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center">
             <button
               onClick={onMenuClick}
-              className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+              className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 lg:hidden"
+              aria-label="Open sidebar"
             >
               <Menu size={24} />
             </button>
-            <Link to="/dashboard" className="flex items-center ml-2 lg:ml-0">
-              <span className="text-2xl font-bold text-primary-600">TaxVault</span>
-              {user?.role === 'ca' && (
-                <span className="ml-2 px-2 py-1 text-xs font-medium bg-secondary-500 text-white rounded-full">
-                  CA
-                </span>
-              )}
-              {user?.userType === 'gig-worker' && (
-                <span className="ml-2 px-2 py-1 text-xs font-medium bg-gold-500 text-white rounded-full">
-                  Gig Worker
-                </span>
-              )}
-              {user?.userType === 'shop-owner' && (
-                <span className="ml-2 px-2 py-1 text-xs font-medium bg-success-500 text-white rounded-full">
-                  Shop Owner
-                </span>
-              )}
+
+            <Link
+              to={user?.role === 'ca' ? '/ca/dashboard' : '/dashboard'}
+              className="ml-2 flex min-w-0 items-center lg:ml-0"
+            >
+              <span className="truncate text-2xl font-bold text-primary-600">
+                TaxVault
+              </span>
+              {getUserBadge()}
             </Link>
           </div>
 
-          {/* Right side */}
-          <div className="flex items-center space-x-4">
-            {/* Chat Button */}
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={handleChatClick}
-              className="relative p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-full"
+              className="relative rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
+              aria-label="Open messages"
+              title={getChatTitle()}
             >
               <MessageCircle size={20} />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                  {unreadCount}
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-xs text-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
             </button>
 
-            {/* Notifications */}
-            <button className="relative p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-full">
+            <button
+              className="relative rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
+              aria-label="Open notifications"
+            >
               <Bell size={20} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
             </button>
 
-            {/* User menu */}
             <button
-              onClick={() => navigate('/profile')}
-              className="flex items-center space-x-3 focus:outline-none"
+              onClick={handleProfileClick}
+              className="flex items-center gap-3 rounded-xl border border-gray-200 px-2 py-1.5 hover:bg-gray-50"
             >
-              <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
-                <span className="text-sm font-medium text-primary-700">
-                  {user?.name?.charAt(0) || 'U'}
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100">
+                <span className="text-sm font-semibold text-primary-700">
+                  {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </span>
               </div>
-              <span className="hidden md:block text-sm font-medium text-gray-700">
-                {user?.name}
-              </span>
+
+              <div className="hidden text-left md:block">
+                <p className="max-w-[140px] truncate text-sm font-medium text-gray-800">
+                  {user?.name || 'User'}
+                </p>
+                <p className="text-xs text-gray-500">{getAccountSubtitle()}</p>
+              </div>
+
+              <ChevronDown
+                size={16}
+                className="hidden text-gray-400 md:block"
+              />
             </button>
 
-            {/* Logout button */}
             <Button
               variant="ghost"
               size="sm"
@@ -130,9 +188,3 @@ const Header = ({ onMenuClick }) => {
 };
 
 export default Header;
-
-
-
-
-
-

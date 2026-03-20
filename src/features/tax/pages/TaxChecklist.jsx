@@ -1037,8 +1037,3 @@ const DeadlineItem = ({ task, daysLeft, variant }) => {
 };
 
 export default TaxChecklist;
-
-
-
-
-

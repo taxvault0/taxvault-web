@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from 'features/auth/context/AuthContext';
 import PrivateRoute from './PrivateRoute';
 
 // Layout
-import Header from 'components/layout/Header';
-import Sidebar from 'components/layout/Sidebar';
-import DemoNav from 'components/layout/DemoNav';
+import AppShell from 'components/layout/AppShell';
 
 // Chat
 import ChatButton from 'features/chat/components/ChatButton';
 import ChatDrawer from 'features/chat/components/ChatDrawer';
 import CAMessages from 'features/chat/pages/CAMessages';
 import CAConversation from 'features/chat/pages/CAConversation';
+import UserMessages from 'features/chat/pages/UserMessages';
+import UserConversation from 'features/chat/pages/UserConversation';
 
 // Life Events
 import LifeEventsHub from 'features/life-events/pages/LifeEventsHub';
@@ -95,412 +95,439 @@ const PublicRoutes = () => (
   </Routes>
 );
 
-const ProtectedRoutes = ({ user, sidebarOpen, setSidebarOpen, chatOpen, setChatOpen }) => (
-  <div className="min-h-screen bg-gray-50 flex">
-    <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
+  const location = useLocation();
 
-    <div className="flex-1 flex flex-col">
-      <Header onMenuClick={() => setSidebarOpen(true)} onChatClick={() => setChatOpen(true)} />
+  const isMessagePage =
+    location.pathname.startsWith('/messages') ||
+    location.pathname.startsWith('/ca/messages');
 
-      <main className="flex-1 p-6">
-        <div className="container mx-auto">
-          <Routes>
-            <Route
-              path="/dashboard"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <Dashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/receipts"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <Receipts />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/receipts/:id"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <ReceiptDetail />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/accounts"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <AccountDocuments />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/tax-checklist"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <TaxChecklist />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/find-ca"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <FindCA />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/mileage"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <Mileage />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/mileage/track"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <MileageTracker />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/mileage/:id"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <TripDetail />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/documents"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <Documents />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <PrivateRoute allowedRoles={['user', 'ca']}>
-                  <Profile />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <PrivateRoute allowedRoles={['user', 'ca']}>
-                  <Settings />
-                </PrivateRoute>
-              }
-            />
+  const renderWithShell = (element, options = {}) => (
+    <AppShell
+      showRightPanel={options.showRightPanel || false}
+      rightPanel={options.rightPanel || null}
+      contentClassName={options.contentClassName || ''}
+      containerClassName={options.containerClassName || ''}
+    >
+      {element}
+    </AppShell>
+  );
 
-            <Route
-              path="/life-events"
-              element={
-                <PrivateRoute allowedRoles={['user', 'ca']}>
-                  <LifeEventsHub />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/life-events/marriage"
-              element={
-                <PrivateRoute allowedRoles={['user', 'ca']}>
-                  <MaritalStatusUpdate />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/life-events/separation"
-              element={
-                <PrivateRoute allowedRoles={['user', 'ca']}>
-                  <SeparationDivorce />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/life-events/add-dependent"
-              element={
-                <PrivateRoute allowedRoles={['user', 'ca']}>
-                  <AddDependent />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/life-events/change-address"
-              element={
-                <PrivateRoute allowedRoles={['user', 'ca']}>
-                  <ChangeAddress />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/life-events/legacy-contact"
-              element={
-                <PrivateRoute allowedRoles={['user', 'ca']}>
-                  <LegacyContact />
-                </PrivateRoute>
-              }
-            />
+  return (
+    <>
+      <Routes>
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<Dashboard />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/receipts"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<Receipts />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/receipts/:id"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<ReceiptDetail />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/accounts"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<AccountDocuments />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/tax-checklist"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<TaxChecklist />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/find-ca"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<FindCA />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/mileage"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<Mileage />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/mileage/track"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<MileageTracker />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/mileage/:id"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<TripDetail />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/documents"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<Documents />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/messages"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<UserMessages />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/messages/:caId"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<UserConversation />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute allowedRoles={['user', 'ca']}>
+              {renderWithShell(<Profile />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <PrivateRoute allowedRoles={['user', 'ca']}>
+              {renderWithShell(<Settings />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/life-events"
+          element={
+            <PrivateRoute allowedRoles={['user', 'ca']}>
+              {renderWithShell(<LifeEventsHub />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/life-events/marriage"
+          element={
+            <PrivateRoute allowedRoles={['user', 'ca']}>
+              {renderWithShell(<MaritalStatusUpdate />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/life-events/separation"
+          element={
+            <PrivateRoute allowedRoles={['user', 'ca']}>
+              {renderWithShell(<SeparationDivorce />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/life-events/add-dependent"
+          element={
+            <PrivateRoute allowedRoles={['user', 'ca']}>
+              {renderWithShell(<AddDependent />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/life-events/change-address"
+          element={
+            <PrivateRoute allowedRoles={['user', 'ca']}>
+              {renderWithShell(<ChangeAddress />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/life-events/legacy-contact"
+          element={
+            <PrivateRoute allowedRoles={['user', 'ca']}>
+              {renderWithShell(<LegacyContact />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/gst-dashboard"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<GSTDashboard />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/business-use-calculator"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<BusinessUseCalculator />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/t2125-form"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<T2125Form />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/shop/dashboard"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<ShopDashboard />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/shop/business-info"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<ShopBusinessInfo />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/shop/sales-income"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<ShopSalesIncome />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/shop/rent-utilities"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<ShopRentUtilities />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/shop/payroll"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<ShopPayroll />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/shop/franchise"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<ShopFranchise />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/shop/inventory"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<ShopInventory />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/shop/gst-records"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<ShopGSTRecords />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/consultations"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<Consultations />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/consultations/request/:caId"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<ConsultationRequest />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/consultations/:id"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<ConsultationDetail />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/ca-availability/:caId"
+          element={
+            <PrivateRoute allowedRoles={['user']}>
+              {renderWithShell(<CAAvailability />)}
+            </PrivateRoute>
+          }
+        />
 
-            <Route
-              path="/gst-dashboard"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <GSTDashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/business-use-calculator"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <BusinessUseCalculator />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/t2125-form"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <T2125Form />
-                </PrivateRoute>
-              }
-            />
+        <Route
+          path="/ca/dashboard"
+          element={
+            <PrivateRoute allowedRoles={['ca']}>
+              {renderWithShell(<CADashboard />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/ca/clients"
+          element={
+            <PrivateRoute allowedRoles={['ca']}>
+              {renderWithShell(<Clients />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/ca/clients/:id"
+          element={
+            <PrivateRoute allowedRoles={['ca']}>
+              {renderWithShell(<ClientDetail />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/ca/clients/:id/documents"
+          element={
+            <PrivateRoute allowedRoles={['ca']}>
+              {renderWithShell(<ClientDocuments />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/ca/clients/:id/tax-summary"
+          element={
+            <PrivateRoute allowedRoles={['ca']}>
+              {renderWithShell(<ClientTaxSummary />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/ca/search"
+          element={
+            <PrivateRoute allowedRoles={['ca']}>
+              {renderWithShell(<ClientSearch />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/ca/analytics"
+          element={
+            <PrivateRoute allowedRoles={['ca']}>
+              {renderWithShell(<CAAnalyticsDashboard />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/ca/requests"
+          element={
+            <PrivateRoute allowedRoles={['ca']}>
+              {renderWithShell(<CARequestDashboard />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/ca/reviews"
+          element={
+            <PrivateRoute allowedRoles={['ca']}>
+              {renderWithShell(<CARequestDashboard />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/ca/requests/:id"
+          element={
+            <PrivateRoute allowedRoles={['ca']}>
+              {renderWithShell(<CARequestDetail />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/ca/calendar"
+          element={
+            <PrivateRoute allowedRoles={['ca']}>
+              {renderWithShell(<CACalendar />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/ca/earnings"
+          element={
+            <PrivateRoute allowedRoles={['ca']}>
+              {renderWithShell(<CAEarnings />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/ca/messages"
+          element={
+            <PrivateRoute allowedRoles={['ca']}>
+              {renderWithShell(<CAMessages />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/ca/messages/:clientId"
+          element={
+            <PrivateRoute allowedRoles={['ca']}>
+              {renderWithShell(<CAConversation />)}
+            </PrivateRoute>
+          }
+        />
 
-            <Route
-              path="/shop/dashboard"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <ShopDashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/shop/business-info"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <ShopBusinessInfo />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/shop/sales-income"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <ShopSalesIncome />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/shop/rent-utilities"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <ShopRentUtilities />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/shop/payroll"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <ShopPayroll />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/shop/franchise"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <ShopFranchise />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/shop/inventory"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <ShopInventory />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/shop/gst-records"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <ShopGSTRecords />
-                </PrivateRoute>
-              }
-            />
+        <Route
+          path="/"
+          element={<Navigate to={user?.role === 'ca' ? '/ca/dashboard' : '/dashboard'} replace />}
+        />
+        <Route
+          path="*"
+          element={<Navigate to={user?.role === 'ca' ? '/ca/dashboard' : '/dashboard'} replace />}
+        />
+      </Routes>
 
-            <Route
-              path="/ca/dashboard"
-              element={
-                <PrivateRoute allowedRoles={['ca']}>
-                  <CADashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/ca/clients"
-              element={
-                <PrivateRoute allowedRoles={['ca']}>
-                  <Clients />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/ca/clients/:id"
-              element={
-                <PrivateRoute allowedRoles={['ca']}>
-                  <ClientDetail />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/ca/clients/:id/documents"
-              element={
-                <PrivateRoute allowedRoles={['ca']}>
-                  <ClientDocuments />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/ca/clients/:id/tax-summary"
-              element={
-                <PrivateRoute allowedRoles={['ca']}>
-                  <ClientTaxSummary />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/ca/search"
-              element={
-                <PrivateRoute allowedRoles={['ca']}>
-                  <ClientSearch />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/ca/analytics"
-              element={
-                <PrivateRoute allowedRoles={['ca']}>
-                  <CAAnalyticsDashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/consultations"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <Consultations />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/consultations/request/:caId"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <ConsultationRequest />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/consultations/:id"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <ConsultationDetail />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/ca-availability/:caId"
-              element={
-                <PrivateRoute allowedRoles={['user']}>
-                  <CAAvailability />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/ca/requests"
-              element={
-                <PrivateRoute allowedRoles={['ca']}>
-                  <CARequestDashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/ca/requests/:id"
-              element={
-                <PrivateRoute allowedRoles={['ca']}>
-                  <CARequestDetail />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/ca/calendar"
-              element={
-                <PrivateRoute allowedRoles={['ca']}>
-                  <CACalendar />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/ca/earnings"
-              element={
-                <PrivateRoute allowedRoles={['ca']}>
-                  <CAEarnings />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/ca/messages"
-              element={
-                <PrivateRoute allowedRoles={['ca']}>
-                  <CAMessages />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/ca/messages/:clientId"
-              element={
-                <PrivateRoute allowedRoles={['ca']}>
-                  <CAConversation />
-                </PrivateRoute>
-              }
-            />
-
-            <Route
-              path="/"
-              element={<Navigate to={user?.role === 'ca' ? '/ca/dashboard' : '/dashboard'} replace />}
-            />
-            <Route
-              path="*"
-              element={<Navigate to={user?.role === 'ca' ? '/ca/dashboard' : '/dashboard'} replace />}
-            />
-          </Routes>
-        </div>
-      </main>
-    </div>
-
-    {chatOpen && !window.location.pathname.includes('/messages') && (
-      <ChatDrawer isOpen={chatOpen} onClose={() => setChatOpen(false)} />
-    )}
-
-    {/* {process.env.NODE_ENV === 'development' && <DemoNav />} */}
-  </div>
-);
+      {chatOpen && !isMessagePage && (
+        <ChatDrawer isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+      )}
+    </>
+  );
+};
 
 const AppRoutes = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const { isAuthenticated, user } = useAuth();
 
@@ -510,13 +537,7 @@ const AppRoutes = () => {
 
   return (
     <>
-      <ProtectedRoutes
-        user={user}
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        chatOpen={chatOpen}
-        setChatOpen={setChatOpen}
-      />
+      <ProtectedRoutes user={user} chatOpen={chatOpen} setChatOpen={setChatOpen} />
       <ChatButton />
     </>
   );

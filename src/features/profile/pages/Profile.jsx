@@ -1,23 +1,70 @@
 import React, { useState } from 'react';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Copy, 
-  Check, 
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Copy,
+  Check,
   QrCode,
-  Share2,
   Download,
   Eye,
   Camera,
   Settings,
-  LogOut
+  LogOut,
+  Briefcase,
+  Car,
+  Building2,
+  FileText,
 } from 'lucide-react';
 import Card from 'components/ui/Card';
 import Button from 'components/ui/Button';
+import Badge from 'components/ui/Badge';
 import { useAuth } from '../../auth/context/AuthContext';
 import { QRCodeCanvas } from 'qrcode.react';
+
+const getActiveProfiles = (user) => {
+  const taxProfile = user?.taxProfile || {};
+  const profiles = [];
+
+  if (taxProfile.employment) {
+    profiles.push({
+      key: 'employment',
+      label: 'Employment',
+      icon: Briefcase,
+      classes: 'bg-blue-50 text-blue-700',
+    });
+  }
+
+  if (taxProfile.gigWork) {
+    profiles.push({
+      key: 'gigWork',
+      label: 'Gig Work',
+      icon: Car,
+      classes: 'bg-green-50 text-green-700',
+    });
+  }
+
+  if (taxProfile.selfEmployment) {
+    profiles.push({
+      key: 'selfEmployment',
+      label: 'Self-Employment',
+      icon: FileText,
+      classes: 'bg-purple-50 text-purple-700',
+    });
+  }
+
+  if (taxProfile.incorporatedBusiness) {
+    profiles.push({
+      key: 'incorporatedBusiness',
+      label: 'Corporation / Business',
+      icon: Building2,
+      classes: 'bg-indigo-50 text-indigo-700',
+    });
+  }
+
+  return profiles;
+};
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -25,20 +72,23 @@ const Profile = () => {
   const [showQR, setShowQR] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Mock user data (replace with actual user data from context)
+  const activeProfiles = getActiveProfiles(user);
+
   const userData = {
     name: user?.name || 'John Doe',
     email: user?.email || 'john@example.com',
-    phone: user?.phoneNumber || '+1 (416) 555-0123',
-    address: user?.address || '123 Main St, Toronto, ON M5V 2H1',
+    phone: user?.phone || user?.phoneNumber || '+1 (416) 555-0123',
+    address:
+      user?.address ||
+      [user?.city, user?.province, user?.postalCode].filter(Boolean).join(', ') ||
+      '123 Main St, Toronto, ON M5V 2H1',
     clientId: user?.clientId || 'TV-2024-1A2B3C',
-    accountType: user?.role === 'ca' ? 'CA Professional' : 'Individual Taxpayer',
-    memberSince: '2024',
+    memberSince: user?.memberSince || '2024',
     stats: {
       documents: 24,
       receipts: 156,
-      mileageTrips: 89
-    }
+      mileageTrips: 89,
+    },
   };
 
   const copyClientId = () => {
@@ -59,8 +109,7 @@ const Profile = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 p-6">
-      {/* Header */}
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
         <div className="flex gap-2">
@@ -84,49 +133,47 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Client ID Card - Prominent Display */}
       <Card className="bg-gradient-to-r from-primary-500 to-primary-600 text-white">
         <Card.Body>
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <div className="flex items-center justify-between mb-4">
+              <div className="mb-4 flex items-center justify-between">
                 <p className="text-sm opacity-90">Your Unique Client ID</p>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setShowQR(!showQR)}
-                    className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
+                    className="rounded-lg bg-white/20 p-2 transition-colors hover:bg-white/30"
                     title="Show QR Code"
                   >
                     <QrCode size={18} />
                   </button>
                   <button
                     onClick={copyClientId}
-                    className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
+                    className="rounded-lg bg-white/20 p-2 transition-colors hover:bg-white/30"
                     title="Copy Client ID"
                   >
                     {copied ? <Check size={18} /> : <Copy size={18} />}
                   </button>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-4">
-                <div className="bg-white/10 p-4 rounded-xl">
-                  <span className="text-3xl font-mono font-bold tracking-wider">
+                <div className="rounded-xl bg-white/10 p-4">
+                  <span className="text-3xl font-bold tracking-wider">
                     {userData.clientId}
                   </span>
                 </div>
               </div>
-              
-              <p className="text-xs opacity-75 mt-3">
-                Share this ID with your CA to securely connect your account. They can use it to access your tax documents.
+
+              <p className="mt-3 text-xs opacity-75">
+                Share this ID with your CA to securely connect your account.
               </p>
             </div>
           </div>
 
-          {/* QR Code Section */}
           {showQR && (
-            <div className="mt-6 pt-4 border-t border-white/20">
-              <div className="flex items-center justify-between mb-4">
+            <div className="mt-6 border-t border-white/20 pt-4">
+              <div className="mb-4 flex items-center justify-between">
                 <h3 className="font-medium">QR Code - Scan to Connect</h3>
                 <Button
                   variant="outline"
@@ -138,17 +185,17 @@ const Profile = () => {
                   Download QR
                 </Button>
               </div>
-              <div className="flex items-center justify-center bg-white p-6 rounded-xl">
+              <div className="flex items-center justify-center rounded-xl bg-white p-6">
                 <QRCodeCanvas
                   value={userData.clientId}
                   size={200}
                   bgColor="#ffffff"
                   fgColor="#000000"
                   level="H"
-                  includeMargin={true}
+                  includeMargin
                 />
               </div>
-              <p className="text-xs text-center mt-3 opacity-75">
+              <p className="mt-3 text-center text-xs opacity-75">
                 Your CA can scan this QR code to instantly add you as a client
               </p>
             </div>
@@ -156,64 +203,86 @@ const Profile = () => {
         </Card.Body>
       </Card>
 
-      {/* Profile Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <Card className="text-center p-4">
+        <Card className="p-4 text-center">
           <p className="text-2xl font-bold text-primary-600">{userData.stats.documents}</p>
           <p className="text-sm text-gray-500">Documents</p>
         </Card>
-        <Card className="text-center p-4">
+        <Card className="p-4 text-center">
           <p className="text-2xl font-bold text-primary-600">{userData.stats.receipts}</p>
           <p className="text-sm text-gray-500">Receipts</p>
         </Card>
-        <Card className="text-center p-4">
+        <Card className="p-4 text-center">
           <p className="text-2xl font-bold text-primary-600">{userData.stats.mileageTrips}</p>
           <p className="text-sm text-gray-500">Mileage Trips</p>
         </Card>
       </div>
 
-      {/* Profile Information */}
       <Card>
         <Card.Header>
           <h2 className="text-xl font-semibold">Personal Information</h2>
         </Card.Header>
         <Card.Body className="space-y-4">
-          <div className="flex items-center space-x-3 pb-3 border-b border-gray-100">
+          <div className="flex items-center space-x-3 border-b border-gray-100 pb-3">
             <User size={20} className="text-gray-400" />
             <div className="flex-1">
               <p className="text-sm text-gray-500">Full Name</p>
               <p className="font-medium">{userData.name}</p>
             </div>
           </div>
-          
-          <div className="flex items-center space-x-3 pb-3 border-b border-gray-100">
+
+          <div className="flex items-center space-x-3 border-b border-gray-100 pb-3">
             <Mail size={20} className="text-gray-400" />
             <div className="flex-1">
               <p className="text-sm text-gray-500">Email Address</p>
               <p className="font-medium">{userData.email}</p>
             </div>
           </div>
-          
-          <div className="flex items-center space-x-3 pb-3 border-b border-gray-100">
+
+          <div className="flex items-center space-x-3 border-b border-gray-100 pb-3">
             <Phone size={20} className="text-gray-400" />
             <div className="flex-1">
               <p className="text-sm text-gray-500">Phone Number</p>
               <p className="font-medium">{userData.phone}</p>
             </div>
           </div>
-          
-          <div className="flex items-center space-x-3 pb-3 border-b border-gray-100">
+
+          <div className="flex items-center space-x-3 border-b border-gray-100 pb-3">
             <MapPin size={20} className="text-gray-400" />
             <div className="flex-1">
               <p className="text-sm text-gray-500">Address</p>
               <p className="font-medium">{userData.address}</p>
             </div>
           </div>
-          
+
+          <div className="border-b border-gray-100 pb-3">
+            <p className="text-sm text-gray-500">Active Tax Profiles</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {activeProfiles.length > 0 ? (
+                activeProfiles.map((profile) => {
+                  const Icon = profile.icon;
+                  return (
+                    <div
+                      key={profile.key}
+                      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm ${profile.classes}`}
+                    >
+                      <Icon size={14} />
+                      {profile.label}
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="font-medium">Personal Tax Filing</p>
+              )}
+            </div>
+          </div>
+
           <div className="flex items-center justify-between pt-2">
             <div>
-              <p className="text-sm text-gray-500">Account Type</p>
-              <p className="font-medium text-primary-600">{userData.accountType}</p>
+              <p className="text-sm text-gray-500">Account Role</p>
+              <p className="font-medium text-primary-600">
+                {user?.role === 'ca' ? 'CA Professional' : 'Client Account'}
+              </p>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-500">Member Since</p>
@@ -223,7 +292,6 @@ const Profile = () => {
         </Card.Body>
       </Card>
 
-      {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-4">
         <Button variant="outline" className="flex items-center justify-center gap-2">
           <Camera size={16} />
@@ -235,8 +303,7 @@ const Profile = () => {
         </Button>
       </div>
 
-      {/* Security Notice */}
-      <div className="text-center text-xs text-gray-400 pt-4">
+      <div className="pt-4 text-center text-xs text-gray-400">
         <p>🔒 Your information is encrypted and secure. Client ID is unique to your account.</p>
       </div>
     </div>
@@ -244,8 +311,3 @@ const Profile = () => {
 };
 
 export default Profile;
-
-
-
-
-
