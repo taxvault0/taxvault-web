@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -27,26 +27,123 @@ import {
   HeartPulse,
   MessageCircle,
   Building2,
+  Landmark,
+  Gift,
+  Wallet,
+  BadgeDollarSign,
 } from 'lucide-react';
 import { useAuth } from 'features/auth/context/AuthContext';
+
+const toBoolean = (value) => value === true;
+
+const normalizeIncomeSources = (sources) => {
+  if (!Array.isArray(sources)) return [];
+  return sources.map((item) => String(item).trim().toLowerCase());
+};
+
+const normalizeUserType = (userType) => String(userType || '').trim().toLowerCase();
+
+const buildTaxProfile = (user) => {
+  const rawTaxProfile = user?.taxProfile || {};
+  const businessInfo = user?.businessInfo || {};
+  const incomeSources = normalizeIncomeSources(user?.incomeSources);
+  const userType = normalizeUserType(user?.userType);
+
+  const hasEmploymentSource =
+    incomeSources.includes('employment') ||
+    incomeSources.includes('t4') ||
+    incomeSources.includes('employee') ||
+    userType === 'employee' ||
+    userType === 't4' ||
+    userType === 't4-employee';
+
+  const hasGigSource =
+    incomeSources.includes('gig') ||
+    incomeSources.includes('gig_work') ||
+    incomeSources.includes('gig-work') ||
+    incomeSources.includes('self_employed') ||
+    incomeSources.includes('self-employed') ||
+    userType === 'gig-worker' ||
+    userType === 'gig' ||
+    userType === 'self-employed';
+
+  const hasBusinessSource =
+    incomeSources.includes('business') ||
+    incomeSources.includes('business_owner') ||
+    incomeSources.includes('business-owner') ||
+    userType === 'business' ||
+    userType === 'business_owner' ||
+    userType === 'business-owner' ||
+    Boolean(businessInfo.businessName) ||
+    Boolean(businessInfo.businessType) ||
+    Boolean(businessInfo.gstRegistered) ||
+    Boolean(businessInfo.hasEmployees) ||
+    Boolean(businessInfo.hasInventory) ||
+    toBoolean(rawTaxProfile.business) ||
+    toBoolean(rawTaxProfile.incorporatedBusiness);
+
+  return {
+    employment: toBoolean(rawTaxProfile.employment) || hasEmploymentSource,
+    gigWork: toBoolean(rawTaxProfile.gigWork) || hasGigSource,
+    business:
+      toBoolean(rawTaxProfile.business) ||
+      toBoolean(rawTaxProfile.incorporatedBusiness) ||
+      hasBusinessSource,
+
+    tfsa: toBoolean(rawTaxProfile.tfsa),
+    rrsp: toBoolean(rawTaxProfile.rrsp),
+    fhsa: toBoolean(rawTaxProfile.fhsa),
+    ccb: toBoolean(rawTaxProfile.ccb),
+    investments: toBoolean(rawTaxProfile.investments),
+    donations: toBoolean(rawTaxProfile.donations),
+  };
+};
 
 const Sidebar = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
 
   const unreadCount = 3;
+  const taxProfile = useMemo(() => buildTaxProfile(user), [user]);
 
-  const taxProfile = user?.taxProfile || {
-    employment: true,
-    gigWork: user?.userType === 'gig-worker' || user?.userType === 'self-employed',
-    selfEmployment: user?.userType === 'self-employed',
-    incorporatedBusiness: user?.userType === 'Business-owner' || user?.userType === 'business',
-  };
+  const hasEmployment = taxProfile.employment;
+  const hasGigWork = taxProfile.gigWork;
+  const hasBusiness = taxProfile.business;
+  const isBusinessOnly = hasBusiness && !hasEmployment && !hasGigWork;
 
-  const hasEmployment = !!taxProfile.employment;
-  const hasGigWork = !!taxProfile.gigWork || !!taxProfile.selfEmployment;
-  const hasBusiness = !!taxProfile.incorporatedBusiness;
+  const activeOptionalProfiles = [
+    taxProfile.tfsa && {
+      path: '/documents?category=tfsa',
+      icon: Landmark,
+      label: 'TFSA',
+    },
+    taxProfile.rrsp && {
+      path: '/documents?category=rrsp',
+      icon: PiggyBank,
+      label: 'RRSP',
+    },
+    taxProfile.fhsa && {
+      path: '/documents?category=fhsa',
+      icon: Home,
+      label: 'FHSA',
+    },
+    taxProfile.ccb && {
+      path: '/documents?category=ccb',
+      icon: BadgeDollarSign,
+      label: 'CCB',
+    },
+    taxProfile.investments && {
+      path: '/documents?category=investments',
+      icon: TrendingUp,
+      label: 'Investments',
+    },
+    taxProfile.donations && {
+      path: '/documents?category=donations',
+      icon: Gift,
+      label: 'Donations',
+    },
+  ].filter(Boolean);
 
-  const userSections = [
+  const standardUserSections = [
     {
       title: 'Main',
       items: [
@@ -55,11 +152,16 @@ const Sidebar = ({ isOpen, onClose }) => {
       ],
     },
     {
-      title: 'Tracking',
+      title: 'Uploads & Records',
       items: [
-        { path: '/receipts', icon: Receipt, label: 'Receipts & Uploads', badge: 3 },
         { path: '/documents', icon: FileText, label: 'Tax Documents' },
-        { path: '/accounts', icon: PiggyBank, label: 'Accounts', badge: 2 },
+        {
+          path: '/receipts',
+          icon: Receipt,
+          label: 'Receipts & Uploads',
+          badge: hasGigWork ? 3 : undefined,
+        },
+        { path: '/accounts', icon: Wallet, label: 'Accounts & Deductions' },
       ],
     },
     {
@@ -67,7 +169,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       items: [
         { path: '/messages', icon: MessageCircle, label: 'Messages', badge: unreadCount },
         { path: '/consultations', icon: Video, label: 'Consultations', badge: 2 },
-        { path: '/find-ca', icon: UserPlus, label: 'Find a CA', badge: 3 },
+        { path: '/find-ca', icon: UserPlus, label: 'Find a CA' },
       ],
     },
     {
@@ -79,17 +181,46 @@ const Sidebar = ({ isOpen, onClose }) => {
     },
   ];
 
+  const businessOnlySections = [
+    {
+      title: 'Business',
+      items: [
+        { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+        { path: '/business/dashboard', icon: Store, label: 'Business Dashboard' },
+        { path: '/business/business-info', icon: Building2, label: 'Business Info' },
+        { path: '/business/sales-income', icon: DollarSign, label: 'Sales & Income' },
+        { path: '/business/inventory', icon: Package, label: 'Inventory' },
+        { path: '/business/payroll', icon: Users, label: 'Payroll' },
+        { path: '/business/rent-utilities', icon: Home, label: 'Rent & Bills' },
+        { path: '/business/gst-records', icon: Percent, label: 'GST/HST Records' },
+      ],
+    },
+    {
+      title: 'Communication',
+      items: [
+        { path: '/messages', icon: MessageCircle, label: 'Messages', badge: unreadCount },
+        { path: '/consultations', icon: Video, label: 'Consultations', badge: 2 },
+        { path: '/find-ca', icon: UserPlus, label: 'Find a CA' },
+      ],
+    },
+    {
+      title: 'Profile',
+      items: [{ path: '/profile', icon: Users, label: 'Profile' }],
+    },
+  ];
+
   const employmentSection = {
     title: 'Employment',
     items: [
-      { path: '/tax-checklist', icon: Briefcase, label: 'T4 & Slips' },
-      { path: '/documents', icon: FileText, label: 'Tax Documents' },
+      { path: '/documents?category=t4', icon: Briefcase, label: 'T4 & Employment Slips' },
     ],
   };
 
   const gigWorkerSection = {
-    title: 'Gig & Self-Employment',
+    title: 'Gig / Self-Employment',
     items: [
+      { path: '/gig/documents/income-records', icon: DollarSign, label: 'Gig Income / T4A' },
+      { path: '/receipts', icon: Receipt, label: 'Gig Expense Receipts' },
       { path: '/mileage', icon: MapPin, label: 'Mileage' },
       { path: '/gst-dashboard', icon: Percent, label: 'GST/HST' },
       { path: '/business-use-calculator', icon: Calculator, label: 'Business Use' },
@@ -98,17 +229,28 @@ const Sidebar = ({ isOpen, onClose }) => {
   };
 
   const businessSection = {
-    title: 'Corporation / Business',
+    title: 'Business',
     items: [
-      { path: '/Business/dashboard', icon: Store, label: 'Business Dashboard' },
-      { path: '/Business/business-info', icon: Building2, label: 'Business Info' },
-      { path: '/Business/sales-income', icon: DollarSign, label: 'Sales' },
-      { path: '/Business/inventory', icon: Package, label: 'Inventory' },
-      { path: '/Business/payroll', icon: Users, label: 'Payroll' },
-      { path: '/Business/rent-utilities', icon: Home, label: 'Rent & Bills' },
-      { path: '/Business/gst-records', icon: Percent, label: 'GST/HST Records' },
+      { path: '/business/dashboard', icon: Store, label: 'Business Dashboard' },
+      { path: '/business/business-info', icon: Building2, label: 'Business Info' },
+      { path: '/business/sales-income', icon: DollarSign, label: 'Sales & Income' },
+      { path: '/business/inventory', icon: Package, label: 'Inventory' },
+      { path: '/business/payroll', icon: Users, label: 'Payroll' },
+      { path: '/business/rent-utilities', icon: Home, label: 'Rent & Bills' },
+      { path: '/business/gst-records', icon: Percent, label: 'GST/HST Records' },
     ],
   };
+
+  const optionalProfilesSection =
+    activeOptionalProfiles.length > 0
+      ? {
+          title: 'Active Tax Accounts',
+          items: [
+            { path: '/accounts', icon: Wallet, label: 'Manage Tax Accounts' },
+            ...activeOptionalProfiles,
+          ],
+        }
+      : null;
 
   const caSections = [
     {
@@ -121,10 +263,22 @@ const Sidebar = ({ isOpen, onClose }) => {
     {
       title: 'Work',
       items: [
-        { path: '/ca/requests', icon: Clock, label: 'Requests', badge: 8, badgeColor: 'warning' },
+        {
+          path: '/ca/requests',
+          icon: Clock,
+          label: 'Requests',
+          badge: 8,
+          badgeColor: 'warning',
+        },
         { path: '/ca/clients', icon: Users, label: 'Clients', badge: 12 },
         { path: '/ca/search', icon: Search, label: 'Find Client' },
-        { path: '/ca/reviews', icon: Clock, label: 'Reviews', badge: 5, badgeColor: 'warning' },
+        {
+          path: '/ca/reviews',
+          icon: Clock,
+          label: 'Reviews',
+          badge: 5,
+          badgeColor: 'warning',
+        },
       ],
     },
     {
@@ -152,12 +306,16 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   if (user?.role === 'ca') {
     sections = caSections;
+  } else if (isBusinessOnly) {
+    sections = [...businessOnlySections];
+    if (optionalProfilesSection) sections.push(optionalProfilesSection);
   } else {
-    sections = [...userSections];
+    sections = [...standardUserSections];
 
     if (hasEmployment) sections.push(employmentSection);
     if (hasGigWork) sections.push(gigWorkerSection);
     if (hasBusiness) sections.push(businessSection);
+    if (optionalProfilesSection) sections.push(optionalProfilesSection);
   }
 
   return (
@@ -195,7 +353,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
                     return (
                       <NavLink
-                        key={item.path}
+                        key={`${section.title}-${item.path}-${item.label}`}
                         to={item.path}
                         onClick={onClose}
                         className={({ isActive }) =>
@@ -233,6 +391,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           <div className="space-y-1 border-t p-3">
             {bottomItems.map((item) => {
               const Icon = item.icon;
+
               return (
                 <NavLink
                   key={item.path}
@@ -253,6 +412,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             })}
 
             <button
+              type="button"
               onClick={logout}
               className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
             >

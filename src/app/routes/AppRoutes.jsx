@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from 'features/auth/context/AuthContext';
 import PrivateRoute from './PrivateRoute';
-import DemoScenarioLogin from 'features/auth/pages/DemoScenarioLogin';
 
 // Layout
 import AppShell from 'components/layout/AppShell';
@@ -91,7 +90,6 @@ const PublicRoutes = () => (
     <Route path="/register/user" element={<Register />} />
     <Route path="/register/ca" element={<RegisterCA />} />
     <Route path="/forgot-password" element={<ForgotPassword />} />
-    <Route path="/demo-scenarios" element={<DemoScenarioLogin />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 );
