@@ -13,6 +13,7 @@ import {
   Building2,
   FileText,
   Layers3,
+  Users,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Card from 'components/ui/Card';
@@ -20,7 +21,7 @@ import Button from 'components/ui/Button';
 import Input from 'components/ui/Input';
 import Checkbox from 'components/ui/Checkbox';
 
-const scenarios = [
+const baseScenarios = [
   {
     id: 't4-only',
     title: 'T4 Employment',
@@ -39,9 +40,13 @@ const scenarios = [
         gigWork: false,
         selfEmployment: false,
         incorporatedBusiness: false,
+        spouse: false,
       },
       businessInfo: {},
       clientId: 'TV-T4-1001',
+      hasSpouse: false,
+      isMarried: false,
+      maritalStatus: 'single',
     },
   },
   {
@@ -62,9 +67,13 @@ const scenarios = [
         gigWork: true,
         selfEmployment: true,
         incorporatedBusiness: false,
+        spouse: false,
       },
       businessInfo: {},
       clientId: 'TV-SE-1001',
+      hasSpouse: false,
+      isMarried: false,
+      maritalStatus: 'single',
     },
   },
   {
@@ -85,6 +94,7 @@ const scenarios = [
         gigWork: false,
         selfEmployment: true,
         incorporatedBusiness: true,
+        spouse: false,
       },
       businessInfo: {
         businessName: 'Brown Consulting',
@@ -94,6 +104,9 @@ const scenarios = [
         hasInventory: false,
       },
       clientId: 'TV-BIZ-1001',
+      hasSpouse: false,
+      isMarried: false,
+      maritalStatus: 'single',
     },
   },
   {
@@ -114,9 +127,13 @@ const scenarios = [
         gigWork: true,
         selfEmployment: true,
         incorporatedBusiness: false,
+        spouse: false,
       },
       businessInfo: {},
       clientId: 'TV-MIX-1001',
+      hasSpouse: false,
+      isMarried: false,
+      maritalStatus: 'single',
     },
   },
   {
@@ -137,6 +154,7 @@ const scenarios = [
         gigWork: false,
         selfEmployment: true,
         incorporatedBusiness: true,
+        spouse: false,
       },
       businessInfo: {
         businessName: 'Patel Studio',
@@ -146,6 +164,9 @@ const scenarios = [
         hasInventory: false,
       },
       clientId: 'TV-T4B-1001',
+      hasSpouse: false,
+      isMarried: false,
+      maritalStatus: 'single',
     },
   },
   {
@@ -166,6 +187,7 @@ const scenarios = [
         gigWork: true,
         selfEmployment: true,
         incorporatedBusiness: true,
+        spouse: false,
       },
       businessInfo: {
         businessName: 'Martin Group',
@@ -175,6 +197,9 @@ const scenarios = [
         hasInventory: true,
       },
       clientId: 'TV-ALL-1001',
+      hasSpouse: false,
+      isMarried: false,
+      maritalStatus: 'single',
     },
   },
   {
@@ -195,6 +220,7 @@ const scenarios = [
         gigWork: false,
         selfEmployment: true,
         incorporatedBusiness: true,
+        spouse: false,
       },
       businessInfo: {
         businessName: 'Green Logistics',
@@ -204,6 +230,9 @@ const scenarios = [
         hasInventory: false,
       },
       clientId: 'TV-PAY-1001',
+      hasSpouse: false,
+      isMarried: false,
+      maritalStatus: 'single',
     },
   },
   {
@@ -224,6 +253,7 @@ const scenarios = [
         gigWork: false,
         selfEmployment: true,
         incorporatedBusiness: true,
+        spouse: false,
       },
       businessInfo: {
         businessName: 'Adams Retail',
@@ -233,6 +263,9 @@ const scenarios = [
         hasInventory: true,
       },
       clientId: 'TV-INV-1001',
+      hasSpouse: false,
+      isMarried: false,
+      maritalStatus: 'single',
     },
   },
 ];
@@ -251,8 +284,494 @@ const sourceLabelMap = {
   business: 'Business',
 };
 
+const userProfileTemplates = [
+  {
+    id: 'user-gig',
+    title: 'User Gig Worker',
+    subtitle: 'User gig worker',
+    tone: 'green',
+    icon: Car,
+    name: 'Jason Cooper',
+    email: 'jason@example.com',
+    userType: 'self-employed',
+    role: 'user',
+    incomeSources: ['self_employed'],
+    taxProfile: {
+      employment: false,
+      gigWork: true,
+      selfEmployment: true,
+      incorporatedBusiness: false,
+    },
+    businessInfo: {},
+    clientId: 'TV-SP-2001',
+  },
+  {
+    id: 'user-t4',
+    title: 'User T4 Employee',
+    subtitle: 'User T4 employee',
+    tone: 'blue',
+    icon: FileText,
+    name: 'Rachel Moore',
+    email: 'rachel@example.com',
+    userType: 'employee',
+    role: 'user',
+    incomeSources: ['employment'],
+    taxProfile: {
+      employment: true,
+      gigWork: false,
+      selfEmployment: false,
+      incorporatedBusiness: false,
+    },
+    businessInfo: {},
+    clientId: 'TV-SP-2002',
+  },
+  {
+    id: 'user-business',
+    title: 'User Business Owner',
+    subtitle: 'User business owner',
+    tone: 'purple',
+    icon: Building2,
+    name: 'Kevin Harris',
+    email: 'kevin@example.com',
+    userType: 'business_owner',
+    role: 'business_owner',
+    incomeSources: ['business'],
+    taxProfile: {
+      employment: false,
+      gigWork: false,
+      selfEmployment: true,
+      incorporatedBusiness: true,
+    },
+    businessInfo: {
+      businessName: 'Harris Ventures',
+      businessType: 'Corporation',
+      gstRegistered: true,
+      hasEmployees: true,
+      hasInventory: false,
+    },
+    clientId: 'TV-SP-2003',
+  },
+  {
+    id: 'user-gig-t4',
+    title: 'User Gig + T4',
+    subtitle: 'User gig + T4',
+    tone: 'amber',
+    icon: Layers3,
+    name: 'Natalie Brooks',
+    email: 'natalie@example.com',
+    userType: 'self-employed',
+    role: 'user',
+    incomeSources: ['employment', 'self_employed'],
+    taxProfile: {
+      employment: true,
+      gigWork: true,
+      selfEmployment: true,
+      incorporatedBusiness: false,
+    },
+    businessInfo: {},
+    clientId: 'TV-SP-2004',
+  },
+  {
+    id: 'user-gig-business',
+    title: 'User Gig + Business',
+    subtitle: 'User gig + business',
+    tone: 'green',
+    icon: Layers3,
+    name: 'Liam Turner',
+    email: 'liam@example.com',
+    userType: 'business_owner',
+    role: 'business_owner',
+    incomeSources: ['self_employed', 'business'],
+    taxProfile: {
+      employment: false,
+      gigWork: true,
+      selfEmployment: true,
+      incorporatedBusiness: true,
+    },
+    businessInfo: {
+      businessName: 'Turner Media',
+      businessType: 'Sole Proprietor',
+      gstRegistered: true,
+      hasEmployees: false,
+      hasInventory: false,
+    },
+    clientId: 'TV-SP-2005',
+  },
+  {
+    id: 'user-t4-business',
+    title: 'User T4 + Business',
+    subtitle: 'User T4 + business',
+    tone: 'blue',
+    icon: Layers3,
+    name: 'Anna Patel',
+    email: 'anna@example.com',
+    userType: 'business_owner',
+    role: 'business_owner',
+    incomeSources: ['employment', 'business'],
+    taxProfile: {
+      employment: true,
+      gigWork: false,
+      selfEmployment: true,
+      incorporatedBusiness: true,
+    },
+    businessInfo: {
+      businessName: 'Patel Studio',
+      businessType: 'Corporation',
+      gstRegistered: true,
+      hasEmployees: true,
+      hasInventory: false,
+    },
+    clientId: 'TV-SP-2006',
+  },
+  {
+    id: 'user-gig-t4-business',
+    title: 'User Gig + T4 + Business',
+    subtitle: 'User gig + T4 + business',
+    tone: 'purple',
+    icon: Layers3,
+    name: 'Olivia Martin',
+    email: 'olivia@example.com',
+    userType: 'business_owner',
+    role: 'business_owner',
+    incomeSources: ['employment', 'self_employed', 'business'],
+    taxProfile: {
+      employment: true,
+      gigWork: true,
+      selfEmployment: true,
+      incorporatedBusiness: true,
+    },
+    businessInfo: {
+      businessName: 'Martin Group',
+      businessType: 'Corporation',
+      gstRegistered: true,
+      hasEmployees: true,
+      hasInventory: true,
+    },
+    clientId: 'TV-SP-2007',
+  },
+];
+
+const spouseProfileTemplates = [
+  {
+    id: 'spouse-gig',
+    title: 'Spouse Gig Worker',
+    subtitle: 'spouse gig worker',
+    incomeSources: ['self_employed'],
+    taxProfile: {
+      employment: false,
+      gigWork: true,
+      selfEmployment: true,
+      incorporatedBusiness: false,
+      unemployed: false,
+    },
+    userType: 'self-employed',
+    role: 'user',
+    businessInfo: {},
+    optionalProfiles: {
+      tfsa: true,
+      rrsp: false,
+      fhsa: false,
+      ccb: false,
+      investments: false,
+      donations: true,
+    },
+  },
+  {
+    id: 'spouse-t4',
+    title: 'Spouse T4 Employee',
+    subtitle: 'spouse T4 employee',
+    incomeSources: ['employment'],
+    taxProfile: {
+      employment: true,
+      gigWork: false,
+      selfEmployment: false,
+      incorporatedBusiness: false,
+      unemployed: false,
+    },
+    userType: 'employee',
+    role: 'user',
+    businessInfo: {},
+    optionalProfiles: {
+      tfsa: true,
+      rrsp: true,
+      fhsa: false,
+      ccb: false,
+      investments: true,
+      donations: false,
+    },
+  },
+  {
+    id: 'spouse-business',
+    title: 'Spouse Business Owner',
+    subtitle: 'spouse business owner',
+    incomeSources: ['business'],
+    taxProfile: {
+      employment: false,
+      gigWork: false,
+      selfEmployment: true,
+      incorporatedBusiness: true,
+      unemployed: false,
+    },
+    userType: 'business_owner',
+    role: 'business_owner',
+    businessInfo: {
+      businessName: 'Spouse Ventures',
+      businessType: 'Corporation',
+      gstRegistered: true,
+      hasEmployees: false,
+      hasInventory: false,
+    },
+    optionalProfiles: {
+      tfsa: false,
+      rrsp: true,
+      fhsa: false,
+      ccb: false,
+      investments: true,
+      donations: true,
+    },
+  },
+  {
+    id: 'spouse-unemployed',
+    title: 'Spouse Unemployed',
+    subtitle: 'spouse unemployed',
+    incomeSources: [],
+    taxProfile: {
+      employment: false,
+      gigWork: false,
+      selfEmployment: false,
+      incorporatedBusiness: false,
+      unemployed: true,
+    },
+    userType: 'unemployed',
+    role: 'user',
+    businessInfo: {},
+    optionalProfiles: {
+      tfsa: true,
+      rrsp: true,
+      fhsa: true,
+      ccb: true,
+      investments: false,
+      donations: true,
+    },
+  },
+  {
+    id: 'spouse-gig-t4',
+    title: 'Spouse Gig + T4',
+    subtitle: 'spouse gig + T4',
+    incomeSources: ['employment', 'self_employed'],
+    taxProfile: {
+      employment: true,
+      gigWork: true,
+      selfEmployment: true,
+      incorporatedBusiness: false,
+      unemployed: false,
+    },
+    userType: 'self-employed',
+    role: 'user',
+    businessInfo: {},
+    optionalProfiles: {
+      tfsa: true,
+      rrsp: false,
+      fhsa: false,
+      ccb: false,
+      investments: true,
+      donations: true,
+    },
+  },
+  {
+    id: 'spouse-gig-business',
+    title: 'Spouse Gig + Business',
+    subtitle: 'spouse gig + business',
+    incomeSources: ['self_employed', 'business'],
+    taxProfile: {
+      employment: false,
+      gigWork: true,
+      selfEmployment: true,
+      incorporatedBusiness: true,
+      unemployed: false,
+    },
+    userType: 'business_owner',
+    role: 'business_owner',
+    businessInfo: {
+      businessName: 'Spouse Studio',
+      businessType: 'Sole Proprietor',
+      gstRegistered: true,
+      hasEmployees: false,
+      hasInventory: false,
+    },
+    optionalProfiles: {
+      tfsa: false,
+      rrsp: true,
+      fhsa: false,
+      ccb: false,
+      investments: true,
+      donations: false,
+    },
+  },
+  {
+    id: 'spouse-t4-business',
+    title: 'Spouse T4 + Business',
+    subtitle: 'spouse T4 + business',
+    incomeSources: ['employment', 'business'],
+    taxProfile: {
+      employment: true,
+      gigWork: false,
+      selfEmployment: true,
+      incorporatedBusiness: true,
+      unemployed: false,
+    },
+    userType: 'business_owner',
+    role: 'business_owner',
+    businessInfo: {
+      businessName: 'Spouse Consulting',
+      businessType: 'Corporation',
+      gstRegistered: true,
+      hasEmployees: true,
+      hasInventory: false,
+    },
+    optionalProfiles: {
+      tfsa: true,
+      rrsp: true,
+      fhsa: false,
+      ccb: false,
+      investments: true,
+      donations: true,
+    },
+  },
+  {
+    id: 'spouse-gig-t4-business',
+    title: 'Spouse Gig + T4 + Business',
+    subtitle: 'spouse gig + T4 + business',
+    incomeSources: ['employment', 'self_employed', 'business'],
+    taxProfile: {
+      employment: true,
+      gigWork: true,
+      selfEmployment: true,
+      incorporatedBusiness: true,
+      unemployed: false,
+    },
+    userType: 'business_owner',
+    role: 'business_owner',
+    businessInfo: {
+      businessName: 'Spouse Holdings',
+      businessType: 'Corporation',
+      gstRegistered: true,
+      hasEmployees: true,
+      hasInventory: true,
+    },
+    optionalProfiles: {
+      tfsa: true,
+      rrsp: true,
+      fhsa: true,
+      ccb: true,
+      investments: true,
+      donations: true,
+    },
+  },
+];
+
+const spouseDisplayMap = {
+  'spouse-gig': 'Gig Worker',
+  'spouse-t4': 'T4 Employee',
+  'spouse-business': 'Business Owner',
+  'spouse-unemployed': 'Unemployed',
+  'spouse-gig-t4': 'Gig + T4',
+  'spouse-gig-business': 'Gig + Business',
+  'spouse-t4-business': 'T4 + Business',
+  'spouse-gig-t4-business': 'Gig + T4 + Business',
+};
+
+const buildHouseholdScenario = (userTemplate, spouseTemplate) => {
+  const spouseNameMap = {
+    'spouse-gig': 'Ava Cooper',
+    'spouse-t4': 'Noah Moore',
+    'spouse-business': 'Emma Harris',
+    'spouse-unemployed': 'Lucas Brooks',
+    'spouse-gig-t4': 'Mia Turner',
+    'spouse-gig-business': 'Ethan Patel',
+    'spouse-t4-business': 'Grace Martin',
+    'spouse-gig-t4-business': 'James Wilson',
+  };
+
+  const spouseProfile = {
+    id: `${userTemplate.id}-${spouseTemplate.id}-spouse`,
+    name: spouseNameMap[spouseTemplate.id],
+    email: `${spouseTemplate.id}@example.com`,
+    role: spouseTemplate.role,
+    userType: spouseTemplate.userType,
+    incomeSources: spouseTemplate.incomeSources || [],
+    taxProfile: {
+      ...(spouseTemplate.taxProfile || {}),
+      ...(spouseTemplate.optionalProfiles || {}),
+    },
+    businessInfo: spouseTemplate.businessInfo || {},
+  };
+
+  return {
+    id: `${userTemplate.id}-${spouseTemplate.id}`,
+    title: `${userTemplate.title} + ${spouseDisplayMap[spouseTemplate.id]}`,
+    subtitle: `${userTemplate.subtitle} + ${spouseTemplate.subtitle}`,
+    icon: Users,
+    tone: userTemplate.tone,
+    user: {
+      id: `${userTemplate.id}-${spouseTemplate.id}-primary`,
+      name: userTemplate.name,
+      email: userTemplate.email,
+      role: userTemplate.role,
+      userType: userTemplate.userType,
+      incomeSources: userTemplate.incomeSources || [],
+      taxProfile: {
+        ...(userTemplate.taxProfile || {}),
+        spouse: true,
+      },
+      businessInfo: userTemplate.businessInfo || {},
+      clientId: `${userTemplate.clientId}-${spouseTemplate.id.toUpperCase()}`,
+      hasSpouse: true,
+      isMarried: true,
+      maritalStatus: 'married',
+      spouse: spouseProfile,
+      spouseProfile,
+      spouseInfo: spouseProfile,
+      householdProfile: {
+        hasSpouse: true,
+        user: {
+          employment: !!userTemplate.taxProfile?.employment,
+          gigWork: !!userTemplate.taxProfile?.gigWork,
+          business: !!userTemplate.taxProfile?.incorporatedBusiness,
+          unemployed:
+            !userTemplate.taxProfile?.employment &&
+            !userTemplate.taxProfile?.gigWork &&
+            !userTemplate.taxProfile?.incorporatedBusiness,
+        },
+        spouse: {
+          employment: !!spouseTemplate.taxProfile?.employment,
+          gigWork: !!spouseTemplate.taxProfile?.gigWork,
+          business: !!spouseTemplate.taxProfile?.incorporatedBusiness,
+          unemployed:
+            !spouseTemplate.taxProfile?.employment &&
+            !spouseTemplate.taxProfile?.gigWork &&
+            !spouseTemplate.taxProfile?.incorporatedBusiness,
+          ...(spouseTemplate.optionalProfiles || {}),
+        },
+      },
+      householdIncomeSources: [
+        ...(userTemplate.incomeSources || []),
+        ...((spouseTemplate.incomeSources || []).map((source) => `spouse_${source}`)),
+      ],
+    },
+  };
+};
+
+const spouseScenarios = userProfileTemplates.flatMap((userTemplate) =>
+  spouseProfileTemplates.map((spouseTemplate) =>
+    buildHouseholdScenario(userTemplate, spouseTemplate)
+  )
+);
+
+const scenarios = [...baseScenarios, ...spouseScenarios];
+
 const Login = () => {
-  const { login, verifyMfa, loginDemoUser } = useAuth();
+  const { login, verifyMfa } = useAuth();
   const navigate = useNavigate();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -312,12 +831,6 @@ const Login = () => {
   });
 
   const handleScenarioLogin = (scenario) => {
-    if (typeof loginDemoUser === 'function') {
-      loginDemoUser(scenario.user);
-      navigate('/dashboard');
-      return;
-    }
-
     localStorage.setItem('user', JSON.stringify(scenario.user));
     window.location.href = '/dashboard';
   };
@@ -475,7 +988,7 @@ const Login = () => {
                     Demo credentials and scenario testing
                   </p>
                   <div className="rounded-xl bg-blue-50 p-3 text-center text-sm text-blue-800">
-                    Use the demo scenarios on the right to test all user combinations directly from this page.
+                    Use the demo scenarios on the right to test single-user and spouse-based household combinations directly from this page.
                   </div>
                 </div>
               )}
@@ -498,12 +1011,13 @@ const Login = () => {
                 Demo Scenario Login
               </h3>
               <p className="mt-2 text-center text-sm text-gray-600">
-                Log in as different tax profiles to test dashboards, profile pages, and flows.
+                Log in as different tax profiles to test dashboards, profile pages, spouse logic, and flows.
               </p>
 
               <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
                 {scenarios.map((scenario) => {
                   const Icon = scenario.icon;
+                  const spouseSources = scenario.user.spouse?.incomeSources || [];
 
                   return (
                     <button
@@ -524,15 +1038,46 @@ const Login = () => {
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-2">
-                        {scenario.user.incomeSources?.map((source) => (
-                          <span
-                            key={source}
-                            className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700"
-                          >
-                            {sourceLabelMap[source] || source}
-                          </span>
-                        ))}
+                      <div className="space-y-3">
+                        <div>
+                          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            User
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {scenario.user.incomeSources?.map((source) => (
+                              <span
+                                key={`${scenario.id}-user-${source}`}
+                                className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700"
+                              >
+                                {sourceLabelMap[source] || source}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {scenario.user.hasSpouse && (
+                          <div>
+                            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                              Spouse
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {spouseSources.length > 0 ? (
+                                spouseSources.map((source) => (
+                                  <span
+                                    key={`${scenario.id}-spouse-${source}`}
+                                    className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700"
+                                  >
+                                    {sourceLabelMap[source] || source}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700">
+                                  Unemployed
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </button>
                   );

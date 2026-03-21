@@ -13,28 +13,22 @@ export const useAuth = () => {
 };
 
 const normalizeTaxProfile = (user) => {
-  if (user?.taxProfile) {
-    return {
-      employment: !!user.taxProfile.employment,
-      gigWork: !!user.taxProfile.gigWork,
-      selfEmployment: !!user.taxProfile.selfEmployment,
-      incorporatedBusiness: !!user.taxProfile.incorporatedBusiness,
-    };
-  }
+  const raw = user?.taxProfile || {};
 
   return {
-    employment:
-      user?.userType === 'employee' ||
-      user?.userType === 'regular' ||
-      !user?.userType,
-    gigWork: user?.userType === 'gig-worker',
-    selfEmployment:
-      user?.userType === 'self-employed' || user?.userType === 'contractor',
-    incorporatedBusiness:
-      user?.userType === 'Business-owner' ||
-      user?.userType === 'small-business' ||
-      user?.userType === 'business' ||
-      user?.userType === 'business_owner',
+    employment: !!raw.employment,
+    gigWork: !!raw.gigWork,
+    selfEmployment: !!raw.selfEmployment,
+    incorporatedBusiness: !!raw.incorporatedBusiness,
+
+    spouse: !!raw.spouse,
+    tfsa: !!raw.tfsa,
+    rrsp: !!raw.rrsp,
+    fhsa: !!raw.fhsa,
+    ccb: !!raw.ccb,
+    investments: !!raw.investments,
+    donations: !!raw.donations,
+    workFromHome: !!raw.workFromHome,
   };
 };
 
@@ -45,8 +39,40 @@ const getPrimaryUserType = (taxProfile) => {
   return 'employee';
 };
 
+const normalizeSpouseData = (spouse) => {
+  if (!spouse) return null;
+
+  return {
+    ...spouse,
+    incomeSources: spouse.incomeSources || [],
+    taxProfile: {
+      employment: !!spouse?.taxProfile?.employment,
+      gigWork: !!spouse?.taxProfile?.gigWork,
+      selfEmployment: !!spouse?.taxProfile?.selfEmployment,
+      incorporatedBusiness: !!spouse?.taxProfile?.incorporatedBusiness,
+      spouse: !!spouse?.taxProfile?.spouse,
+      tfsa: !!spouse?.taxProfile?.tfsa,
+      rrsp: !!spouse?.taxProfile?.rrsp,
+      fhsa: !!spouse?.taxProfile?.fhsa,
+      ccb: !!spouse?.taxProfile?.ccb,
+      investments: !!spouse?.taxProfile?.investments,
+      donations: !!spouse?.taxProfile?.donations,
+      workFromHome: !!spouse?.taxProfile?.workFromHome,
+    },
+    businessInfo: spouse?.businessInfo || {},
+  };
+};
+
 const buildUserData = (rawUser) => {
   const taxProfile = normalizeTaxProfile(rawUser);
+
+  const spouseRaw =
+    rawUser?.spouse ||
+    rawUser?.spouseProfile ||
+    rawUser?.spouseInfo ||
+    null;
+
+  const normalizedSpouse = normalizeSpouseData(spouseRaw);
 
   return {
     id: rawUser.id,
@@ -64,13 +90,23 @@ const buildUserData = (rawUser) => {
     country: rawUser.country || 'Canada',
     assignedCAId: rawUser.assignedCAId || rawUser.caId || null,
     assignedCA: rawUser.assignedCA || null,
-    maritalStatus: rawUser.maritalStatus || '',
-    spouseInfo: rawUser.spouseInfo || null,
+
+    hasSpouse: !!rawUser.hasSpouse,
+    isMarried: !!rawUser.isMarried,
+    maritalStatus: rawUser.maritalStatus || (rawUser.hasSpouse ? 'married' : ''),
+
+    spouse: normalizedSpouse,
+    spouseProfile: normalizedSpouse,
+    spouseInfo: normalizedSpouse,
+
     dependents: rawUser.dependents || [],
     profile: rawUser.profile || {},
     clientId: rawUser.clientId || `TV-${String(rawUser.id || '0001').toUpperCase()}`,
     memberSince: rawUser.memberSince || new Date().getFullYear().toString(),
     businessInfo: rawUser.businessInfo || {},
+    householdProfile: rawUser.householdProfile || null,
+    householdIncomeSources: rawUser.householdIncomeSources || [],
+
     ...(rawUser.businessName && { businessName: rawUser.businessName }),
     ...(rawUser.firmName && { firmName: rawUser.firmName }),
     ...(rawUser.caNumber && { caNumber: rawUser.caNumber }),
@@ -92,7 +128,11 @@ const DEMO_USERS = {
       gigWork: false,
       selfEmployment: false,
       incorporatedBusiness: false,
+      spouse: false,
     },
+    hasSpouse: false,
+    isMarried: false,
+    maritalStatus: 'single',
     clientId: 'TV-DEMO-USER-1',
   },
   'ca@demo.com': {
@@ -127,7 +167,11 @@ const DEMO_USERS = {
       gigWork: false,
       selfEmployment: true,
       incorporatedBusiness: true,
+      spouse: false,
     },
+    hasSpouse: false,
+    isMarried: false,
+    maritalStatus: 'single',
     clientId: 'TV-DEMO-BUSINESS-1',
   },
   'gig@test.com': {
@@ -143,7 +187,11 @@ const DEMO_USERS = {
       gigWork: true,
       selfEmployment: false,
       incorporatedBusiness: false,
+      spouse: false,
     },
+    hasSpouse: false,
+    isMarried: false,
+    maritalStatus: 'single',
     clientId: 'TV-GIG-1001',
   },
   'employee@test.com': {
@@ -159,7 +207,11 @@ const DEMO_USERS = {
       gigWork: false,
       selfEmployment: false,
       incorporatedBusiness: false,
+      spouse: false,
     },
+    hasSpouse: false,
+    isMarried: false,
+    maritalStatus: 'single',
     clientId: 'TV-EMP-1001',
   },
   'mixed@test.com': {
@@ -181,7 +233,11 @@ const DEMO_USERS = {
       gigWork: true,
       selfEmployment: true,
       incorporatedBusiness: true,
+      spouse: false,
     },
+    hasSpouse: false,
+    isMarried: false,
+    maritalStatus: 'single',
     businessName: 'Martin Consulting Inc.',
     businessInfo: {
       businessName: 'Martin Consulting Inc.',
@@ -340,6 +396,14 @@ export const AuthProvider = ({ children }) => {
         gigWork: !!nextTaxProfile.gigWork,
         selfEmployment: !!nextTaxProfile.selfEmployment,
         incorporatedBusiness: !!nextTaxProfile.incorporatedBusiness,
+        spouse: !!nextTaxProfile.spouse,
+        tfsa: !!nextTaxProfile.tfsa,
+        rrsp: !!nextTaxProfile.rrsp,
+        fhsa: !!nextTaxProfile.fhsa,
+        ccb: !!nextTaxProfile.ccb,
+        investments: !!nextTaxProfile.investments,
+        donations: !!nextTaxProfile.donations,
+        workFromHome: !!nextTaxProfile.workFromHome,
       };
 
       const updated = {

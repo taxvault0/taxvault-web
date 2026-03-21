@@ -31,119 +31,36 @@ import {
   Gift,
   Wallet,
   BadgeDollarSign,
+  HeartHandshake,
 } from 'lucide-react';
 import { useAuth } from 'features/auth/context/AuthContext';
-
-const toBoolean = (value) => value === true;
-
-const normalizeIncomeSources = (sources) => {
-  if (!Array.isArray(sources)) return [];
-  return sources.map((item) => String(item).trim().toLowerCase());
-};
-
-const normalizeUserType = (userType) => String(userType || '').trim().toLowerCase();
-
-const buildTaxProfile = (user) => {
-  const rawTaxProfile = user?.taxProfile || {};
-  const businessInfo = user?.businessInfo || {};
-  const incomeSources = normalizeIncomeSources(user?.incomeSources);
-  const userType = normalizeUserType(user?.userType);
-
-  const hasEmploymentSource =
-    incomeSources.includes('employment') ||
-    incomeSources.includes('t4') ||
-    incomeSources.includes('employee') ||
-    userType === 'employee' ||
-    userType === 't4' ||
-    userType === 't4-employee';
-
-  const hasGigSource =
-    incomeSources.includes('gig') ||
-    incomeSources.includes('gig_work') ||
-    incomeSources.includes('gig-work') ||
-    incomeSources.includes('self_employed') ||
-    incomeSources.includes('self-employed') ||
-    userType === 'gig-worker' ||
-    userType === 'gig' ||
-    userType === 'self-employed';
-
-  const hasBusinessSource =
-    incomeSources.includes('business') ||
-    incomeSources.includes('business_owner') ||
-    incomeSources.includes('business-owner') ||
-    userType === 'business' ||
-    userType === 'business_owner' ||
-    userType === 'business-owner' ||
-    Boolean(businessInfo.businessName) ||
-    Boolean(businessInfo.businessType) ||
-    Boolean(businessInfo.gstRegistered) ||
-    Boolean(businessInfo.hasEmployees) ||
-    Boolean(businessInfo.hasInventory) ||
-    toBoolean(rawTaxProfile.business) ||
-    toBoolean(rawTaxProfile.incorporatedBusiness);
-
-  return {
-    employment: toBoolean(rawTaxProfile.employment) || hasEmploymentSource,
-    gigWork: toBoolean(rawTaxProfile.gigWork) || hasGigSource,
-    business:
-      toBoolean(rawTaxProfile.business) ||
-      toBoolean(rawTaxProfile.incorporatedBusiness) ||
-      hasBusinessSource,
-
-    tfsa: toBoolean(rawTaxProfile.tfsa),
-    rrsp: toBoolean(rawTaxProfile.rrsp),
-    fhsa: toBoolean(rawTaxProfile.fhsa),
-    ccb: toBoolean(rawTaxProfile.ccb),
-    investments: toBoolean(rawTaxProfile.investments),
-    donations: toBoolean(rawTaxProfile.donations),
-  };
-};
+import {
+  buildHouseholdProfile,
+  getOptionalProfiles,
+} from 'utils/taxProfile';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
-
   const unreadCount = 3;
-  const taxProfile = useMemo(() => buildTaxProfile(user), [user]);
 
-  const hasEmployment = taxProfile.employment;
-  const hasGigWork = taxProfile.gigWork;
-  const hasBusiness = taxProfile.business;
-  const isBusinessOnly = hasBusiness && !hasEmployment && !hasGigWork;
+  const household = useMemo(() => buildHouseholdProfile(user), [user]);
 
-  const activeOptionalProfiles = [
-    taxProfile.tfsa && {
-      path: '/documents?category=tfsa',
-      icon: Landmark,
-      label: 'TFSA',
-    },
-    taxProfile.rrsp && {
-      path: '/documents?category=rrsp',
-      icon: PiggyBank,
-      label: 'RRSP',
-    },
-    taxProfile.fhsa && {
-      path: '/documents?category=fhsa',
-      icon: Home,
-      label: 'FHSA',
-    },
-    taxProfile.ccb && {
-      path: '/documents?category=ccb',
-      icon: BadgeDollarSign,
-      label: 'CCB',
-    },
-    taxProfile.investments && {
-      path: '/documents?category=investments',
-      icon: TrendingUp,
-      label: 'Investments',
-    },
-    taxProfile.donations && {
-      path: '/documents?category=donations',
-      icon: Gift,
-      label: 'Donations',
-    },
-  ].filter(Boolean);
+  const hasSpouse = household.hasSpouse;
+  const userProfile = household.user;
+  const spouseProfile = household.spouse;
 
-  const standardUserSections = [
+  const hasEmployment = userProfile.employment;
+  const hasGigWork = userProfile.gigWork;
+  const hasBusiness = userProfile.business;
+  const isBusinessOnly = household.userBusinessOnly;
+
+  const spouseHasEmployment = hasSpouse && spouseProfile?.employment;
+  const spouseHasGigWork = hasSpouse && spouseProfile?.gigWork;
+  const spouseHasBusiness = hasSpouse && spouseProfile?.business;
+
+  const activeOptionalProfiles = getOptionalProfiles(userProfile);
+
+  const userMainSections = [
     {
       title: 'Main',
       items: [
@@ -210,14 +127,14 @@ const Sidebar = ({ isOpen, onClose }) => {
   ];
 
   const employmentSection = {
-    title: 'Employment',
+    title: 'My Employment',
     items: [
       { path: '/documents?category=t4', icon: Briefcase, label: 'T4 & Employment Slips' },
     ],
   };
 
   const gigWorkerSection = {
-    title: 'Gig / Self-Employment',
+    title: 'My Gig / Self-Employment',
     items: [
       { path: '/gig/documents/income-records', icon: DollarSign, label: 'Gig Income / T4A' },
       { path: '/receipts', icon: Receipt, label: 'Gig Expense Receipts' },
@@ -229,7 +146,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   };
 
   const businessSection = {
-    title: 'Business',
+    title: 'My Business',
     items: [
       { path: '/business/dashboard', icon: Store, label: 'Business Dashboard' },
       { path: '/business/business-info', icon: Building2, label: 'Business Info' },
@@ -241,16 +158,74 @@ const Sidebar = ({ isOpen, onClose }) => {
     ],
   };
 
+  const spouseSection = hasSpouse
+    ? {
+        title: 'Spouse',
+        items: [
+          spouseHasEmployment && {
+            path: '/documents?category=spouse-t4',
+            icon: Briefcase,
+            label: 'Spouse Employment',
+          },
+          spouseHasGigWork && {
+            path: '/documents?category=spouse-gig',
+            icon: DollarSign,
+            label: 'Spouse Gig Income',
+          },
+          spouseHasGigWork && {
+            path: '/documents?category=spouse-gig-expenses',
+            icon: Receipt,
+            label: 'Spouse Gig Expenses',
+          },
+          spouseHasBusiness && {
+            path: '/documents?category=spouse-business',
+            icon: Building2,
+            label: 'Spouse Business',
+          },
+          spouseProfile?.unemployed && {
+            path: '/documents?category=spouse-optional',
+            icon: HeartHandshake,
+            label: 'Spouse Optional Accounts',
+          },
+        ].filter(Boolean),
+      }
+    : null;
+
   const optionalProfilesSection =
     activeOptionalProfiles.length > 0
       ? {
           title: 'Active Tax Accounts',
           items: [
             { path: '/accounts', icon: Wallet, label: 'Manage Tax Accounts' },
-            ...activeOptionalProfiles,
+            ...activeOptionalProfiles.map((item) => ({
+              path: item.to,
+              icon:
+                item.label === 'TFSA'
+                  ? Landmark
+                  : item.label === 'RRSP'
+                  ? PiggyBank
+                  : item.label === 'FHSA'
+                  ? Home
+                  : item.label === 'CCB'
+                  ? BadgeDollarSign
+                  : item.label === 'Investments'
+                  ? TrendingUp
+                  : Gift,
+              label: item.label,
+            })),
           ],
         }
       : null;
+
+  const householdSection = hasSpouse
+    ? {
+        title: 'Household',
+        items: [
+          { path: '/dashboard', icon: Users, label: 'Household Summary' },
+          { path: '/tax-checklist', icon: FileText, label: 'Combined Checklist' },
+        ],
+      }
+    : null;
 
   const caSections = [
     {
@@ -308,13 +283,16 @@ const Sidebar = ({ isOpen, onClose }) => {
     sections = caSections;
   } else if (isBusinessOnly) {
     sections = [...businessOnlySections];
+    if (householdSection) sections.push(householdSection);
+    if (spouseSection?.items?.length) sections.push(spouseSection);
     if (optionalProfilesSection) sections.push(optionalProfilesSection);
   } else {
-    sections = [...standardUserSections];
-
+    sections = [...userMainSections];
+    if (householdSection) sections.push(householdSection);
     if (hasEmployment) sections.push(employmentSection);
     if (hasGigWork) sections.push(gigWorkerSection);
     if (hasBusiness) sections.push(businessSection);
+    if (spouseSection?.items?.length) sections.push(spouseSection);
     if (optionalProfilesSection) sections.push(optionalProfilesSection);
   }
 
@@ -328,12 +306,9 @@ const Sidebar = ({ isOpen, onClose }) => {
       )}
 
       <aside
-        className={`
-          fixed top-0 left-0 z-50 h-full w-64 border-r bg-white
-          transform transition-transform duration-300 ease-in-out
-          lg:static lg:translate-x-0
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        `}
+        className={`fixed top-0 left-0 z-50 h-full w-64 border-r bg-white transform transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
       >
         <div className="flex h-full flex-col">
           <div className="flex h-16 items-center border-b px-6">
