@@ -25,3 +25,5 @@ const PrivateRoute = ({ children, allowedRoles = ['user', 'ca'] }) => {
 };
 
 export default PrivateRoute;
+
+

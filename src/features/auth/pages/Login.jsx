@@ -21,7 +21,7 @@ const Login = () => {
     initialValues: {
       email: '',
       password: '',
-      mfaToken: ''
+      mfaToken: '',
     },
     validationSchema: Yup.object({
       email: Yup.string()
@@ -30,14 +30,14 @@ const Login = () => {
       password: Yup.string()
         .required('Password is required')
         .min(8, 'Password must be at least 8 characters'),
-      mfaToken: Yup.string()
-        .when('$mfaRequired', {
-          is: true,
-          then: (schema) => schema
+      mfaToken: Yup.string().when('$mfaRequired', {
+        is: true,
+        then: (schema) =>
+          schema
             .required('MFA token is required')
             .matches(/^\d+$/, 'MFA token must contain only digits')
-            .length(6, 'MFA token must be 6 digits')
-        })
+            .length(6, 'MFA token must be 6 digits'),
+      }),
     }),
     validateOnChange: true,
     validateOnBlur: true,
@@ -61,57 +61,55 @@ const Login = () => {
         }
       }
       setSubmitting(false);
-    }
+    },
+    context: { mfaRequired },
   });
 
   const handleDemoFill = (type) => {
     if (type === 'user') {
-      formik.setValues({ 
-        email: 'user@example.com', 
+      formik.setValues({
+        email: 'user@example.com',
         password: 'password123',
-        mfaToken: '' 
+        mfaToken: '',
       });
     } else {
-      formik.setValues({ 
-        email: 'ca@example.com', 
+      formik.setValues({
+        email: 'ca@example.com',
         password: 'password123',
-        mfaToken: '' 
+        mfaToken: '',
       });
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      {/* Back button */}
+    <div className="flex min-h-screen flex-col justify-center bg-gradient-to-br from-primary-50 to-gray-100 py-12 sm:px-6 lg:px-8">
       <button
         onClick={() => navigate('/')}
-        className="absolute top-4 left-4 flex items-center text-gray-600 hover:text-primary-500 transition-colors"
+        className="absolute left-4 top-4 flex items-center text-gray-600 transition-colors hover:text-primary-500"
       >
         <ArrowLeft size={20} className="mr-1" />
         <span>Back to role selection</span>
       </button>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        {/* Logo */}
         <div className="text-center">
           <h1 className="text-4xl font-bold text-primary-600">TaxVault</h1>
           <h2 className="mt-6 text-2xl font-bold text-gray-900">
             {mfaRequired ? 'Two-Factor Authentication' : 'Welcome Back'}
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            {mfaRequired 
-              ? 'Enter the verification code from your authenticator app' 
+            {mfaRequired
+              ? 'Enter the verification code from your authenticator app'
               : 'Sign in to access your tax documents and receipts'}
           </p>
         </div>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <Card className="py-8 px-4 sm:px-10">
+        <Card className="px-4 py-8 sm:px-10">
           <form className="space-y-6" onSubmit={formik.handleSubmit}>
             {!mfaRequired ? (
               <>
-                {/* Email field */}
                 <Input
                   label="Email Address"
                   name="email"
@@ -125,7 +123,6 @@ const Login = () => {
                   required
                 />
 
-                {/* Password field with show/hide */}
                 <div className="relative">
                   <Input
                     label="Password"
@@ -148,7 +145,6 @@ const Login = () => {
                   </button>
                 </div>
 
-                {/* Remember me & Forgot password */}
                 <div className="flex items-center justify-between">
                   <Checkbox
                     label="Remember me"
@@ -157,14 +153,19 @@ const Login = () => {
                   />
                   <Link
                     to="/forgot-password"
-                    className="text-sm text-primary-500 hover:text-primary-600 font-medium"
+                    className="text-sm font-medium text-primary-500 hover:text-primary-600"
                   >
                     Forgot password?
                   </Link>
                 </div>
+
+                <Link to="/demo-scenarios" className="block">
+                  <Button type="button" variant="outline" fullWidth size="lg">
+                    Open Demo Scenario Login
+                  </Button>
+                </Link>
               </>
             ) : (
-              /* MFA Token Input */
               <div className="space-y-4">
                 <Input
                   label="Verification Code"
@@ -179,13 +180,12 @@ const Login = () => {
                   className="text-center text-2xl tracking-widest"
                   required
                 />
-                <p className="text-xs text-gray-500 text-center">
+                <p className="text-center text-xs text-gray-500">
                   Enter the 6-digit code from Google Authenticator, Authy, or similar app
                 </p>
               </div>
             )}
 
-            {/* Submit button */}
             <Button
               type="submit"
               variant="primary"
@@ -193,14 +193,16 @@ const Login = () => {
               size="lg"
               loading={formik.isSubmitting}
             >
-              {formik.isSubmitting 
-                ? (mfaRequired ? 'Verifying...' : 'Signing in...')
-                : (mfaRequired ? 'Verify Code' : 'Sign In')
-              }
+              {formik.isSubmitting
+                ? mfaRequired
+                  ? 'Verifying...'
+                  : 'Signing in...'
+                : mfaRequired
+                ? 'Verify Code'
+                : 'Sign In'}
             </Button>
           </form>
 
-          {/* Register link */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               {mfaRequired ? (
@@ -212,17 +214,17 @@ const Login = () => {
                       setUserId(null);
                       formik.setFieldValue('mfaToken', '');
                     }}
-                    className="text-primary-500 hover:text-primary-600 font-medium"
+                    className="font-medium text-primary-500 hover:text-primary-600"
                   >
                     Back to login
                   </button>
                 </>
               ) : (
                 <>
-                  Don't have an account?{' '}
+                  Don&apos;t have an account?{' '}
                   <Link
                     to="/register/user"
-                    className="text-primary-500 hover:text-primary-600 font-medium"
+                    className="font-medium text-primary-500 hover:text-primary-600"
                   >
                     Register here
                   </Link>
@@ -231,34 +233,39 @@ const Login = () => {
             </p>
           </div>
 
-          {/* Demo credentials (only show on initial login) */}
           {!mfaRequired && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <p className="text-xs text-gray-500 text-center mb-3">
+            <div className="mt-6 border-t border-gray-200 pt-6">
+              <p className="mb-3 text-center text-xs text-gray-500">
                 Demo credentials (for testing)
               </p>
+
+              {/*
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => handleDemoFill('user')}
-                  className="text-xs bg-gray-50 hover:bg-gray-100 text-gray-600 py-2 px-3 rounded-lg transition-colors"
+                  className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 transition-colors hover:bg-gray-100"
                 >
                   Fill as User
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDemoFill('ca')}
-                  className="text-xs bg-gray-50 hover:bg-gray-100 text-gray-600 py-2 px-3 rounded-lg transition-colors"
+                  className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 transition-colors hover:bg-gray-100"
                 >
                   Fill as CA
                 </button>
+              </div>
+              */}
+
+              <div className="rounded-xl bg-blue-50 p-3 text-center text-sm text-blue-800">
+                Use <span className="font-semibold">Open Demo Scenario Login</span> to test all user combinations.
               </div>
             </div>
           )}
         </Card>
 
-        {/* Security badges */}
-        <div className="mt-6 text-center space-y-2">
+        <div className="mt-6 space-y-2 text-center">
           <div className="flex justify-center space-x-4 text-xs text-gray-500">
             <span>🔒 Bank-level encryption</span>
             <span>•</span>
@@ -273,10 +280,3 @@ const Login = () => {
 };
 
 export default Login;
-
-
-
-
-
-
-

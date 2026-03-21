@@ -33,12 +33,12 @@ const LoginUser = () => {
       icon: Briefcase,
       path: '/ca/dashboard'
     },
-    shop: {
-      email: 'shop@demo.com',
+    Business: {
+      email: 'Business@demo.com',
       password: 'demo1234',
-      label: 'Shop Owner',
+      label: 'Business Owner',
       icon: Store,
-      path: '/shop/dashboard'
+      path: '/Business/dashboard'
     },
     gig: {
       email: 'gig@test.com',
@@ -89,8 +89,8 @@ const LoginUser = () => {
         // Determine navigation based on user role
         if (result.user?.role === 'ca') {
           navigate('/ca/dashboard');
-        } else if (result.user?.userType === 'shop-owner') {
-          navigate('/shop/dashboard');
+        } else if (result.user?.userType === 'Business-owner') {
+          navigate('/Business/dashboard');
         } else {
           navigate('/dashboard');
         }
@@ -199,12 +199,12 @@ const LoginUser = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleDemoLogin('shop')}
-                  loading={demoLoading.shop}
+                  onClick={() => handleDemoLogin('Business')}
+                  loading={demoLoading.Business}
                   className="flex items-center justify-center gap-1"
                 >
                   <Store size={14} />
-                  Shop Owner
+                  Business Owner
                 </Button>
                 <Button
                   variant="outline"
@@ -284,10 +284,10 @@ const LoginUser = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => fillDemoCredentials('shop')}
+                  onClick={() => fillDemoCredentials('Business')}
                   className="text-xs text-primary-600 hover:text-primary-700 px-2 py-1"
                 >
-                  Fill Shop
+                  Fill Business
                 </button>
                 <button
                   type="button"
@@ -331,7 +331,7 @@ const LoginUser = () => {
 
             {/* Demo Credentials Note */}
             <p className="text-xs text-gray-400 text-center mt-4">
-              Demo: user@demo.com / shop@demo.com (demo1234) | gig@test.com (password123)
+              Demo: user@demo.com / Business@demo.com (demo1234) | gig@test.com (password123)
             </p>
           </Card.Body>
         </Card>
@@ -341,6 +341,8 @@ const LoginUser = () => {
 };
 
 export default LoginUser;
+
+
 
 
 

@@ -39,7 +39,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     employment: true,
     gigWork: user?.userType === 'gig-worker' || user?.userType === 'self-employed',
     selfEmployment: user?.userType === 'self-employed',
-    incorporatedBusiness: user?.userType === 'shop-owner' || user?.userType === 'business',
+    incorporatedBusiness: user?.userType === 'Business-owner' || user?.userType === 'business',
   };
 
   const hasEmployment = !!taxProfile.employment;
@@ -57,8 +57,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     {
       title: 'Tracking',
       items: [
-        { path: '/receipts', icon: Receipt, label: 'Receipts', badge: 3 },
-        { path: '/documents', icon: FileText, label: 'Documents' },
+        { path: '/receipts', icon: Receipt, label: 'Receipts & Uploads', badge: 3 },
+        { path: '/documents', icon: FileText, label: 'Tax Documents' },
         { path: '/accounts', icon: PiggyBank, label: 'Accounts', badge: 2 },
       ],
     },
@@ -83,7 +83,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     title: 'Employment',
     items: [
       { path: '/tax-checklist', icon: Briefcase, label: 'T4 & Slips' },
-      { path: '/documents', icon: FileText, label: 'Employment Docs' },
+      { path: '/documents', icon: FileText, label: 'Tax Documents' },
     ],
   };
 
@@ -100,13 +100,13 @@ const Sidebar = ({ isOpen, onClose }) => {
   const businessSection = {
     title: 'Corporation / Business',
     items: [
-      { path: '/shop/dashboard', icon: Store, label: 'Business Dashboard' },
-      { path: '/shop/business-info', icon: Building2, label: 'Business Info' },
-      { path: '/shop/sales-income', icon: DollarSign, label: 'Sales' },
-      { path: '/shop/inventory', icon: Package, label: 'Inventory' },
-      { path: '/shop/payroll', icon: Users, label: 'Payroll' },
-      { path: '/shop/rent-utilities', icon: Home, label: 'Rent & Bills' },
-      { path: '/shop/gst-records', icon: Percent, label: 'GST/HST Records' },
+      { path: '/Business/dashboard', icon: Store, label: 'Business Dashboard' },
+      { path: '/Business/business-info', icon: Building2, label: 'Business Info' },
+      { path: '/Business/sales-income', icon: DollarSign, label: 'Sales' },
+      { path: '/Business/inventory', icon: Package, label: 'Inventory' },
+      { path: '/Business/payroll', icon: Users, label: 'Payroll' },
+      { path: '/Business/rent-utilities', icon: Home, label: 'Rent & Bills' },
+      { path: '/Business/gst-records', icon: Percent, label: 'GST/HST Records' },
     ],
   };
 

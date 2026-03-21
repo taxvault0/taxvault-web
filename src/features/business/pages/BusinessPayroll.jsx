@@ -18,7 +18,7 @@ import Input from 'components/ui/Input';
 import Badge from 'components/ui/Badge';
 import { PROVINCES } from 'constants/provinces';
 
-const ShopPayroll = () => {
+const BusinessPayroll = () => {
   const [selectedYear, setSelectedYear] = useState(2024);
   const [province, setProvince] = useState('ON');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -373,7 +373,9 @@ const ShopPayroll = () => {
   );
 };
 
-export default ShopPayroll;
+export default BusinessPayroll;
+
+
 
 
 

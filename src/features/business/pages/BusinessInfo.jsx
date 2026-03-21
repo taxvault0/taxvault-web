@@ -21,7 +21,7 @@ import Badge from 'components/ui/Badge';
 import Input from 'components/ui/Input';
 import { PROVINCES } from 'constants/provinces';
 
-const ShopBusinessInfo = () => {
+const BusinessInfo = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [province, setProvince] = useState('ON');
 
@@ -375,7 +375,9 @@ const ShopBusinessInfo = () => {
   );
 };
 
-export default ShopBusinessInfo;
+export default BusinessInfo;
+
+
 
 
 

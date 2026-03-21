@@ -20,7 +20,7 @@ import Button from 'components/ui/Button';
 import Badge from 'components/ui/Badge';
 import { PROVINCES } from 'constants/provinces';
 
-const ShopRentUtilities = () => {
+const BusinessExpenses = () => {
   const [selectedYear, setSelectedYear] = useState(2024);
   const [expandedMonth, setExpandedMonth] = useState(null);
   const [province, setProvince] = useState('ON');
@@ -328,7 +328,10 @@ const ShopRentUtilities = () => {
   );
 };
 
-export default ShopRentUtilities;
+export default BusinessExpenses;
+
+
+
 
 
 

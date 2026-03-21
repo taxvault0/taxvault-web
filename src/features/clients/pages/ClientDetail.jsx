@@ -37,7 +37,7 @@ const normalizeTaxProfile = (client) => {
     selfEmployment:
       client?.userType === 'self-employed' || client?.userType === 'contractor',
     incorporatedBusiness:
-      client?.userType === 'shop-owner' ||
+      client?.userType === 'Business-owner' ||
       client?.userType === 'small-business' ||
       client?.userType === 'business',
   };
@@ -473,3 +473,4 @@ const ClientDetail = () => {
 };
 
 export default ClientDetail;
+

@@ -111,7 +111,7 @@ const CAAnalyticsDashboard = () => {
   const [clientBreakdown, setClientBreakdown] = useState({
     byType: [
       { name: 'Gig Workers', value: 45, color: '#FF6B35', icon: Car, count: 45, revenue: 11250 },
-      { name: 'Shop Owners', value: 28, color: '#005A9C', icon: Store, count: 28, revenue: 19600 },
+      { name: 'Business Owners', value: 28, color: '#005A9C', icon: Store, count: 28, revenue: 19600 },
       { name: 'Franchisees', value: 12, color: '#2E7D32', icon: Briefcase, count: 12, revenue: 14400 },
       { name: 'T4 Employees', value: 38, color: '#9C27B0', icon: Users, count: 38, revenue: 9500 },
       { name: 'Contractors', value: 22, color: '#ED6A5E', icon: GraduationCap, count: 22, revenue: 11000 },
@@ -204,7 +204,7 @@ const CAAnalyticsDashboard = () => {
     ],
     clientTypeEfficiency: [
       { type: 'Gig Workers', avgDays: 6.2, benchmark: 7.5 },
-      { type: 'Shop Owners', avgDays: 9.8, benchmark: 10.2 },
+      { type: 'Business Owners', avgDays: 9.8, benchmark: 10.2 },
       { type: 'Franchisees', avgDays: 12.5, benchmark: 11.8 },
       { type: 'T4 Employees', avgDays: 5.2, benchmark: 6.0 },
       { type: 'Contractors', avgDays: 8.5, benchmark: 9.2 }
@@ -229,7 +229,7 @@ const CAAnalyticsDashboard = () => {
       { id: 5, client: 'David Kim', amount: 1500, dueDate: '2025-03-18', status: 'pending', daysOverdue: 0 }
     ],
     profitabilityByType: [
-      { type: 'Shop Owners', percentOfClients: 18, percentOfRevenue: 32, margin: 'high' },
+      { type: 'Business Owners', percentOfClients: 18, percentOfRevenue: 32, margin: 'high' },
       { type: 'Franchisees', percentOfClients: 8, percentOfRevenue: 21, margin: 'high' },
       { type: 'Gig Workers', percentOfClients: 28, percentOfRevenue: 24, margin: 'medium' },
       { type: 'Contractors', percentOfClients: 14, percentOfRevenue: 16, margin: 'medium' },
@@ -237,7 +237,7 @@ const CAAnalyticsDashboard = () => {
       { type: 'Other', percentOfClients: 8, percentOfRevenue: 5, margin: 'low' }
     ],
     insights: [
-      'Shop owners represent 18% of clients but generate 32% of revenue - focus marketing on this segment',
+      'Business owners represent 18% of clients but generate 32% of revenue - focus marketing on this segment',
       'Franchisees have the highest margin - consider developing specialized franchise packages',
       'T4 employees have lowest margin - consider automated packages or minimum fees',
       'Outstanding invoices total $23,450 - 12% of YTD revenue'
@@ -824,6 +824,8 @@ const CAAnalyticsDashboard = () => {
 };
 
 export default CAAnalyticsDashboard;
+
+
 
 
 

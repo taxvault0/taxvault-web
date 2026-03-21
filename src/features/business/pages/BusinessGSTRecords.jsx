@@ -17,7 +17,7 @@ import Button from 'components/ui/Button';
 import Badge from 'components/ui/Badge';
 import { PROVINCES, calculateTax, getTaxRateDisplay } from 'constants/provinces';
 
-const ShopGSTRecords = () => {
+const BusinessGSTRecords = () => {
   const [selectedYear, setSelectedYear] = useState(2024);
   const [province, setProvince] = useState('ON');
   const [selectedQuarter, setSelectedQuarter] = useState(null);
@@ -445,7 +445,9 @@ const ShopGSTRecords = () => {
   );
 };
 
-export default ShopGSTRecords;
+export default BusinessGSTRecords;
+
+
 
 
 

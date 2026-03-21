@@ -28,16 +28,18 @@ const normalizeTaxProfile = (user) => {
       user?.userType === 'regular' ||
       !user?.userType,
     gigWork: user?.userType === 'gig-worker',
-    selfEmployment: user?.userType === 'self-employed' || user?.userType === 'contractor',
+    selfEmployment:
+      user?.userType === 'self-employed' || user?.userType === 'contractor',
     incorporatedBusiness:
-      user?.userType === 'shop-owner' ||
+      user?.userType === 'Business-owner' ||
       user?.userType === 'small-business' ||
-      user?.userType === 'business',
+      user?.userType === 'business' ||
+      user?.userType === 'business_owner',
   };
 };
 
 const getPrimaryUserType = (taxProfile) => {
-  if (taxProfile?.incorporatedBusiness) return 'business';
+  if (taxProfile?.incorporatedBusiness) return 'business_owner';
   if (taxProfile?.gigWork) return 'gig-worker';
   if (taxProfile?.selfEmployment) return 'self-employed';
   return 'employee';
@@ -52,6 +54,7 @@ const buildUserData = (rawUser) => {
     email: rawUser.email,
     role: rawUser.role || 'user',
     userType: rawUser.userType || getPrimaryUserType(taxProfile),
+    incomeSources: rawUser.incomeSources || [],
     taxProfile,
     phone: rawUser.phone || rawUser.phoneNumber || '',
     address: rawUser.address || '',
@@ -67,6 +70,7 @@ const buildUserData = (rawUser) => {
     profile: rawUser.profile || {},
     clientId: rawUser.clientId || `TV-${String(rawUser.id || '0001').toUpperCase()}`,
     memberSince: rawUser.memberSince || new Date().getFullYear().toString(),
+    businessInfo: rawUser.businessInfo || {},
     ...(rawUser.businessName && { businessName: rawUser.businessName }),
     ...(rawUser.firmName && { firmName: rawUser.firmName }),
     ...(rawUser.caNumber && { caNumber: rawUser.caNumber }),
@@ -82,6 +86,7 @@ const DEMO_USERS = {
     role: 'user',
     userType: 'employee',
     password: 'demo1234',
+    incomeSources: ['employment'],
     taxProfile: {
       employment: true,
       gigWork: false,
@@ -101,21 +106,29 @@ const DEMO_USERS = {
     caNumber: '123456',
     clientId: 'TV-DEMO-CA-1',
   },
-  'shop@demo.com': {
-    id: 'demo-shop-1',
+  'Business@demo.com': {
+    id: 'demo-business-1',
     name: 'Mike Wilson',
-    email: 'shop@demo.com',
-    role: 'user',
-    userType: 'business',
+    email: 'Business@demo.com',
+    role: 'business_owner',
+    userType: 'business_owner',
     password: 'demo1234',
+    incomeSources: ['self_employed'],
     businessName: 'Wilson Retail',
+    businessInfo: {
+      businessName: 'Wilson Retail',
+      businessType: 'Sole Proprietor',
+      gstRegistered: false,
+      hasEmployees: false,
+      hasInventory: false,
+    },
     taxProfile: {
       employment: false,
       gigWork: false,
-      selfEmployment: false,
+      selfEmployment: true,
       incorporatedBusiness: true,
     },
-    clientId: 'TV-DEMO-SHOP-1',
+    clientId: 'TV-DEMO-BUSINESS-1',
   },
   'gig@test.com': {
     id: 'test-gig-1',
@@ -124,6 +137,7 @@ const DEMO_USERS = {
     role: 'user',
     userType: 'gig-worker',
     password: 'password123',
+    incomeSources: ['gig_work'],
     taxProfile: {
       employment: false,
       gigWork: true,
@@ -139,6 +153,7 @@ const DEMO_USERS = {
     role: 'user',
     userType: 'employee',
     password: 'password123',
+    incomeSources: ['employment'],
     taxProfile: {
       employment: true,
       gigWork: false,
@@ -151,9 +166,10 @@ const DEMO_USERS = {
     id: 'test-mixed-1',
     name: 'Alex Martin',
     email: 'mixed@test.com',
-    role: 'user',
-    userType: 'employee',
+    role: 'business_owner',
+    userType: 'business_owner',
     password: 'password123',
+    incomeSources: ['employment', 'gig_work', 'self_employed'],
     assignedCAId: 'demo-ca-1',
     assignedCA: {
       id: 'demo-ca-1',
@@ -163,10 +179,17 @@ const DEMO_USERS = {
     taxProfile: {
       employment: true,
       gigWork: true,
-      selfEmployment: false,
+      selfEmployment: true,
       incorporatedBusiness: true,
     },
     businessName: 'Martin Consulting Inc.',
+    businessInfo: {
+      businessName: 'Martin Consulting Inc.',
+      businessType: 'Corporation',
+      gstRegistered: true,
+      hasEmployees: true,
+      hasInventory: false,
+    },
     clientId: 'TV-MIXED-1001',
   },
 };
@@ -204,7 +227,7 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: 'Invalid account type' };
       }
 
-      if (role === 'user' && demoUser.role !== 'user') {
+      if (role === 'user' && !['user', 'business_owner'].includes(demoUser.role)) {
         toast.error('This account is not a user account');
         return { success: false, error: 'Invalid account type' };
       }
@@ -226,9 +249,10 @@ export const AuthProvider = ({ children }) => {
       const emailMap = {
         user: 'user@demo.com',
         ca: 'ca@demo.com',
-        shop: 'shop@demo.com',
-        'shop-owner': 'shop@demo.com',
-        business: 'shop@demo.com',
+        Business: 'Business@demo.com',
+        'Business-owner': 'Business@demo.com',
+        business: 'Business@demo.com',
+        business_owner: 'Business@demo.com',
         gig: 'gig@test.com',
         'gig-worker': 'gig@test.com',
         employee: 'employee@test.com',
@@ -252,6 +276,14 @@ export const AuthProvider = ({ children }) => {
       toast.error('Demo login failed');
       return { success: false, error: error.message };
     }
+  };
+
+  const loginDemoUser = (demoUser) => {
+    const userData = buildUserData(demoUser);
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+    toast.success(`Logged in as ${userData.name}`);
+    return { success: true, user: userData };
   };
 
   const verifyMfa = async () => {
@@ -328,6 +360,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     demoLogin,
+    loginDemoUser,
     verifyMfa,
     register,
     logout,
@@ -338,7 +371,8 @@ export const AuthProvider = ({ children }) => {
     isAdmin: user?.role === 'admin',
     isGigWorker: !!user?.taxProfile?.gigWork,
     isSelfEmployed: !!user?.taxProfile?.selfEmployment,
-    isBusinessOwner: !!user?.taxProfile?.incorporatedBusiness,
+    isBusinessOwner:
+      user?.role === 'business_owner' || !!user?.taxProfile?.incorporatedBusiness,
     isEmployee: !!user?.taxProfile?.employment,
     isDemoMode,
   };

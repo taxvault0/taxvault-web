@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from 'features/auth/context/AuthContext';
 import PrivateRoute from './PrivateRoute';
+import DemoScenarioLogin from 'features/auth/pages/DemoScenarioLogin';
 
 // Layout
 import AppShell from 'components/layout/AppShell';
@@ -55,16 +56,18 @@ import CAAvailability from 'features/consultations/pages/CAAvailability';
 import GSTDashboard from 'features/dashboard/pages/GSTDashboard';
 import BusinessUseCalculator from 'features/tax/pages/BusinessUseCalculator';
 import T2125Form from 'features/tax/pages/T2125Form';
+import GigDocumentsHub from 'features/gig/pages/GigDocumentsHub';
+import GigDocumentCategory from 'features/gig/pages/GigDocumentCategory';
 
-// Shop
-import ShopDashboard from 'features/dashboard/pages/ShopDashboard';
-import ShopBusinessInfo from 'features/shop/pages/ShopBusinessInfo';
-import ShopSalesIncome from 'features/shop/pages/ShopSalesIncome';
-import ShopRentUtilities from 'features/shop/pages/ShopRentUtilities';
-import ShopPayroll from 'features/shop/pages/ShopPayroll';
-import ShopFranchise from 'features/shop/pages/ShopFranchise';
-import ShopInventory from 'features/shop/pages/ShopInventory';
-import ShopGSTRecords from 'features/shop/pages/ShopGSTRecords';
+// Business
+import BusinessOwnerDashboard from 'features/dashboard/pages/BusinessOwnerDashboard';
+import BusinessInfo from 'features/business/pages/BusinessInfo';
+import BusinessIncome from 'features/business/pages/BusinessIncome';
+import BusinessExpenses from 'features/business/pages/BusinessExpenses';
+import BusinessPayroll from 'features/business/pages/BusinessPayroll';
+import BusinessStructure from 'features/business/pages/BusinessStructure';
+import BusinessInventory from 'features/business/pages/BusinessInventory';
+import BusinessGSTRecords from 'features/business/pages/BusinessGSTRecords';
 
 // CA
 import CADashboard from 'features/dashboard/pages/CADashboard';
@@ -82,15 +85,13 @@ import CAEarnings from 'features/ca/pages/CAEarnings';
 const PublicRoutes = () => (
   <Routes>
     <Route path="/" element={<RoleSelect />} />
-    <Route path="/login" element={<Login />} />
-    <Route path="/login/user" element={<LoginUser />} />
+    {/* <Route path="/login" element={<Login />} /> */}
+    <Route path="/login/user" element={<Login />} />
     <Route path="/login/ca" element={<LoginCA />} />
     <Route path="/register/user" element={<Register />} />
     <Route path="/register/ca" element={<RegisterCA />} />
     <Route path="/forgot-password" element={<ForgotPassword />} />
-    <Route path="/accounts" element={<AccountDocuments />} />
-    <Route path="/tax-checklist" element={<TaxChecklist />} />
-    <Route path="/find-ca" element={<FindCA />} />
+    <Route path="/demo-scenarios" element={<DemoScenarioLogin />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 );
@@ -119,7 +120,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/dashboard"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<Dashboard />)}
             </PrivateRoute>
           }
@@ -127,7 +128,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/receipts"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<Receipts />)}
             </PrivateRoute>
           }
@@ -135,7 +136,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/receipts/:id"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<ReceiptDetail />)}
             </PrivateRoute>
           }
@@ -143,7 +144,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/accounts"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<AccountDocuments />)}
             </PrivateRoute>
           }
@@ -151,7 +152,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/tax-checklist"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<TaxChecklist />)}
             </PrivateRoute>
           }
@@ -159,7 +160,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/find-ca"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<FindCA />)}
             </PrivateRoute>
           }
@@ -167,7 +168,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/mileage"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<Mileage />)}
             </PrivateRoute>
           }
@@ -175,7 +176,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/mileage/track"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<MileageTracker />)}
             </PrivateRoute>
           }
@@ -183,7 +184,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/mileage/:id"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<TripDetail />)}
             </PrivateRoute>
           }
@@ -191,15 +192,32 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/documents"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<Documents />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/gig/documents"
+          element={
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
+              {renderWithShell(<GigDocumentsHub />)}
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/gig/documents/:categoryId"
+          element={
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
+              {renderWithShell(<GigDocumentCategory />)}
             </PrivateRoute>
           }
         />
         <Route
           path="/messages"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<UserMessages />)}
             </PrivateRoute>
           }
@@ -207,7 +225,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/messages/:caId"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<UserConversation />)}
             </PrivateRoute>
           }
@@ -215,7 +233,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/profile"
           element={
-            <PrivateRoute allowedRoles={['user', 'ca']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner', 'ca']}>
               {renderWithShell(<Profile />)}
             </PrivateRoute>
           }
@@ -223,7 +241,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/settings"
           element={
-            <PrivateRoute allowedRoles={['user', 'ca']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner', 'ca']}>
               {renderWithShell(<Settings />)}
             </PrivateRoute>
           }
@@ -231,7 +249,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/life-events"
           element={
-            <PrivateRoute allowedRoles={['user', 'ca']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner', 'ca']}>
               {renderWithShell(<LifeEventsHub />)}
             </PrivateRoute>
           }
@@ -239,7 +257,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/life-events/marriage"
           element={
-            <PrivateRoute allowedRoles={['user', 'ca']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner', 'ca']}>
               {renderWithShell(<MaritalStatusUpdate />)}
             </PrivateRoute>
           }
@@ -247,7 +265,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/life-events/separation"
           element={
-            <PrivateRoute allowedRoles={['user', 'ca']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner', 'ca']}>
               {renderWithShell(<SeparationDivorce />)}
             </PrivateRoute>
           }
@@ -255,7 +273,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/life-events/add-dependent"
           element={
-            <PrivateRoute allowedRoles={['user', 'ca']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner', 'ca']}>
               {renderWithShell(<AddDependent />)}
             </PrivateRoute>
           }
@@ -263,7 +281,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/life-events/change-address"
           element={
-            <PrivateRoute allowedRoles={['user', 'ca']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner', 'ca']}>
               {renderWithShell(<ChangeAddress />)}
             </PrivateRoute>
           }
@@ -271,7 +289,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/life-events/legacy-contact"
           element={
-            <PrivateRoute allowedRoles={['user', 'ca']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner', 'ca']}>
               {renderWithShell(<LegacyContact />)}
             </PrivateRoute>
           }
@@ -279,7 +297,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/gst-dashboard"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<GSTDashboard />)}
             </PrivateRoute>
           }
@@ -287,7 +305,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/business-use-calculator"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<BusinessUseCalculator />)}
             </PrivateRoute>
           }
@@ -295,79 +313,83 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/t2125-form"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<T2125Form />)}
             </PrivateRoute>
           }
         />
+
+        {/* Business routes */}
         <Route
-          path="/shop/dashboard"
+          path="/business/dashboard"
           element={
-            <PrivateRoute allowedRoles={['user']}>
-              {renderWithShell(<ShopDashboard />)}
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
+              {renderWithShell(<BusinessOwnerDashboard />)}
             </PrivateRoute>
           }
         />
         <Route
-          path="/shop/business-info"
+          path="/business/business-info"
           element={
-            <PrivateRoute allowedRoles={['user']}>
-              {renderWithShell(<ShopBusinessInfo />)}
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
+              {renderWithShell(<BusinessInfo />)}
             </PrivateRoute>
           }
         />
         <Route
-          path="/shop/sales-income"
+          path="/business/income"
           element={
-            <PrivateRoute allowedRoles={['user']}>
-              {renderWithShell(<ShopSalesIncome />)}
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
+              {renderWithShell(<BusinessIncome />)}
             </PrivateRoute>
           }
         />
         <Route
-          path="/shop/rent-utilities"
+          path="/business/expenses"
           element={
-            <PrivateRoute allowedRoles={['user']}>
-              {renderWithShell(<ShopRentUtilities />)}
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
+              {renderWithShell(<BusinessExpenses />)}
             </PrivateRoute>
           }
         />
         <Route
-          path="/shop/payroll"
+          path="/business/payroll"
           element={
-            <PrivateRoute allowedRoles={['user']}>
-              {renderWithShell(<ShopPayroll />)}
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
+              {renderWithShell(<BusinessPayroll />)}
             </PrivateRoute>
           }
         />
         <Route
-          path="/shop/franchise"
+          path="/business/structure"
           element={
-            <PrivateRoute allowedRoles={['user']}>
-              {renderWithShell(<ShopFranchise />)}
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
+              {renderWithShell(<BusinessStructure />)}
             </PrivateRoute>
           }
         />
         <Route
-          path="/shop/inventory"
+          path="/business/inventory"
           element={
-            <PrivateRoute allowedRoles={['user']}>
-              {renderWithShell(<ShopInventory />)}
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
+              {renderWithShell(<BusinessInventory />)}
             </PrivateRoute>
           }
         />
         <Route
-          path="/shop/gst-records"
+          path="/business/gst-records"
           element={
-            <PrivateRoute allowedRoles={['user']}>
-              {renderWithShell(<ShopGSTRecords />)}
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
+              {renderWithShell(<BusinessGSTRecords />)}
             </PrivateRoute>
           }
         />
+
+        {/* Consultations */}
         <Route
           path="/consultations"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<Consultations />)}
             </PrivateRoute>
           }
@@ -375,7 +397,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/consultations/request/:caId"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<ConsultationRequest />)}
             </PrivateRoute>
           }
@@ -383,7 +405,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/consultations/:id"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<ConsultationDetail />)}
             </PrivateRoute>
           }
@@ -391,12 +413,13 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
         <Route
           path="/ca-availability/:caId"
           element={
-            <PrivateRoute allowedRoles={['user']}>
+            <PrivateRoute allowedRoles={['user', 'business_owner']}>
               {renderWithShell(<CAAvailability />)}
             </PrivateRoute>
           }
         />
 
+        {/* CA routes */}
         <Route
           path="/ca/dashboard"
           element={
@@ -512,11 +535,21 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
 
         <Route
           path="/"
-          element={<Navigate to={user?.role === 'ca' ? '/ca/dashboard' : '/dashboard'} replace />}
+          element={
+            <Navigate
+              to={user?.role === 'ca' ? '/ca/dashboard' : '/dashboard'}
+              replace
+            />
+          }
         />
         <Route
           path="*"
-          element={<Navigate to={user?.role === 'ca' ? '/ca/dashboard' : '/dashboard'} replace />}
+          element={
+            <Navigate
+              to={user?.role === 'ca' ? '/ca/dashboard' : '/dashboard'}
+              replace
+            />
+          }
         />
       </Routes>
 

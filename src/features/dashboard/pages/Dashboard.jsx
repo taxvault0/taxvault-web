@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Bell,
@@ -13,18 +13,21 @@ import {
   AlertTriangle,
   Briefcase,
   Car,
-  Percent,
   Receipt,
   ChevronRight,
   Megaphone,
   Building2,
+  CheckCircle2,
+  PiggyBank,
+  Landmark,
+  ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '../../auth/context/AuthContext';
 import Card from 'components/ui/Card';
 import Button from 'components/ui/Button';
 import Badge from 'components/ui/Badge';
 
-const VehicleExpenseTracker = () => {
+const VehicleExpenseTracker = ({ visible = true }) => {
   const [vehicleData, setVehicleData] = useState({
     totalKm: '25000',
     businessKm: '16250',
@@ -35,6 +38,8 @@ const VehicleExpenseTracker = () => {
   });
 
   const [showDetails, setShowDetails] = useState(false);
+
+  if (!visible) return null;
 
   const businessPercentage =
     vehicleData.totalKm && vehicleData.businessKm
@@ -65,7 +70,9 @@ const VehicleExpenseTracker = () => {
           </h3>
           <Badge variant="info">Annual</Badge>
         </div>
-        <p className="mt-1 text-xs text-gray-500">Year-end totals for tax filing</p>
+        <p className="mt-1 text-xs text-gray-500">
+          Track mileage and vehicle deductions for gig or self-employment work
+        </p>
       </Card.Header>
 
       <Card.Body>
@@ -187,7 +194,7 @@ const VehicleExpenseTracker = () => {
             </div>
           )}
 
-          <Link to="/vehicle-expenses" className="block">
+          <Link to="/mileage" className="block">
             <Button variant="outline" size="sm" fullWidth>
               Manage Vehicle Expenses
             </Button>
@@ -198,72 +205,12 @@ const VehicleExpenseTracker = () => {
   );
 };
 
-const GigWorkerDocumentGuide = () => {
-  const documents = [
-    {
-      name: 'Income Records',
-      icon: DollarSign,
-      colorClasses: 'bg-green-100 text-green-600',
-      description: 'T4A, payment statements',
-    },
-    {
-      name: 'Expense Receipts',
-      icon: Receipt,
-      colorClasses: 'bg-orange-100 text-orange-600',
-      description: 'Business purchases',
-    },
-    {
-      name: 'Mileage Log',
-      icon: MapPin,
-      colorClasses: 'bg-blue-100 text-blue-600',
-      description: 'Business km tracked',
-    },
-    {
-      name: 'GST/HST Records',
-      icon: Percent,
-      colorClasses: 'bg-purple-100 text-purple-600',
-      description: 'Annual summary',
-    },
-  ];
-
-  return (
-    <Card className="border-l-4 border-green-500">
-      <Card.Header>
-        <h3 className="flex items-center text-lg font-bold">
-          <Briefcase size={20} className="mr-2 text-green-600" />
-          Gig / Self-Employment Guide
-        </h3>
-        <p className="text-sm text-gray-500">Useful documents for side income and contract work</p>
-      </Card.Header>
-
-      <Card.Body>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {documents.map((doc) => {
-            const Icon = doc.icon;
-            return (
-              <div key={doc.name} className="rounded-lg bg-gray-50 p-3">
-                <div
-                  className={`mb-2 flex h-8 w-8 items-center justify-center rounded-full ${doc.colorClasses}`}
-                >
-                  <Icon size={16} />
-                </div>
-                <p className="text-sm font-medium">{doc.name}</p>
-                <p className="text-xs text-gray-500">{doc.description}</p>
-              </div>
-            );
-          })}
-        </div>
-      </Card.Body>
-    </Card>
-  );
-};
-
 const EmploymentGuide = () => {
   const documents = [
     { name: 'T4 Slip', icon: FileText, description: 'Employment income slip' },
-    { name: 'T4A / Benefits', icon: DollarSign, description: 'Other employer-issued slips' },
-    { name: 'RRSP Receipts', icon: Receipt, description: 'Contribution records' },
-    { name: 'Medical / Donations', icon: Receipt, description: 'Tax credit support' },
+    { name: 'RRSP Records', icon: PiggyBank, description: 'Contribution slips and records' },
+    { name: 'TFSA / RESP', icon: Landmark, description: 'Savings and account records' },
+    { name: 'Investments', icon: DollarSign, description: 'Investment slips and statements' },
   ];
 
   return (
@@ -271,9 +218,11 @@ const EmploymentGuide = () => {
       <Card.Header>
         <h3 className="flex items-center text-lg font-bold">
           <Briefcase size={20} className="mr-2 text-blue-600" />
-          Employment Filing Guide
+          Employment (T4) Guide
         </h3>
-        <p className="text-sm text-gray-500">Key records for salary and payroll-based income</p>
+        <p className="text-sm text-gray-500">
+          Upload employment and personal tax documents here
+        </p>
       </Card.Header>
 
       <Card.Body>
@@ -296,20 +245,40 @@ const EmploymentGuide = () => {
   );
 };
 
-const BusinessGuide = () => {
+const GigGuide = () => {
+  const documents = [
+    { name: 'Income Records', icon: DollarSign, description: 'T4A, payouts, statements', to: '/gig/documents/income-records' },
+    { name: 'Expense Receipts', icon: Receipt, description: 'Business purchases and costs', to: '/gig/documents/fuel-receipts' },
+    { name: 'Mileage Log', icon: MapPin, description: 'Track work-related driving', to: '/mileage' },
+    { name: 'Other Deductions', icon: FileText, description: 'Phone, internet, supplies', to: '/gig/documents/other-deductions' },
+  ];
+
   return (
-    <Card className="border-l-4 border-purple-500">
+    <Card className="border-l-4 border-green-500">
       <Card.Header>
         <h3 className="flex items-center text-lg font-bold">
-          <Building2 size={20} className="mr-2 text-purple-600" />
-          Corporation / Business Guide
+          <Car size={20} className="mr-2 text-green-600" />
+          Gig / Self-Employment Guide
         </h3>
-        <p className="text-sm text-gray-500">Track company-level records separately from personal taxes</p>
+        <p className="text-sm text-gray-500">
+          Keep contract and side-income records organized
+        </p>
       </Card.Header>
+
       <Card.Body>
-        <div className="rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
-          Keep payroll, sales, expenses, GST/HST records, and corporate documents organized
-          to support both personal and business filing.
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {documents.map((doc) => {
+            const Icon = doc.icon;
+            return (
+              <Link key={doc.name} to={doc.to} className="rounded-lg bg-gray-50 p-3 transition hover:bg-gray-100">
+                <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-600">
+                  <Icon size={16} />
+                </div>
+                <p className="text-sm font-medium">{doc.name}</p>
+                <p className="text-xs text-gray-500">{doc.description}</p>
+              </Link>
+            );
+          })}
         </div>
       </Card.Body>
     </Card>
@@ -329,8 +298,7 @@ const RecommendedHelpCard = () => {
 
         <h3 className="text-lg font-bold text-gray-900">Need expert tax help?</h3>
         <p className="mt-2 text-sm text-gray-600">
-          Connect with a verified CA to review deductions, multiple income sources,
-          and filing readiness.
+          Connect with a verified CA to review your deductions and filing readiness.
         </p>
 
         <Link to="/find-ca" className="mt-4 block">
@@ -346,42 +314,69 @@ const RecommendedHelpCard = () => {
 const Dashboard = () => {
   const { user } = useAuth();
 
-  const taxProfile = user?.taxProfile || {
-    employment: true,
-    gigWork: user?.userType === 'gig-worker' || user?.userType === 'self-employed',
-    selfEmployment: user?.userType === 'self-employed',
-    incorporatedBusiness: user?.userType === 'shop-owner' || user?.userType === 'business',
-  };
+  const incomeSources = useMemo(() => {
+    if (Array.isArray(user?.incomeSources) && user.incomeSources.length > 0) {
+      return user.incomeSources;
+    }
 
-  const hasEmployment = !!taxProfile.employment;
-  const hasGigWork = !!taxProfile.gigWork || !!taxProfile.selfEmployment;
-  const hasBusiness = !!taxProfile.incorporatedBusiness;
+    const taxProfile = user?.taxProfile || {};
+    const sources = [];
+
+    if (taxProfile.employment) sources.push('employment');
+    if (taxProfile.gigWork) sources.push('gig_work');
+    if (taxProfile.selfEmployment) sources.push('self_employed');
+
+    return sources;
+  }, [user]);
+
+  const businessInfo = user?.businessInfo || {};
+  const hasEmployment = incomeSources.includes('employment');
+  const hasGigWork =
+    incomeSources.includes('gig_work') || incomeSources.includes('self_employed');
+
+  const hasBusiness =
+    user?.role === 'business_owner' ||
+    Boolean(businessInfo.businessName) ||
+    Boolean(businessInfo.businessType) ||
+    Boolean(businessInfo.gstRegistered) ||
+    Boolean(businessInfo.hasEmployees) ||
+    Boolean(businessInfo.hasInventory);
 
   const documentStats = {
-    total: 24,
+    total: hasEmployment && hasGigWork ? 20 : hasGigWork ? 14 : 12,
     uploaded: 8,
-    pending: 16,
-    completion: 33,
+    pending: hasEmployment && hasGigWork ? 12 : hasGigWork ? 6 : 4,
+    completion: hasEmployment && hasGigWork ? 40 : hasGigWork ? 57 : 67,
   };
 
   const upcomingDeadlines = [
-    { id: 1, task: 'GST/HST Filing', date: 'Apr 30, 2024', daysLeft: 15, priority: 'high' },
-    { id: 2, task: 'RRSP Contribution', date: 'Mar 1, 2024', daysLeft: 0, priority: 'urgent' },
-    { id: 3, task: 'Tax Filing Deadline', date: 'Apr 30, 2024', daysLeft: 15, priority: 'high' },
+    { id: 1, task: 'Tax Filing Deadline', date: 'Apr 30, 2026', daysLeft: 41, priority: 'high' },
+    ...(hasGigWork
+      ? [{ id: 2, task: 'Expense Review', date: 'Apr 15, 2026', daysLeft: 26, priority: 'warning' }]
+      : []),
   ];
 
   const taxNews = [
-    { id: 1, title: '2024 tax brackets announced', date: 'Jan 15, 2024' },
-    { id: 2, title: 'FHSA limit increased to $8,000', date: 'Jan 10, 2024' },
+    { id: 1, title: 'Review your slips before filing', date: 'Mar 2026' },
+    { id: 2, title: 'Keep receipts and records organized year-round', date: 'Mar 2026' },
   ];
 
   const quickActions = [
     {
+      to: '/documents',
+      label: 'Upload Documents',
+      description: 'T4, RRSP, slips',
+      icon: FileText,
+      classes: 'bg-blue-50 hover:bg-blue-100 text-blue-600',
+      show: true,
+    },
+    {
       to: '/receipts',
       label: 'Upload Receipt',
-      description: 'Scan or upload',
+      description: 'Track deductions',
       icon: Upload,
       classes: 'bg-primary-50 hover:bg-primary-100 text-primary-600',
+      show: hasGigWork,
     },
     {
       to: '/mileage',
@@ -394,31 +389,34 @@ const Dashboard = () => {
     {
       to: '/tax-checklist',
       label: 'Checklist',
-      description: 'View progress',
-      icon: FileText,
+      description: 'See what is missing',
+      icon: CheckCircle2,
       classes: 'bg-purple-50 hover:bg-purple-100 text-purple-600',
+      show: true,
     },
     {
-      to: '/find-ca',
-      label: 'Find a CA',
-      description: 'Get help',
+      to: user?.assignedCAId ? `/messages/${user.assignedCAId}` : '/find-ca',
+      label: user?.assignedCAId ? 'Your CA' : 'Find a CA',
+      description: user?.assignedCAId
+        ? 'Message your tax professional'
+        : 'Get expert help',
       icon: MessageCircle,
       classes: 'bg-orange-50 hover:bg-orange-100 text-orange-600',
+      show: true,
     },
-    {
-      to: '/shop/dashboard',
-      label: 'Business Area',
-      description: 'Open records',
-      icon: Building2,
-      classes: 'bg-indigo-50 hover:bg-indigo-100 text-indigo-600',
-      show: hasBusiness,
-    },
-  ].filter((item) => item.show === undefined || item.show);
+  ].filter((item) => item.show);
 
   const activeProfiles = [
-    hasEmployment ? 'Employment' : null,
+    hasEmployment ? 'Employment (T4)' : null,
     hasGigWork ? 'Gig / Self-Employment' : null,
-    hasBusiness ? 'Corporation / Business' : null,
+    hasBusiness ? 'Business Area Available' : null,
+  ].filter(Boolean);
+
+  const attentionItems = [
+    hasEmployment ? 'Upload your T4 slip' : null,
+    hasEmployment ? 'Add RRSP / TFSA / RESP records' : null,
+    hasGigWork ? 'Upload recent expense receipts' : null,
+    hasGigWork ? 'Review mileage records' : null,
   ].filter(Boolean);
 
   return (
@@ -428,7 +426,9 @@ const Dashboard = () => {
           <h1 className="text-3xl font-bold text-gray-900">
             Welcome back, {user?.name?.split(' ')[0] || 'User'}!
           </h1>
-          <p className="mt-1 text-gray-600">Here&apos;s your tax readiness summary</p>
+          <p className="mt-1 text-gray-600">
+            Your personal tax dashboard for employment and gig-income records.
+          </p>
         </div>
 
         {activeProfiles.length > 0 && (
@@ -441,6 +441,60 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+
+      {hasBusiness && (
+        <Card className="border-indigo-200 bg-indigo-50">
+          <Card.Body>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-white p-3">
+                  <Building2 size={20} className="text-indigo-700" />
+                </div>
+                <div>
+                  <p className="font-semibold text-indigo-900">Business Area</p>
+                  <p className="text-sm text-indigo-700">
+                    Open your business dashboard for income, expenses, GST, payroll, and more.
+                  </p>
+                </div>
+              </div>
+
+              <Link to="/business/dashboard">
+                <Button variant="primary">
+                  Open Business Dashboard
+                  <ArrowRight size={16} className="ml-2" />
+                </Button>
+              </Link>
+            </div>
+          </Card.Body>
+        </Card>
+      )}
+
+      <Card>
+        <Card.Header>
+          <h2 className="text-xl font-bold">Quick Actions</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Start with the most common tasks first.
+          </p>
+        </Card.Header>
+        <Card.Body>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <Link
+                  key={action.label}
+                  to={action.to}
+                  className={`rounded-lg p-4 text-center transition-colors ${action.classes}`}
+                >
+                  <Icon size={24} className="mx-auto mb-2" />
+                  <h3 className="text-sm font-semibold text-gray-900">{action.label}</h3>
+                  <p className="text-xs text-gray-500">{action.description}</p>
+                </Link>
+              );
+            })}
+          </div>
+        </Card.Body>
+      </Card>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
@@ -455,11 +509,11 @@ const Dashboard = () => {
 
         <Card>
           <Card.Body>
-            <p className="text-sm text-gray-500">Pending Documents</p>
+            <p className="text-sm text-gray-500">Pending Items</p>
             <p className="mt-2 text-3xl font-bold text-warning-600">
               {documentStats.pending}
             </p>
-            <p className="mt-1 text-xs text-gray-500">Still required</p>
+            <p className="mt-1 text-xs text-gray-500">Still needs attention</p>
           </Card.Body>
         </Card>
 
@@ -473,11 +527,11 @@ const Dashboard = () => {
 
         <Card>
           <Card.Body>
-            <p className="text-sm text-gray-500">Active Tax Profiles</p>
+            <p className="text-sm text-gray-500">Active Income Areas</p>
             <p className="mt-2 text-3xl font-bold text-blue-700">
               {activeProfiles.length}
             </p>
-            <p className="mt-1 text-xs text-gray-500">Income types to file</p>
+            <p className="mt-1 text-xs text-gray-500">Shown on your dashboard</p>
           </Card.Body>
         </Card>
       </div>
@@ -488,51 +542,22 @@ const Dashboard = () => {
             <Card.Header>
               <div className="flex items-center justify-between">
                 <h2 className="flex items-center text-xl font-bold">
-                  <Bell size={20} className="mr-2 text-primary-500" />
-                  Tax Updates & Reminders
+                  <AlertTriangle size={20} className="mr-2 text-primary-500" />
+                  What Needs Attention
                 </h2>
-                <Button variant="ghost" size="sm">
-                  View All
-                </Button>
               </div>
             </Card.Header>
 
             <Card.Body>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm font-medium text-yellow-800">
-                      Latest News
-                    </span>
-                    <Badge variant="warning">{taxNews.length} new</Badge>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                {attentionItems.map((task) => (
+                  <div
+                    key={task}
+                    className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800"
+                  >
+                    {task}
                   </div>
-                  <ul className="space-y-2">
-                    {taxNews.map((news) => (
-                      <li key={news.id} className="text-sm">
-                        <span className="text-gray-700">{news.title}</span>
-                        <span className="block text-xs text-gray-500">
-                          {news.date}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-                  <div className="mb-2 flex items-center">
-                    <AlertTriangle size={18} className="mr-2 text-red-600" />
-                    <span className="text-sm font-medium text-red-800">
-                      RRSP Deadline
-                    </span>
-                  </div>
-                  <p className="text-2xl font-bold text-red-700">Mar 1, 2024</p>
-                  <p className="mt-1 text-xs text-red-600">
-                    Only 14 days left to contribute
-                  </p>
-                  <Button variant="outline" size="sm" className="mt-3 w-full">
-                    Review Contributions
-                  </Button>
-                </div>
+                ))}
               </div>
             </Card.Body>
           </Card>
@@ -586,59 +611,66 @@ const Dashboard = () => {
                   style={{ width: `${documentStats.completion}%` }}
                 />
               </div>
-
-              {documentStats.pending > 0 && (
-                <div className="mt-4 flex items-center justify-between rounded-lg bg-yellow-50 p-3">
-                  <div className="flex items-center">
-                    <AlertTriangle size={16} className="mr-2 text-yellow-600" />
-                    <span className="text-sm text-yellow-700">
-                      {documentStats.pending} documents still needed
-                    </span>
-                  </div>
-                  <Link
-                    to="/tax-checklist"
-                    className="text-sm text-primary-600 hover:underline"
-                  >
-                    Upload Now
-                  </Link>
-                </div>
-              )}
             </Card.Body>
           </Card>
 
           {hasEmployment && <EmploymentGuide />}
-          {hasGigWork && <GigWorkerDocumentGuide />}
-          {hasBusiness && <BusinessGuide />}
+          {hasGigWork && <GigGuide />}
 
           <Card>
             <Card.Header>
-              <h2 className="text-xl font-bold">Quick Actions</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="flex items-center text-xl font-bold">
+                  <Bell size={20} className="mr-2 text-primary-500" />
+                  Tax Updates & Reminders
+                </h2>
+                <Button variant="ghost" size="sm">
+                  View All
+                </Button>
+              </div>
             </Card.Header>
+
             <Card.Body>
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-5">
-                {quickActions.map((action) => {
-                  const Icon = action.icon;
-                  return (
-                    <Link
-                      key={action.label}
-                      to={action.to}
-                      className={`rounded-lg p-4 text-center transition-colors ${action.classes}`}
-                    >
-                      <Icon size={24} className="mx-auto mb-2" />
-                      <h3 className="text-sm font-semibold text-gray-900">
-                        {action.label}
-                      </h3>
-                      <p className="text-xs text-gray-500">{action.description}</p>
-                    </Link>
-                  );
-                })}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-sm font-medium text-yellow-800">Latest Tips</span>
+                    <Badge variant="warning">{taxNews.length} items</Badge>
+                  </div>
+                  <ul className="space-y-2">
+                    {taxNews.map((news) => (
+                      <li key={news.id} className="text-sm">
+                        <span className="text-gray-700">{news.title}</span>
+                        <span className="block text-xs text-gray-500">
+                          {news.date}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                  <div className="mb-2 flex items-center">
+                    <AlertTriangle size={18} className="mr-2 text-red-600" />
+                    <span className="text-sm font-medium text-red-800">
+                      Next Important Deadline
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-red-700">Apr 30, 2026</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    Review your tax checklist before filing
+                  </p>
+                  <Button variant="outline" size="sm" className="mt-3 w-full">
+                    Review Checklist
+                  </Button>
+                </div>
               </div>
             </Card.Body>
           </Card>
         </div>
 
         <div className="space-y-6 xl:col-span-4">
-          {hasGigWork && <VehicleExpenseTracker />}
+          <VehicleExpenseTracker visible={hasGigWork} />
 
           <Card className="border border-green-200 bg-gradient-to-br from-green-50 to-white">
             <Card.Body>
@@ -651,28 +683,33 @@ const Dashboard = () => {
 
               <p className="mb-2 text-3xl font-bold text-green-700">$2,450</p>
               <p className="mb-4 text-xs text-gray-600">
-                Based on uploaded documents
+                Based on uploaded documents and tracked deductions
               </p>
 
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between rounded bg-white p-2">
-                  <span className="text-gray-600">RRSP/FHSA</span>
-                  <span className="font-medium">$1,250</span>
-                </div>
-                <div className="flex justify-between rounded bg-white p-2">
-                  <span className="text-gray-600">Donations</span>
-                  <span className="font-medium">$375</span>
-                </div>
-                <div className="flex justify-between rounded bg-white p-2">
-                  <span className="text-gray-600">Medical</span>
-                  <span className="font-medium">$225</span>
-                </div>
-                {hasGigWork && (
-                  <div className="flex justify-between rounded bg-green-100 p-2">
-                    <span className="font-medium">Business Expenses</span>
-                    <span className="font-bold text-green-700">$600</span>
+                {hasEmployment && (
+                  <div className="flex justify-between rounded bg-white p-2">
+                    <span className="text-gray-600">Employment Credits</span>
+                    <span className="font-medium">$750</span>
                   </div>
                 )}
+
+                {hasGigWork && (
+                  <div className="flex justify-between rounded bg-white p-2">
+                    <span className="text-gray-600">Gig / Contract Expenses</span>
+                    <span className="font-medium">$600</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between rounded bg-white p-2">
+                  <span className="text-gray-600">RRSP / FHSA</span>
+                  <span className="font-medium">$1,250</span>
+                </div>
+
+                <div className="flex justify-between rounded bg-white p-2">
+                  <span className="text-gray-600">Medical / Donations</span>
+                  <span className="font-medium">$225</span>
+                </div>
               </div>
 
               <div className="mt-4 border-t border-green-200 pt-3">
@@ -716,7 +753,7 @@ const Dashboard = () => {
                           : 'info'
                       }
                     >
-                      {deadline.daysLeft > 0 ? `${deadline.daysLeft}d left` : 'Today'}
+                      {deadline.daysLeft}d left
                     </Badge>
                   </div>
                 ))}
@@ -726,48 +763,14 @@ const Dashboard = () => {
 
           <RecommendedHelpCard />
 
-          <Card>
-            <Card.Body>
-              <h3 className="mb-3 font-bold">Quick Links</h3>
-              <div className="space-y-2">
-                <Link
-                  to="/profile"
-                  className="block rounded p-2 transition-colors hover:bg-gray-50"
-                >
-                  👤 Profile Settings
-                </Link>
-                <Link
-                  to="/documents"
-                  className="block rounded p-2 transition-colors hover:bg-gray-50"
-                >
-                  📁 All Documents
-                </Link>
-                <Link
-                  to="/support"
-                  className="block rounded p-2 transition-colors hover:bg-gray-50"
-                >
-                  💬 Help & Support
-                </Link>
-                {hasBusiness && (
-                  <Link
-                    to="/shop/dashboard"
-                    className="block rounded p-2 transition-colors hover:bg-gray-50"
-                  >
-                    🏢 Business Dashboard
-                  </Link>
-                )}
-              </div>
-            </Card.Body>
-          </Card>
-
           <Card className="border-primary-200 bg-primary-50">
             <Card.Body>
               <div className="flex items-center">
                 <Calendar size={20} className="mr-3 text-primary-600" />
                 <div>
-                  <p className="text-sm font-medium text-primary-800">Tax Year 2023</p>
+                  <p className="text-sm font-medium text-primary-800">Current Tax Year</p>
                   <p className="text-xs text-primary-600">
-                    Filing deadline: Apr 30, 2024
+                    Keep slips, receipts, and records updated throughout the year
                   </p>
                 </div>
               </div>

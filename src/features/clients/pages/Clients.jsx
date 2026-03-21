@@ -103,7 +103,7 @@ const Clients = () => {
     switch (type) {
       case 'gig-worker':
         return '🚗';
-      case 'shop-owner':
+      case 'Business-owner':
         return '🏪';
       case 'contractor':
         return '💻';
@@ -554,6 +554,8 @@ const Clients = () => {
 };
 
 export default Clients;
+
+
 
 
 

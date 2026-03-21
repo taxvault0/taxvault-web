@@ -18,7 +18,7 @@ import Input from 'components/ui/Input';
 import Badge from 'components/ui/Badge';
 import { PROVINCES, calculateTax, getTaxRateDisplay } from 'constants/provinces';
 
-const ShopSalesIncome = () => {
+const BusinessIncome = () => {
   const [selectedYear, setSelectedYear] = useState(2024);
   const [province, setProvince] = useState('ON');
   const [expandedMonth, setExpandedMonth] = useState(null);
@@ -430,7 +430,10 @@ const ShopSalesIncome = () => {
   );
 };
 
-export default ShopSalesIncome;
+export default BusinessIncome;
+
+
+
 
 
 

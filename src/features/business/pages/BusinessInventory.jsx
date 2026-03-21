@@ -20,7 +20,7 @@ import Input from 'components/ui/Input';
 import Badge from 'components/ui/Badge';
 import { PROVINCES } from 'constants/provinces';
 
-const ShopInventory = () => {
+const BusinessInventory = () => {
   const [selectedYear, setSelectedYear] = useState(2024);
   const [province, setProvince] = useState('ON');
   const [searchTerm, setSearchTerm] = useState('');
@@ -506,7 +506,9 @@ const ShopInventory = () => {
   );
 };
 
-export default ShopInventory;
+export default BusinessInventory;
+
+
 
 
 

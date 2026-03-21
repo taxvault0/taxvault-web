@@ -27,7 +27,7 @@ const getUserTaxProfile = (user) => {
     gigWork: user?.userType === 'gig-worker',
     selfEmployment: user?.userType === 'self-employed' || user?.userType === 'contractor',
     incorporatedBusiness:
-      user?.userType === 'shop-owner' ||
+      user?.userType === 'Business-owner' ||
       user?.userType === 'small-business' ||
       user?.userType === 'business',
   };
@@ -525,3 +525,4 @@ const ConsultationRequest = () => {
 };
 
 export default ConsultationRequest;
+

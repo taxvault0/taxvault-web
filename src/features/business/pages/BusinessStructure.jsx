@@ -17,7 +17,7 @@ import Button from 'components/ui/Button';
 import Badge from 'components/ui/Badge';
 import { PROVINCES } from 'constants/provinces';
 
-const ShopFranchise = () => {
+const BusinessStructure = () => {
   const [selectedYear, setSelectedYear] = useState(2024);
   const [province, setProvince] = useState('ON');
 
@@ -337,7 +337,10 @@ const ShopFranchise = () => {
   );
 };
 
-export default ShopFranchise;
+export default BusinessStructure;
+
+
+
 
 
 
