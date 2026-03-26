@@ -27,6 +27,9 @@ import {
   Home,
   MoreHorizontal,
   X,
+  Briefcase,
+  Package,
+  Receipt,
 } from 'lucide-react';
 import Card from 'components/ui/Card';
 import Button from 'components/ui/Button';
@@ -58,16 +61,16 @@ const CATEGORY_META = {
     iconColor: 'text-red-700',
     chip: 'bg-red-100 text-red-700',
   },
-  parking: {
-    label: 'Parking',
-    description: 'Parking fees, tolls, meters, and trip-related road charges.',
+  parking_tolls: {
+    label: 'Parking / Tolls',
+    description: 'Parking fees, tolls, meters, and road charges.',
     icon: Car,
     iconWrap: 'bg-purple-100',
     iconColor: 'text-purple-700',
     chip: 'bg-purple-100 text-purple-700',
   },
-  mobile: {
-    label: 'Mobile/Internet',
+  mobile_internet: {
+    label: 'Mobile / Internet',
     description: 'Phone, data, mobile plans, and internet bills.',
     icon: Smartphone,
     iconWrap: 'bg-blue-100',
@@ -82,9 +85,17 @@ const CATEGORY_META = {
     iconColor: 'text-green-700',
     chip: 'bg-green-100 text-green-700',
   },
+  equipment: {
+    label: 'Equipment',
+    description: 'Devices, tools, and business equipment purchases.',
+    icon: Package,
+    iconWrap: 'bg-emerald-100',
+    iconColor: 'text-emerald-700',
+    chip: 'bg-emerald-100 text-emerald-700',
+  },
   insurance: {
     label: 'Insurance',
-    description: 'Recurring insurance premium receipts or payment confirmations.',
+    description: 'Recurring insurance premium receipts or confirmations.',
     icon: Shield,
     iconWrap: 'bg-indigo-100',
     iconColor: 'text-indigo-700',
@@ -146,13 +157,53 @@ const CATEGORY_META = {
     iconColor: 'text-yellow-700',
     chip: 'bg-yellow-100 text-yellow-700',
   },
-  'home-office': {
+  home_office: {
     label: 'Home Office',
     description: 'Home office supplies, internet, utilities, and workspace expenses.',
     icon: Home,
     iconWrap: 'bg-slate-100',
     iconColor: 'text-slate-700',
     chip: 'bg-slate-100 text-slate-700',
+  },
+  rent_utilities: {
+    label: 'Rent / Utilities',
+    description: 'Rent, utilities, and occupancy-related records.',
+    icon: Home,
+    iconWrap: 'bg-sky-100',
+    iconColor: 'text-sky-700',
+    chip: 'bg-sky-100 text-sky-700',
+  },
+  vehicle_expenses: {
+    label: 'Vehicle Expenses',
+    description: 'Combined vehicle cost records for business or gig use.',
+    icon: Car,
+    iconWrap: 'bg-orange-100',
+    iconColor: 'text-orange-700',
+    chip: 'bg-orange-100 text-orange-700',
+  },
+  payroll_expenses: {
+    label: 'Payroll Expenses',
+    description: 'Payroll cost records and wage support.',
+    icon: Briefcase,
+    iconWrap: 'bg-fuchsia-100',
+    iconColor: 'text-fuchsia-700',
+    chip: 'bg-fuchsia-100 text-fuchsia-700',
+  },
+  inventory_purchases: {
+    label: 'Inventory Purchases',
+    description: 'Inventory buying records and purchase invoices.',
+    icon: Package,
+    iconWrap: 'bg-stone-100',
+    iconColor: 'text-stone-700',
+    chip: 'bg-stone-100 text-stone-700',
+  },
+  professional_fees: {
+    label: 'Professional Fees',
+    description: 'Accounting, legal, and professional service invoices.',
+    icon: Receipt,
+    iconWrap: 'bg-violet-100',
+    iconColor: 'text-violet-700',
+    chip: 'bg-violet-100 text-violet-700',
   },
   other: {
     label: 'Other',
@@ -162,6 +213,56 @@ const CATEGORY_META = {
     iconColor: 'text-gray-700',
     chip: 'bg-gray-100 text-gray-700',
   },
+};
+
+const EMPLOYEE_FALLBACK = [
+  'medical',
+  'tuition',
+  'donations',
+  'rrsp',
+  'childcare',
+  'moving',
+  'home_office',
+  'other',
+];
+
+const GIG_FALLBACK = [
+  'fuel',
+  'maintenance',
+  'parking_tolls',
+  'mobile_internet',
+  'supplies',
+  'insurance',
+  'meals',
+  'vehicle_expenses',
+  'other',
+];
+
+const BUSINESS_FALLBACK = [
+  'fuel',
+  'maintenance',
+  'parking_tolls',
+  'mobile_internet',
+  'supplies',
+  'equipment',
+  'insurance',
+  'rent_utilities',
+  'payroll_expenses',
+  'inventory_purchases',
+  'professional_fees',
+  'home_office',
+  'other',
+];
+
+const mapLegacyCategory = (category) => {
+  const aliasMap = {
+    parking: 'parking_tolls',
+    mobile: 'mobile_internet',
+    childcare: 'childcare',
+    'home-office': 'home_office',
+  };
+
+  return aliasMap[category] || category;
 };
 
 const Receipts = () => {
@@ -178,68 +279,74 @@ const Receipts = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [receipts, setReceipts] = useState([]);
 
-  const activeProfile = useMemo(() => {
-    const userType = (user?.userType || '').toLowerCase();
+  const selectedReceiptCategories =
+    user?.documentPreferences?.selectedReceiptCategories || [];
+  const suggestedReceiptCategories =
+    user?.onboarding?.suggestedReceiptCategories || [];
+  const selectedSlips = user?.documentPreferences?.selectedSlips || [];
+  const suggestedSlips = user?.onboarding?.suggestedSlips || [];
 
-    if (user?.hasMultipleIncomes || userType === 'hybrid') return 'hybrid';
-    if (userType.includes('gig')) return 'gig';
-    if (userType.includes('business')) return 'hybrid';
-    if (userType.includes('contractor')) return 'hybrid';
-    return 'employee';
+  const finalSlips =
+    selectedSlips.length > 0 ? selectedSlips : suggestedSlips;
+
+  const fallbackCategories = useMemo(() => {
+    const taxProfile = user?.taxProfile || {};
+
+    if (taxProfile?.incorporatedBusiness) return BUSINESS_FALLBACK;
+    if (taxProfile?.gigWork || taxProfile?.selfEmployment) return GIG_FALLBACK;
+    return EMPLOYEE_FALLBACK;
   }, [user]);
 
+  const finalReceiptCategories = useMemo(() => {
+    const base =
+      selectedReceiptCategories.length > 0
+        ? selectedReceiptCategories
+        : suggestedReceiptCategories.length > 0
+          ? suggestedReceiptCategories
+          : fallbackCategories;
+
+    const normalized = base.map(mapLegacyCategory);
+
+    if (finalSlips.includes('RRSP') && !normalized.includes('rrsp')) {
+      normalized.push('rrsp');
+    }
+    if (finalSlips.includes('MEDICAL') && !normalized.includes('medical')) {
+      normalized.push('medical');
+    }
+    if (finalSlips.includes('TUITION') && !normalized.includes('tuition')) {
+      normalized.push('tuition');
+    }
+    if (finalSlips.includes('DONATIONS') && !normalized.includes('donations')) {
+      normalized.push('donations');
+    }
+    if (finalSlips.includes('CHILD_CARE') && !normalized.includes('childcare')) {
+      normalized.push('childcare');
+    }
+    if (finalSlips.includes('MOVING') && !normalized.includes('moving')) {
+      normalized.push('moving');
+    }
+    if (finalSlips.includes('HOME_OFFICE') && !normalized.includes('home_office')) {
+      normalized.push('home_office');
+    }
+
+    return Array.from(new Set(normalized)).filter((key) => CATEGORY_META[key]);
+  }, [
+    selectedReceiptCategories,
+    suggestedReceiptCategories,
+    fallbackCategories,
+    finalSlips,
+  ]);
+
   const visibleCategories = useMemo(() => {
-    const base = ['all'];
-
-    if (activeProfile === 'gig') {
-      return [
-        ...base,
-        'fuel',
-        'maintenance',
-        'parking',
-        'mobile',
-        'supplies',
-        'insurance',
-        'meals',
-        'other',
-      ];
-    }
-
-    if (activeProfile === 'employee') {
-      return [
-        ...base,
-        'medical',
-        'tuition',
-        'donations',
-        'rrsp',
-        'childcare',
-        'moving',
-        'home-office',
-        'other',
-      ];
-    }
-
-    return [
-      ...base,
-      'fuel',
-      'maintenance',
-      'parking',
-      'mobile',
-      'supplies',
-      'insurance',
-      'meals',
-      'medical',
-      'home-office',
-      'other',
-    ];
-  }, [activeProfile]);
+    return ['all', ...finalReceiptCategories];
+  }, [finalReceiptCategories]);
 
   useEffect(() => {
     const loadReceipts = async () => {
       setLoading(true);
       try {
-        await new Promise((resolve) => setTimeout(resolve, 700));
-        setReceipts(generateMockReceipts(activeProfile));
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        setReceipts(generateMockReceipts(finalReceiptCategories));
       } catch (error) {
         console.error('Error loading receipts:', error);
       } finally {
@@ -248,7 +355,13 @@ const Receipts = () => {
     };
 
     loadReceipts();
-  }, [activeProfile, dateRange, sortBy]);
+  }, [finalReceiptCategories, dateRange, sortBy]);
+
+  useEffect(() => {
+    if (!visibleCategories.includes(selectedCategory)) {
+      setSelectedCategory('all');
+    }
+  }, [visibleCategories, selectedCategory]);
 
   const categoryCounts = useMemo(() => {
     const counts = visibleCategories.reduce((acc, category) => {
@@ -306,6 +419,12 @@ const Receipts = () => {
       month: 'short',
       day: 'numeric',
     });
+
+  const setupMode = user?.documentPreferences?.skippedAtRegistration
+    ? 'Skipped at registration'
+    : user?.documentPreferences?.needsSuggestions
+      ? 'Suggested by app'
+      : 'Selected by user';
 
   const DeleteModal = () => {
     if (!showDeleteModal || !selectedReceipt) return null;
@@ -457,6 +576,9 @@ const Receipts = () => {
             Store recurring expense receipts and day-to-day tax proof such as fuel, maintenance,
             parking, mobile bills, supplies, meals, and other frequent uploads.
           </p>
+          <p className="mt-2 text-sm text-gray-500">
+            Built from your selected or suggested receipt setup.
+          </p>
         </div>
 
         <div className="flex flex-wrap gap-3">
@@ -471,6 +593,16 @@ const Receipts = () => {
           </Link>
         </div>
       </div>
+
+      <Card className="border-blue-200 bg-blue-50">
+        <Card.Body>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="info">{setupMode}</Badge>
+            <Badge variant="success">{finalReceiptCategories.length} receipt categories</Badge>
+            <Badge variant="warning">{finalSlips.length} related slip types</Badge>
+          </div>
+        </Card.Body>
+      </Card>
 
       <Card>
         <Card.Body>
@@ -652,7 +784,7 @@ const Receipts = () => {
   );
 };
 
-function generateMockReceipts(profile) {
+function generateMockReceipts(categories) {
   const today = new Date();
 
   const buildReceipt = (
@@ -679,48 +811,51 @@ function generateMockReceipts(profile) {
     };
   };
 
-  if (profile === 'gig') {
-    return [
-      buildReceipt(1, 'Shell', 'fuel', 62.48, 2, 'Fuel receipt for delivery shift.'),
-      buildReceipt(2, 'Canadian Tire', 'maintenance', 138.79, 7, 'Oil change and wiper replacement.'),
-      buildReceipt(3, 'Green P', 'parking', 18.0, 4, 'Downtown pickup parking.'),
-      buildReceipt(4, 'Rogers', 'mobile', 96.5, 10, 'Monthly phone and data bill.'),
-      buildReceipt(5, 'Staples', 'supplies', 34.29, 14, 'Phone mount and organizers.'),
-      buildReceipt(6, 'Intact Insurance', 'insurance', 172.35, 20, 'Monthly vehicle insurance payment.'),
-      buildReceipt(7, 'Tim Hortons', 'meals', 11.42, 1, 'Meal during work shift.'),
-      buildReceipt(8, 'Petro-Canada', 'fuel', 58.17, 12, 'Fuel refill before evening run.'),
-      buildReceipt(9, '407 ETR', 'parking', 24.6, 16, 'Road toll payment.'),
-      buildReceipt(10, 'Amazon', 'other', 29.99, 22, 'Miscellaneous delivery supplies.'),
-    ];
-  }
+  const templates = {
+    fuel: ['Shell', 'Petro-Canada', 'Esso'],
+    maintenance: ['Canadian Tire', 'Midas', 'Jiffy Lube'],
+    parking_tolls: ['Green P', 'Impark', '407 ETR'],
+    mobile_internet: ['Rogers', 'Bell', 'Telus'],
+    supplies: ['Staples', 'Walmart', 'Costco'],
+    equipment: ['Best Buy', 'Amazon', 'Home Depot'],
+    insurance: ['Intact Insurance', 'Aviva', 'TD Insurance'],
+    meals: ['Tim Hortons', 'A&W', 'Subway'],
+    medical: ['Shoppers Drug Mart', 'Dental Clinic', 'Pharmacy'],
+    tuition: ['University Payment', 'College Fees', 'Course Portal'],
+    donations: ['United Way', 'Red Cross', 'Local Charity'],
+    rrsp: ['RBC', 'TD Direct Investing', 'Wealthsimple'],
+    childcare: ['BrightPath', 'Daycare Center', 'Child Care Provider'],
+    moving: ['U-Haul', 'Moving Supplies', 'Truck Rental'],
+    home_office: ['Staples', 'Telus', 'IKEA'],
+    rent_utilities: ['Landlord Payment', 'ATCO', 'Enmax'],
+    vehicle_expenses: ['Auto Expense Bundle', 'Vehicle Log Upload', 'Driving Costs'],
+    payroll_expenses: ['Payroll Provider', 'Wage Summary', 'Salary Records'],
+    inventory_purchases: ['Wholesale Supplier', 'Inventory Vendor', 'Stock Purchase'],
+    professional_fees: ['Accountant Invoice', 'Legal Invoice', 'Consulting Fee'],
+    other: ['Other Expense', 'Misc Expense', 'General Receipt'],
+  };
 
-  if (profile === 'employee') {
-    return [
-      buildReceipt(1, 'Shoppers Drug Mart', 'medical', 42.33, 3, 'Prescription and health items.'),
-      buildReceipt(2, 'BrightPath', 'childcare', 780.0, 5, 'Monthly daycare fee.'),
-      buildReceipt(3, 'University of Alberta', 'tuition', 640.0, 9, 'Course fee installment.'),
-      buildReceipt(4, 'United Way', 'donations', 50.0, 12, 'Monthly donation receipt.'),
-      buildReceipt(5, 'RBC', 'rrsp', 300.0, 15, 'Recurring RRSP contribution.'),
-      buildReceipt(6, 'U-Haul', 'moving', 129.99, 28, 'Moving truck expense.'),
-      buildReceipt(7, 'Staples', 'home-office', 45.22, 8, 'Printer paper and office items.'),
-      buildReceipt(8, 'Telus', 'home-office', 105.0, 18, 'Internet bill for home office use.'),
-      buildReceipt(9, 'Dental Clinic', 'medical', 89.5, 25, 'Dental cleaning payment.'),
-      buildReceipt(10, 'Other Expense', 'other', 22.0, 32, 'Small tax-related expense.'),
-    ];
-  }
+  let id = 1;
+  const rows = [];
 
-  return [
-    buildReceipt(1, 'Shell', 'fuel', 61.2, 2, 'Fuel for mixed gig and business use.'),
-    buildReceipt(2, 'Midas', 'maintenance', 220.75, 6, 'Brake service and inspection.'),
-    buildReceipt(3, 'Green P', 'parking', 16.0, 4, 'Parking during client meeting.'),
-    buildReceipt(4, 'Bell', 'mobile', 109.5, 10, 'Phone and internet bill.'),
-    buildReceipt(5, 'Costco', 'supplies', 88.35, 9, 'Office and delivery supplies.'),
-    buildReceipt(6, 'Aviva', 'insurance', 210.0, 13, 'Insurance premium payment.'),
-    buildReceipt(7, 'A&W', 'meals', 14.4, 5, 'Meal during delivery hours.'),
-    buildReceipt(8, 'Pharmacy', 'medical', 37.8, 11, 'Medical expense receipt.'),
-    buildReceipt(9, 'Staples', 'home-office', 64.1, 17, 'Desk accessories and printer ink.'),
-    buildReceipt(10, 'Other Expense', 'other', 26.75, 24, 'General recurring expense.'),
-  ];
+  categories.forEach((category, index) => {
+    const vendors = templates[category] || templates.other;
+
+    vendors.slice(0, 2).forEach((vendor, vendorIndex) => {
+      rows.push(
+        buildReceipt(
+          id++,
+          vendor,
+          category,
+          Number((25 + index * 17 + vendorIndex * 21.35).toFixed(2)),
+          2 + index * 3 + vendorIndex * 5,
+          `${CATEGORY_META[category]?.label || 'Receipt'} uploaded for tax support.`
+        )
+      );
+    });
+  });
+
+  return rows;
 }
 
 export default Receipts;

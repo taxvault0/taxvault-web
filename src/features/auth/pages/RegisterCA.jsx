@@ -2683,16 +2683,3 @@ const RegisterCA = () => {
 };
 
 export default RegisterCA;
-
-
-
-
-
-
-
-
-
-
-
-
-

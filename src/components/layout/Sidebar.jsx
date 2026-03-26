@@ -266,6 +266,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     {
       title: 'Finance',
       items: [
+        { path: '/ca/pricing', icon: BadgeDollarSign, label: 'Pricing & Services' },
         { path: '/ca/earnings', icon: DollarSign, label: 'Earnings' },
         { path: '/ca/reports', icon: TrendingUp, label: 'Reports' },
       ],

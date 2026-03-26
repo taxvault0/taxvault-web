@@ -21,10 +21,16 @@ import {
   Upload,
   Wallet,
   X,
+  Home,
+  TrendingUp,
+  Package,
+  Percent,
+  Smartphone,
+  Car,
+  Gift,
 } from 'lucide-react';
 import Card from 'components/ui/Card';
 import Button from 'components/ui/Button';
-import Badge from 'components/ui/Badge';
 import Input from 'components/ui/Input';
 import { useAuth } from '../../auth/context/AuthContext';
 import { buildHouseholdProfile } from 'utils/taxProfile';
@@ -44,6 +50,11 @@ const CATEGORY_META = {
     label: 'T4',
     icon: Briefcase,
     pillClass: 'bg-blue-100 text-blue-700',
+  },
+  t4a: {
+    label: 'T4A',
+    icon: Briefcase,
+    pillClass: 'bg-amber-100 text-amber-700',
   },
   'gig-income': {
     label: 'Gig Income',
@@ -75,8 +86,67 @@ const CATEGORY_META = {
     icon: HeartPulse,
     pillClass: 'bg-rose-100 text-rose-700',
   },
+  rrsp: {
+    label: 'RRSP',
+    icon: PiggyBank,
+    pillClass: 'bg-green-100 text-green-700',
+  },
+  fhsa: {
+    label: 'FHSA',
+    icon: Home,
+    pillClass: 'bg-cyan-100 text-cyan-700',
+  },
+  tfsa: {
+    label: 'TFSA',
+    icon: Wallet,
+    pillClass: 'bg-lime-100 text-lime-700',
+  },
+  tuition: {
+    label: 'Tuition',
+    icon: GraduationCap,
+    pillClass: 'bg-teal-100 text-teal-700',
+  },
+  rental: {
+    label: 'Rental',
+    icon: Home,
+    pillClass: 'bg-orange-100 text-orange-700',
+  },
+  'foreign-income': {
+    label: 'Foreign Income',
+    icon: FileText,
+    pillClass: 'bg-slate-100 text-slate-700',
+  },
+  crypto: {
+    label: 'Crypto',
+    icon: TrendingUp,
+    pillClass: 'bg-violet-100 text-violet-700',
+  },
+  business: {
+    label: 'Business',
+    icon: Building2,
+    pillClass: 'bg-indigo-100 text-indigo-700',
+  },
+  'gst-hst': {
+    label: 'GST / HST',
+    icon: Percent,
+    pillClass: 'bg-fuchsia-100 text-fuchsia-700',
+  },
+  payroll: {
+    label: 'Payroll',
+    icon: Briefcase,
+    pillClass: 'bg-yellow-100 text-yellow-700',
+  },
+  inventory: {
+    label: 'Inventory',
+    icon: Package,
+    pillClass: 'bg-stone-100 text-stone-700',
+  },
+  'home-office': {
+    label: 'Home Office',
+    icon: Home,
+    pillClass: 'bg-sky-100 text-sky-700',
+  },
 
-  // New spouse-aware categories
   'spouse-t4': {
     label: 'Spouse T4',
     icon: HeartHandshake,
@@ -104,25 +174,295 @@ const CATEGORY_META = {
   },
 };
 
-const TABS = [
-  'all',
-  'employment',
-  'gig-income',
-  'investments',
-  'savings',
-  'insurance',
-  'education',
-  'medical-donations',
-  'spouse-t4',
-  'spouse-gig',
-  'spouse-gig-expenses',
-  'spouse-business',
-  'spouse-optional',
-];
+const TABS = Object.keys(CATEGORY_META);
 
 const normalizeQueryCategory = (value) => {
   const category = String(value || '').trim().toLowerCase();
   return TABS.includes(category) ? category : 'all';
+};
+
+const mapSlipToDocumentCategory = (slip) => {
+  switch (slip) {
+    case 'T4':
+      return 't4';
+    case 'T4A':
+      return 't4a';
+    case 'T5':
+    case 'T3':
+    case 'T5008':
+      return 'investments';
+    case 'RRSP':
+      return 'rrsp';
+    case 'FHSA':
+      return 'fhsa';
+    case 'TFSA':
+      return 'tfsa';
+    case 'TUITION':
+      return 'tuition';
+    case 'MEDICAL':
+    case 'DONATIONS':
+    case 'CHILD_CARE':
+    case 'MOVING':
+      return 'medical-donations';
+    case 'RENTAL':
+      return 'rental';
+    case 'FOREIGN':
+      return 'foreign-income';
+    case 'CRYPTO':
+      return 'crypto';
+    case 'BUSINESS_RECORDS':
+      return 'business';
+    case 'GST_HST':
+      return 'gst-hst';
+    case 'PAYROLL':
+      return 'payroll';
+    case 'INVENTORY':
+      return 'inventory';
+    case 'HOME_OFFICE':
+      return 'home-office';
+    default:
+      return 'all';
+  }
+};
+
+const getSlipMeta = (slip) => {
+  const metaMap = {
+    T4: {
+      name: 'T4 - Employment Slip',
+      issuer: 'Employer',
+      documentType: 'T4 Slip',
+      notes: 'Employment income slip.',
+    },
+    T4A: {
+      name: 'T4A - Contract / Gig Income',
+      issuer: 'Platform / Client',
+      documentType: 'T4A / Income Summary',
+      notes: 'Contract, commission, or gig income support.',
+    },
+    T5: {
+      name: 'T5 - Investment Income',
+      issuer: 'Financial Institution',
+      documentType: 'T5 Slip',
+      notes: 'Interest and investment income statement.',
+    },
+    T3: {
+      name: 'T3 - Trust Income',
+      issuer: 'Trust / Fund',
+      documentType: 'T3 Slip',
+      notes: 'Trust income support.',
+    },
+    T5008: {
+      name: 'T5008 - Securities Transactions',
+      issuer: 'Brokerage',
+      documentType: 'T5008 Slip',
+      notes: 'Capital gains and securities transaction support.',
+    },
+    RRSP: {
+      name: 'RRSP Contribution Slip',
+      issuer: 'Bank / Brokerage',
+      documentType: 'RRSP Receipt',
+      notes: 'Registered retirement contribution support.',
+    },
+    FHSA: {
+      name: 'FHSA Contribution Record',
+      issuer: 'Bank / Brokerage',
+      documentType: 'FHSA Statement',
+      notes: 'First Home Savings Account contribution support.',
+    },
+    TFSA: {
+      name: 'TFSA Account Records',
+      issuer: 'Bank / Brokerage',
+      documentType: 'TFSA Statement',
+      notes: 'Tax-Free Savings Account records.',
+    },
+    TUITION: {
+      name: 'Tuition / T2202',
+      issuer: 'School / Institution',
+      documentType: 'Education Slip',
+      notes: 'Post-secondary tuition support.',
+    },
+    MEDICAL: {
+      name: 'Medical Records',
+      issuer: 'Clinic / Pharmacy / Provider',
+      documentType: 'Medical Support',
+      notes: 'Eligible medical expense records.',
+    },
+    DONATIONS: {
+      name: 'Donation Receipts',
+      issuer: 'Registered Charity',
+      documentType: 'Donation Receipt',
+      notes: 'Official charitable donation receipt summary.',
+    },
+    CHILD_CARE: {
+      name: 'Child Care Receipts',
+      issuer: 'Daycare / Provider',
+      documentType: 'Child Care Receipt',
+      notes: 'Child care expense support.',
+    },
+    MOVING: {
+      name: 'Moving Expense Records',
+      issuer: 'Multiple Issuers',
+      documentType: 'Moving Support',
+      notes: 'Moving expense support.',
+    },
+    RENTAL: {
+      name: 'Rental Income Records',
+      issuer: 'User Uploaded',
+      documentType: 'Rental Package',
+      notes: 'Rental income and expense support.',
+    },
+    FOREIGN: {
+      name: 'Foreign Income Records',
+      issuer: 'Foreign Issuer',
+      documentType: 'Foreign Income Support',
+      notes: 'Foreign income statements and supporting records.',
+    },
+    CRYPTO: {
+      name: 'Crypto Transaction Records',
+      issuer: 'Exchange / Wallet Export',
+      documentType: 'Crypto Statement',
+      notes: 'Crypto transaction summary and export.',
+    },
+    BUSINESS_RECORDS: {
+      name: 'Business Records / Statements',
+      issuer: 'Business',
+      documentType: 'Business Package',
+      notes: 'Business income and expense records.',
+    },
+    GST_HST: {
+      name: 'GST / HST Records',
+      issuer: 'CRA / Business',
+      documentType: 'GST/HST Support',
+      notes: 'GST/HST returns and support.',
+    },
+    PAYROLL: {
+      name: 'Payroll Records',
+      issuer: 'Payroll System',
+      documentType: 'Payroll Package',
+      notes: 'Payroll summaries and remittance support.',
+    },
+    INVENTORY: {
+      name: 'Inventory Records',
+      issuer: 'Business',
+      documentType: 'Inventory Records',
+      notes: 'Inventory purchases and stock records.',
+    },
+    HOME_OFFICE: {
+      name: 'Home Office Records',
+      issuer: 'User Uploaded',
+      documentType: 'Home Office Support',
+      notes: 'Workspace-at-home support records.',
+    },
+  };
+
+  return metaMap[slip] || {
+    name: slip,
+    issuer: 'User Uploaded',
+    documentType: 'Tax Document',
+    notes: 'Uploaded tax support document.',
+  };
+};
+
+const getReceiptMeta = (receipt) => {
+  const metaMap = {
+    fuel: {
+      name: 'Fuel Receipts',
+      issuer: 'Gas Stations',
+      documentType: 'Expense Bundle',
+      notes: 'Fuel receipt support for work use.',
+    },
+    maintenance: {
+      name: 'Maintenance Receipts',
+      issuer: 'Repair / Service Providers',
+      documentType: 'Expense Bundle',
+      notes: 'Vehicle maintenance and parts support.',
+    },
+    parking_tolls: {
+      name: 'Parking / Toll Records',
+      issuer: 'Parking / Toll Providers',
+      documentType: 'Expense Bundle',
+      notes: 'Parking and toll support.',
+    },
+    meals: {
+      name: 'Meal Receipts',
+      issuer: 'Restaurants / Vendors',
+      documentType: 'Expense Bundle',
+      notes: 'Meal expense support.',
+    },
+    mobile_internet: {
+      name: 'Mobile / Internet Bills',
+      issuer: 'Telecom Provider',
+      documentType: 'Service Statements',
+      notes: 'Phone and internet bills used for work.',
+    },
+    supplies: {
+      name: 'Supply Receipts',
+      issuer: 'Office / Retail Stores',
+      documentType: 'Expense Bundle',
+      notes: 'Supplies and office purchase records.',
+    },
+    equipment: {
+      name: 'Equipment Receipts',
+      issuer: 'Retailer / Supplier',
+      documentType: 'Expense Bundle',
+      notes: 'Tools, devices, and equipment purchases.',
+    },
+    insurance: {
+      name: 'Insurance Records',
+      issuer: 'Insurance Provider',
+      documentType: 'Insurance Statement',
+      notes: 'Insurance support records.',
+    },
+    rent_utilities: {
+      name: 'Rent / Utilities Records',
+      issuer: 'Landlord / Utility Providers',
+      documentType: 'Occupancy Support',
+      notes: 'Rent and utility support.',
+    },
+    home_office: {
+      name: 'Home Office Expenses',
+      issuer: 'Multiple Issuers',
+      documentType: 'Expense Bundle',
+      notes: 'Home office expense records.',
+    },
+    vehicle_expenses: {
+      name: 'Vehicle Expense Records',
+      issuer: 'Multiple Issuers',
+      documentType: 'Expense Bundle',
+      notes: 'Vehicle support records.',
+    },
+    payroll_expenses: {
+      name: 'Payroll Expense Records',
+      issuer: 'Payroll Provider',
+      documentType: 'Payroll Support',
+      notes: 'Payroll expense records.',
+    },
+    inventory_purchases: {
+      name: 'Inventory Purchase Records',
+      issuer: 'Suppliers',
+      documentType: 'Inventory Support',
+      notes: 'Inventory purchase invoices and records.',
+    },
+    professional_fees: {
+      name: 'Professional Fee Records',
+      issuer: 'Lawyer / Accountant / Consultant',
+      documentType: 'Expense Bundle',
+      notes: 'Professional service invoices.',
+    },
+    other: {
+      name: 'Other Receipts',
+      issuer: 'Multiple Issuers',
+      documentType: 'Expense Bundle',
+      notes: 'Other eligible receipt records.',
+    },
+  };
+
+  return metaMap[receipt] || {
+    name: receipt,
+    issuer: 'User Uploaded',
+    documentType: 'Expense Bundle',
+    notes: 'Uploaded receipt support.',
+  };
 };
 
 const Documents = () => {
@@ -142,6 +482,20 @@ const Documents = () => {
   const [showAccessLogModal, setShowAccessLogModal] = useState(false);
   const [showPermissionsModal, setShowPermissionsModal] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
+
+  const selectedSlips = user?.documentPreferences?.selectedSlips || [];
+  const selectedReceiptCategories =
+    user?.documentPreferences?.selectedReceiptCategories || [];
+  const suggestedSlips = user?.onboarding?.suggestedSlips || [];
+  const suggestedReceiptCategories =
+    user?.onboarding?.suggestedReceiptCategories || [];
+
+  const finalSlips =
+    selectedSlips.length > 0 ? selectedSlips : suggestedSlips;
+  const finalReceiptCategories =
+    selectedReceiptCategories.length > 0
+      ? selectedReceiptCategories
+      : suggestedReceiptCategories;
 
   useEffect(() => {
     const queryCategory = normalizeQueryCategory(searchParams.get('category'));
@@ -167,16 +521,19 @@ const Documents = () => {
   }, [user]);
 
   const visibleTabs = useMemo(() => {
-    const tabs = [
-      'all',
-      'employment',
-      'gig-income',
-      'investments',
-      'savings',
-      'insurance',
-      'education',
-      'medical-donations',
-    ];
+    const tabs = ['all'];
+
+    const categoriesFromSlips = finalSlips
+      .map(mapSlipToDocumentCategory)
+      .filter((cat) => cat && cat !== 'all');
+
+    categoriesFromSlips.forEach((cat) => {
+      if (!tabs.includes(cat)) tabs.push(cat);
+    });
+
+    if (finalReceiptCategories.includes('insurance')) {
+      if (!tabs.includes('insurance')) tabs.push('insurance');
+    }
 
     if (household.hasSpouse && household.spouse?.employment) {
       tabs.push('spouse-t4');
@@ -205,8 +562,8 @@ const Documents = () => {
       }
     }
 
-    return tabs;
-  }, [household]);
+    return Array.from(new Set(tabs)).filter((tab) => CATEGORY_META[tab]);
+  }, [household, finalSlips, finalReceiptCategories]);
 
   const counts = useMemo(() => {
     const result = TABS.reduce((acc, key) => {
@@ -345,7 +702,7 @@ const Documents = () => {
                 Document category
               </label>
               <select
-                defaultValue={activeCategory === 'all' ? 'employment' : activeCategory}
+                defaultValue={activeCategory === 'all' ? (visibleTabs[1] || 't4') : activeCategory}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-primary-500"
               >
                 {visibleTabs
@@ -709,6 +1066,9 @@ const Documents = () => {
           <p className="mt-2 text-gray-600">
             Store official tax slips, annual statements, and supporting records for filing.
           </p>
+          <p className="mt-1 text-sm text-gray-500">
+            Built from your selected or suggested document setup.
+          </p>
         </div>
 
         <div className="flex gap-3">
@@ -721,9 +1081,8 @@ const Documents = () => {
               variant="outline"
               onClick={() => setShowActionsMenu((prev) => !prev)}
             >
-              <Settings2 size={16} className="mr-2" />
+              <ChevronDown size={16} className="mr-2" />
               More
-              <ChevronDown size={16} className="ml-2" />
             </Button>
 
             {showActionsMenu && (
@@ -793,6 +1152,19 @@ const Documents = () => {
           </Card.Body>
         </Card>
       </div>
+
+      <Card className="border-blue-200 bg-blue-50">
+        <Card.Body>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-blue-700">
+              {finalSlips.length} slip types
+            </span>
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-blue-700">
+              {finalReceiptCategories.length} receipt categories
+            </span>
+          </div>
+        </Card.Body>
+      </Card>
 
       <Card>
         <Card.Body>
@@ -865,172 +1237,67 @@ const InfoItem = ({ label, value }) => (
 
 function generateMockDocuments(user) {
   const household = buildHouseholdProfile(user);
-  const profile = household.user;
   const spouse = household.spouse;
+
+  const selectedSlips = user?.documentPreferences?.selectedSlips || [];
+  const selectedReceiptCategories =
+    user?.documentPreferences?.selectedReceiptCategories || [];
+  const suggestedSlips = user?.onboarding?.suggestedSlips || [];
+  const suggestedReceiptCategories =
+    user?.onboarding?.suggestedReceiptCategories || [];
+
+  const finalSlips =
+    selectedSlips.length > 0 ? selectedSlips : suggestedSlips;
+  const finalReceiptCategories =
+    selectedReceiptCategories.length > 0
+      ? selectedReceiptCategories
+      : suggestedReceiptCategories;
 
   let id = 1;
   const nextId = () => id++;
 
-  const docs = [
-    {
-      id: nextId(),
-      category: 'employment',
-      documentType: 'T4',
-      name: 'T4 - ABC Logistics Inc.',
-      fileName: 't4_abc_logistics_2025.pdf',
-      issuer: 'ABC Logistics Inc.',
-      taxYear: 2025,
-      uploadDate: '2026-02-22',
-      size: '240 KB',
-      permissions: 'view-only',
-      viewedBy: ['You', 'David Chen (CA)'],
-      lastViewed: '2026-03-16',
-      notes: 'Employment income slip for 2025.',
-    },
-    {
-      id: nextId(),
-      category: 'savings',
-      documentType: 'RRSP Contribution Slip',
-      name: 'RRSP Contribution Slip - RBC',
-      fileName: 'rrsp_rbc_2025.pdf',
-      issuer: 'RBC',
-      taxYear: 2025,
-      uploadDate: '2026-02-28',
-      size: '182 KB',
-      permissions: 'view-only',
-      viewedBy: ['You', 'David Chen (CA)'],
-      lastViewed: '2026-03-17',
-      notes: 'First 60 days RRSP contribution record.',
-    },
-    {
-      id: nextId(),
-      category: 'investments',
-      documentType: 'T5',
-      name: 'T5 - TD Direct Investing',
-      fileName: 't5_td_direct_2025.pdf',
-      issuer: 'TD Direct Investing',
-      taxYear: 2025,
-      uploadDate: '2026-03-01',
-      size: '196 KB',
-      permissions: 'downloadable',
-      viewedBy: ['You'],
-      lastViewed: '2026-03-10',
-      notes: 'Interest and investment income statement.',
-    },
-    {
-      id: nextId(),
-      category: 'medical-donations',
-      documentType: 'Donation Receipt Summary',
-      name: 'Annual Donation Summary - United Way',
-      fileName: 'donation_united_way_2025.pdf',
-      issuer: 'United Way',
-      taxYear: 2025,
-      uploadDate: '2026-02-10',
-      size: '118 KB',
-      permissions: 'view-only',
-      viewedBy: ['You', 'David Chen (CA)'],
-      lastViewed: '2026-03-14',
-      notes: 'Official charitable donation receipt summary.',
-    },
-    {
-      id: nextId(),
-      category: 'insurance',
-      documentType: 'Insurance Statement',
-      name: 'Sun Life Annual Insurance Statement',
-      fileName: 'sunlife_statement_2025.pdf',
-      issuer: 'Sun Life',
-      taxYear: 2025,
-      uploadDate: '2026-01-30',
-      size: '321 KB',
-      permissions: 'view-only',
-      viewedBy: ['You'],
-      lastViewed: '2026-03-11',
-      notes: 'Annual benefits and insurance record.',
-    },
-    {
-      id: nextId(),
-      category: 'education',
-      documentType: 'RESP Statement',
-      name: 'RESP Annual Statement - CIBC',
-      fileName: 'resp_cibc_2025.pdf',
-      issuer: 'CIBC',
-      taxYear: 2025,
-      uploadDate: '2026-02-14',
-      size: '274 KB',
-      permissions: 'view-only',
-      viewedBy: ['You'],
-      lastViewed: '2026-03-09',
-      notes: 'Annual RESP contribution and balance statement.',
-    },
-    {
-      id: nextId(),
-      category: 'savings',
-      documentType: 'FHSA Contribution Record',
-      name: 'FHSA Record - Wealthsimple',
-      fileName: 'fhsa_wealthsimple_2025.pdf',
-      issuer: 'Wealthsimple',
-      taxYear: 2025,
-      uploadDate: '2026-02-26',
-      size: '164 KB',
-      permissions: 'view-only',
-      viewedBy: ['You'],
-      lastViewed: '2026-03-18',
-      notes: 'FHSA annual contribution summary.',
-    },
-  ];
+  const docs = [];
 
-  if (profile.employment) {
+  finalSlips.forEach((slip, index) => {
+    const meta = getSlipMeta(slip);
+    const category = mapSlipToDocumentCategory(slip);
+
     docs.push({
       id: nextId(),
-      category: 't4',
-      documentType: 'T4 Slip',
-      name: 'My T4 - Employment Slip',
-      fileName: 'my_t4_2025.pdf',
-      issuer: user?.employerName || 'Primary Employer',
+      category,
+      documentType: meta.documentType,
+      name: meta.name,
+      fileName: `${slip.toLowerCase()}_2025.pdf`,
+      issuer: meta.issuer,
       taxYear: 2025,
-      uploadDate: '2026-02-25',
-      size: '150 KB',
+      uploadDate: `2026-02-${String(10 + index).padStart(2, '0')}`,
+      size: `${150 + index * 12} KB`,
+      permissions: 'view-only',
+      viewedBy: index % 2 === 0 ? ['You', 'David Chen (CA)'] : ['You'],
+      lastViewed: `2026-03-${String(10 + index).padStart(2, '0')}`,
+      notes: meta.notes,
+    });
+  });
+
+  finalReceiptCategories.forEach((receipt, index) => {
+    const meta = getReceiptMeta(receipt);
+
+    docs.push({
+      id: nextId(),
+      category: receipt === 'insurance' ? 'insurance' : receipt === 'home_office' ? 'home-office' : receipt === 'rent_utilities' ? 'business' : receipt === 'inventory_purchases' ? 'inventory' : receipt === 'payroll_expenses' ? 'payroll' : 'gig-income',
+      documentType: meta.documentType,
+      name: meta.name,
+      fileName: `${receipt}_bundle_2025.pdf`,
+      issuer: meta.issuer,
+      taxYear: 2025,
+      uploadDate: `2026-03-${String(1 + index).padStart(2, '0')}`,
+      size: `${210 + index * 8} KB`,
       permissions: 'view-only',
       viewedBy: ['You'],
-      lastViewed: '2026-03-15',
-      notes: 'Primary employment slip.',
+      lastViewed: `2026-03-${String(15 + index).padStart(2, '0')}`,
+      notes: meta.notes,
     });
-  }
-
-  if (profile.gigWork) {
-    docs.push(
-      {
-        id: nextId(),
-        category: 'gig-income',
-        documentType: 'Annual Platform Summary',
-        name: 'Uber Annual Summary 2025',
-        fileName: 'uber_annual_summary_2025.pdf',
-        issuer: 'Uber',
-        taxYear: 2025,
-        uploadDate: '2026-02-18',
-        size: '387 KB',
-        permissions: 'view-only',
-        viewedBy: ['You', 'David Chen (CA)'],
-        lastViewed: '2026-03-15',
-        notes: 'Annual platform earnings summary for gig income reporting.',
-      },
-      {
-        id: nextId(),
-        category: 'gig-income',
-        documentType: 'Tax Statement',
-        name: 'DoorDash Tax Statement 2025',
-        fileName: 'doordash_tax_statement_2025.pdf',
-        issuer: 'DoorDash',
-        taxYear: 2025,
-        uploadDate: '2026-02-20',
-        size: '225 KB',
-        permissions: 'downloadable',
-        viewedBy: ['You'],
-        lastViewed: '2026-03-13',
-        notes: 'Platform-issued annual tax summary.',
-      }
-    );
-  }
+  });
 
   if (household.hasSpouse && spouse?.employment) {
     docs.push({

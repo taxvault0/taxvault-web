@@ -13,8 +13,12 @@ import {
   TruckIcon,
   UserCircleIcon,
   CurrencyDollarIcon,
+  DocumentTextIcon,
+  CheckCircleIcon,
+  FolderOpenIcon,
 } from '@heroicons/react/24/outline';
 import { caAPI } from 'services/api';
+import { formatCurrency, taxExtractionService } from 'services/taxExtractionService';
 import StatsCard from 'components/shared/StatsCard';
 import DocumentCard from 'components/shared/DocumentCard';
 
@@ -92,58 +96,62 @@ const ClientDetail = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [taxYear, setTaxYear] = useState(new Date().getFullYear());
 
-  const { data: client, isLoading } = useQuery(
-    ['client', id, taxYear],
-    async () => {
-      try {
-        const res = await caAPI.getClientDashboard(id, taxYear);
-        return res.data;
-      } catch (error) {
-        return {
-          id,
-          name: 'John Doe',
-          email: 'john@example.com',
-          status: 'in-review',
-          userType: 'employee',
-          taxProfile: {
-            employment: true,
-            gigWork: true,
-            selfEmployment: false,
-            incorporatedBusiness: true,
+  const { data: client, isLoading } = useQuery(['client', id, taxYear], async () => {
+    try {
+      const res = await caAPI.getClientDashboard(id, taxYear);
+      return res.data;
+    } catch (error) {
+      return {
+        id,
+        name: 'John Doe',
+        email: 'john@example.com',
+        status: 'in-review',
+        userType: 'employee',
+        taxProfile: {
+          employment: true,
+          gigWork: true,
+          selfEmployment: false,
+          incorporatedBusiness: true,
+        },
+        documentsUploaded: 8,
+        documentsRequired: 15,
+        receiptCount: 36,
+        mileageKm: 1240,
+        totalIncome: 72500,
+        totalExpenses: 11200,
+        netIncome: 61300,
+        gstOwing: 1450,
+        businessName: 'Doe Consulting Inc.',
+        assignedCAName: 'Jane Smith, CA',
+        recentDocuments: [
+          {
+            id: 'doc-1',
+            name: 'T4 Slip',
+            type: 'Tax Slip',
+            createdAt: '2026-03-10',
+            status: 'uploaded',
           },
-          documentsUploaded: 8,
-          documentsRequired: 15,
-          receiptCount: 36,
-          mileageKm: 1240,
-          totalIncome: 72500,
-          totalExpenses: 11200,
-          netIncome: 61300,
-          gstOwing: 1450,
-          businessName: 'Doe Consulting Inc.',
-          assignedCAName: 'Jane Smith, CA',
-          recentDocuments: [
-            {
-              id: 'doc-1',
-              name: 'T4 Slip',
-              type: 'Tax Slip',
-              createdAt: '2026-03-10',
-              status: 'uploaded',
-            },
-            {
-              id: 'doc-2',
-              name: 'RRSP Contribution Receipt',
-              type: 'Receipt',
-              createdAt: '2026-03-08',
-              status: 'uploaded',
-            },
-          ],
-        };
-      }
+          {
+            id: 'doc-2',
+            name: 'RRSP Contribution Receipt',
+            type: 'Receipt',
+            createdAt: '2026-03-08',
+            status: 'uploaded',
+          },
+        ],
+      };
     }
+  });
+
+  const { data: taxData } = useQuery(
+    ['client-tax-summary-inline', id, taxYear],
+    () => taxExtractionService.getClientTaxSummary(id, taxYear),
+    { staleTime: 5 * 60 * 1000 }
   );
 
   const tabs = [
     { name: 'Overview', id: 'overview' },
+    { name: 'Tax Data', id: 'tax-data' },
     { name: 'Receipts', id: 'receipts' },
     { name: 'Documents', id: 'documents' },
     { name: 'Mileage', id: 'mileage' },
@@ -172,7 +180,6 @@ const ClientDetail = () => {
 
   return (
     <div className="space-y-6">
-      {/* Back + Header */}
       <div>
         <Link
           to="/ca/clients"
@@ -223,8 +230,8 @@ const ClientDetail = () => {
                     client?.status === 'ready'
                       ? 'bg-green-50 text-green-700'
                       : client?.status === 'in-review'
-                      ? 'bg-yellow-50 text-yellow-700'
-                      : 'bg-gray-100 text-gray-700'
+                        ? 'bg-yellow-50 text-yellow-700'
+                        : 'bg-gray-100 text-gray-700'
                   }`}
                 >
                   {client?.status || 'active'}
@@ -252,6 +259,14 @@ const ClientDetail = () => {
               Message
             </button>
 
+            <button
+              className="btn-outline"
+              onClick={() => navigate(`/ca/clients/${id}/documents`)}
+            >
+              <FolderOpenIcon className="mr-2 h-4 w-4" />
+              Documents
+            </button>
+
             <button className="btn-primary">
               <CloudArrowDownIcon className="mr-2 h-4 w-4" />
               Export
@@ -260,7 +275,6 @@ const ClientDetail = () => {
         </div>
       </div>
 
-      {/* Client Status / Snapshot */}
       <div className="rounded-xl bg-white p-4 shadow-sm">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <div className="flex items-center space-x-3">
@@ -296,28 +310,19 @@ const ClientDetail = () => {
           </div>
 
           <div className="flex items-center space-x-3">
-            <div
-              className={`rounded-lg p-2 ${
-                client?.status === 'ready' ? 'bg-green-100' : 'bg-yellow-100'
-              }`}
-            >
-              <div
-                className={`h-5 w-5 rounded-full ${
-                  client?.status === 'ready' ? 'bg-green-600' : 'bg-yellow-600'
-                }`}
-              />
+            <div className="rounded-lg bg-amber-100 p-2">
+              <DocumentTextIcon className="h-5 w-5 text-amber-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Status</p>
-              <p className="text-lg font-semibold capitalize">
-                {client?.status || 'active'}
+              <p className="text-sm text-gray-500">Tax Data Review</p>
+              <p className="text-lg font-semibold">
+                {taxData?.summary?.documentsNeedingReview || 0} pending
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* CA visibility section */}
       <div className="rounded-xl border border-primary-100 bg-primary-50 p-4">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -345,9 +350,8 @@ const ClientDetail = () => {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+        <nav className="-mb-px flex flex-wrap gap-6">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -364,7 +368,6 @@ const ClientDetail = () => {
         </nav>
       </div>
 
-      {/* Tab Content */}
       <div className="mt-6">
         {activeTab === 'overview' && (
           <div className="space-y-6">
@@ -393,9 +396,7 @@ const ClientDetail = () => {
 
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
               <div className="xl:col-span-2">
-                <h3 className="mb-4 text-lg font-medium text-gray-900">
-                  Recent Documents
-                </h3>
+                <h3 className="mb-4 text-lg font-medium text-gray-900">Recent Documents</h3>
                 <div className="space-y-3">
                   {client?.recentDocuments?.length ? (
                     client.recentDocuments.map((doc) => (
@@ -417,9 +418,7 @@ const ClientDetail = () => {
                   <div className="mt-3 space-y-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Client</span>
-                      <span className="font-medium text-gray-900">
-                        {client?.name || '—'}
-                      </span>
+                      <span className="font-medium text-gray-900">{client?.name || '—'}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Tax Year</span>
@@ -427,9 +426,7 @@ const ClientDetail = () => {
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Profiles</span>
-                      <span className="font-medium text-gray-900">
-                        {profileBadges.length || 0}
-                      </span>
+                      <span className="font-medium text-gray-900">{profileBadges.length || 0}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Assigned CA</span>
@@ -462,7 +459,182 @@ const ClientDetail = () => {
           </div>
         )}
 
-        {activeTab !== 'overview' && (
+        {activeTab === 'tax-data' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p className="text-sm text-gray-500">Slips</p>
+                <h2 className="mt-2 text-2xl font-bold text-gray-900">
+                  {taxData?.summary?.slipsReceived || 0}/{taxData?.summary?.slipsExpected || 0}
+                </h2>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p className="text-sm text-gray-500">Employment</p>
+                <h2 className="mt-2 text-2xl font-bold text-gray-900">
+                  {formatCurrency(taxData?.summary?.employmentIncomeTotal)}
+                </h2>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p className="text-sm text-gray-500">Self-Employed</p>
+                <h2 className="mt-2 text-2xl font-bold text-gray-900">
+                  {formatCurrency(taxData?.summary?.selfEmploymentIncomeTotal)}
+                </h2>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p className="text-sm text-gray-500">Tax Paid</p>
+                <h2 className="mt-2 text-2xl font-bold text-gray-900">
+                  {formatCurrency(taxData?.summary?.totalTaxDeducted)}
+                </h2>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+              <div className="space-y-4 xl:col-span-8">
+                {((taxData?.supportedSlips && taxData.supportedSlips.length > 0)
+                  ? taxData.supportedSlips
+                  : taxData?.slips || []
+                ).map((slip) => (
+                  <div
+                    key={slip.id}
+                    className="rounded-lg border border-gray-200 bg-white p-4 transition hover:shadow-md"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-medium text-gray-900">
+                          {slip.label || slip.type || 'Slip'}
+                          {slip.fullName ? ` — ${slip.fullName}` : slip.issuer ? ` — ${slip.issuer}` : ''}
+                        </h4>
+
+                        <span
+                          className={`rounded-full px-2 py-1 text-xs font-medium ${
+                            slip.status === 'verified'
+                              ? 'bg-green-100 text-green-700'
+                              : slip.status === 'review'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-red-100 text-red-700'
+                          }`}
+                        >
+                          {slip.status}
+                        </span>
+                      </div>
+
+                      {(slip.isUploaded || slip.documentName) && (
+                        <Link
+                          to={`/ca/clients/${id}/documents`}
+                          className="text-xs font-medium text-primary-600 hover:text-primary-700"
+                        >
+                          Open →
+                        </Link>
+                      )}
+                    </div>
+
+                    <p className="mt-1 text-xs text-gray-500">
+                      {slip.category || slip.documentName || slip.dueWindow || 'Tax slip'}
+                    </p>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+                      {(slip.fields || []).slice(0, 4).map((field) => (
+                        <div
+                          key={`${slip.id}-${field.code}`}
+                          className="rounded-md bg-gray-50 px-2 py-2"
+                        >
+                          <p className="text-[10px] text-gray-400">Box {field.code}</p>
+                          <p className="truncate text-xs text-gray-600">{field.label}</p>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {field.value === null || field.value === undefined
+                              ? '—'
+                              : field.format === 'currency' && typeof field.value === 'number'
+                                ? formatCurrency(field.value)
+                                : typeof field.value === 'number'
+                                  ? formatCurrency(field.value)
+                                  : String(field.value)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {slip.flags?.length > 0 && (
+                      <div className="mt-3 text-xs text-red-600">
+                        ⚠ {slip.flags[0]}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-4 xl:col-span-4">
+                <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                  <h3 className="text-base font-semibold text-gray-900">Review Status</h3>
+
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-3">
+                      <span className="text-sm text-gray-600">Needs Review</span>
+                      <b className="text-sm text-yellow-600">
+                        {taxData?.summary?.documentsNeedingReview || 0}
+                      </b>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-3">
+                      <span className="text-sm text-gray-600">Missing</span>
+                      <b className="text-sm text-red-600">
+                        {taxData?.missingSlipTypes?.length || 0}
+                      </b>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-3">
+                      <span className="text-sm text-gray-600">Status</span>
+                      <b className="text-sm text-gray-900">
+                        {taxData?.summary?.readyToFile ? 'Ready' : 'Pending'}
+                      </b>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                  <h3 className="text-base font-semibold text-gray-900">Quick Actions</h3>
+
+                  <div className="mt-3 space-y-2">
+                    <button className="btn-primary w-full">Start Filing</button>
+                    <button className="btn-outline w-full">Request Missing Docs</button>
+                    <button className="btn-outline w-full">Download Summary</button>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                  <h3 className="text-base font-semibold text-gray-900">Missing Items</h3>
+
+                  <div className="mt-3 space-y-1">
+                    {(taxData?.missingSlipTypes || []).slice(0, 6).map((item) => (
+                      <div key={item} className="text-xs text-red-600">
+                        • {item}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-primary-200 bg-primary-50 p-5 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <CheckCircleIcon className="mt-0.5 h-5 w-5 text-primary-600" />
+                    <div>
+                      <h3 className="text-base font-semibold text-primary-900">
+                        CA workflow improvement
+                      </h3>
+                      <p className="mt-2 text-sm text-primary-700">
+                        The CA can now see key tax slip values directly in the client profile
+                        without opening every uploaded document.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab !== 'overview' && activeTab !== 'tax-data' && (
           <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-sm text-gray-500">
             {tabs.find((tab) => tab.id === activeTab)?.name} view can be added next.
           </div>
@@ -473,4 +645,3 @@ const ClientDetail = () => {
 };
 
 export default ClientDetail;
-

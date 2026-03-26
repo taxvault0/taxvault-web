@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   User,
@@ -21,16 +21,16 @@ import {
   Users,
   Baby,
   Heart,
-  GraduationCap,
   Coffee,
-  Wrench,
   ArrowLeft,
   CheckSquare,
   Square,
   Briefcase,
   FileText,
-  TrendingUp,
   Building2,
+  Receipt,
+  Sparkles,
+  FolderPlus,
 } from 'lucide-react';
 import Card from 'components/ui/Card';
 import Button from 'components/ui/Button';
@@ -173,12 +173,31 @@ const Register = () => {
     agreeToTerms: false,
     agreeToPrivacy: false,
     confirmAccuracy: false,
+
+    documentPreferences: {
+      knowsSlipTypes: true,
+      needsSuggestions: false,
+      skippedAtRegistration: false,
+      selectedSlips: [],
+      selectedReceiptCategories: [],
+      gigPlatforms: [],
+    },
   });
 
   const provinces = [
-    'Alberta', 'British Columbia', 'Manitoba', 'New Brunswick',
-    'Newfoundland and Labrador', 'Nova Scotia', 'Ontario', 'Prince Edward Island',
-    'Quebec', 'Saskatchewan', 'Northwest Territories', 'Nunavut', 'Yukon'
+    'Alberta',
+    'British Columbia',
+    'Manitoba',
+    'New Brunswick',
+    'Newfoundland and Labrador',
+    'Nova Scotia',
+    'Ontario',
+    'Prince Edward Island',
+    'Quebec',
+    'Saskatchewan',
+    'Northwest Territories',
+    'Nunavut',
+    'Yukon',
   ];
 
   const profileOptions = [
@@ -213,25 +232,127 @@ const Register = () => {
   ];
 
   const employmentStatuses = [
-    'Full-time', 'Part-time', 'Contract', 'Seasonal', 'Self-employed', 'Unemployed', 'Retired'
+    'Full-time',
+    'Part-time',
+    'Contract',
+    'Seasonal',
+    'Self-employed',
+    'Unemployed',
+    'Retired',
   ];
 
   const taxFilingStatuses = [
-    'Single', 'Married', 'Common-Law', 'Separated', 'Divorced', 'Widowed'
+    'Single',
+    'Married',
+    'Common-Law',
+    'Separated',
+    'Divorced',
+    'Widowed',
   ];
 
   const businessTypes = [
-    'Sole Proprietorship', 'Partnership', 'Corporation', 'Cooperative', 'Non-profit'
+    'Sole Proprietorship',
+    'Partnership',
+    'Corporation',
+    'Cooperative',
+    'Non-profit',
   ];
 
   const platforms = [
-    'Uber', 'DoorDash', 'SkipTheDishes', 'Instacart', 'Amazon Flex',
-    'Lyft', 'TaskRabbit', 'Fiverr', 'Upwork', 'Other'
+    'Uber',
+    'DoorDash',
+    'SkipTheDishes',
+    'Instacart',
+    'Amazon Flex',
+    'Lyft',
+    'TaskRabbit',
+    'Fiverr',
+    'Upwork',
+    'Other',
   ];
 
   const vehicleTypes = [
-    'Car', 'SUV', 'Truck', 'Van', 'Motorcycle', 'Bicycle', 'Scooter'
+    'Car',
+    'SUV',
+    'Truck',
+    'Van',
+    'Motorcycle',
+    'Bicycle',
+    'Scooter',
   ];
+
+  const slipOptions = [
+    { key: 'T4', label: 'T4 Employment Slip', group: 'employment' },
+    { key: 'T4A', label: 'T4A Contract / Commission / Gig', group: 'gig' },
+    { key: 'T5', label: 'T5 Investment Income', group: 'investment' },
+    { key: 'T3', label: 'T3 Trust Income', group: 'investment' },
+    { key: 'T5008', label: 'T5008 Securities Transactions', group: 'investment' },
+    { key: 'RRSP', label: 'RRSP Contribution Receipt', group: 'deduction' },
+    { key: 'FHSA', label: 'FHSA Contribution Record', group: 'deduction' },
+    { key: 'TFSA', label: 'TFSA Records', group: 'deduction' },
+    { key: 'TUITION', label: 'Tuition / T2202', group: 'education' },
+    { key: 'MEDICAL', label: 'Medical Receipts', group: 'deduction' },
+    { key: 'DONATIONS', label: 'Donation Receipts', group: 'deduction' },
+    { key: 'CHILD_CARE', label: 'Child Care Receipts', group: 'family' },
+    { key: 'MOVING', label: 'Moving Expense Records', group: 'deduction' },
+    { key: 'RENTAL', label: 'Rental Income Records', group: 'rental' },
+    { key: 'FOREIGN', label: 'Foreign Income Documents', group: 'other' },
+    { key: 'CRYPTO', label: 'Crypto Transaction Records', group: 'other' },
+    { key: 'BUSINESS_RECORDS', label: 'Business Records / Statements', group: 'business' },
+    { key: 'GST_HST', label: 'GST/HST Records', group: 'business' },
+    { key: 'PAYROLL', label: 'Payroll Records', group: 'business' },
+    { key: 'INVENTORY', label: 'Inventory Records', group: 'business' },
+  ];
+
+  const receiptOptions = [
+    { key: 'fuel', label: 'Fuel' },
+    { key: 'maintenance', label: 'Maintenance' },
+    { key: 'parking_tolls', label: 'Parking / Tolls' },
+    { key: 'meals', label: 'Meals' },
+    { key: 'mobile_internet', label: 'Mobile / Internet' },
+    { key: 'supplies', label: 'Supplies' },
+    { key: 'equipment', label: 'Equipment' },
+    { key: 'insurance', label: 'Insurance' },
+    { key: 'rent_utilities', label: 'Rent / Utilities' },
+    { key: 'home_office', label: 'Home Office' },
+    { key: 'vehicle_expenses', label: 'Vehicle Expenses' },
+    { key: 'payroll_expenses', label: 'Payroll Expenses' },
+    { key: 'inventory_purchases', label: 'Inventory Purchases' },
+    { key: 'professional_fees', label: 'Professional Fees' },
+    { key: 'other', label: 'Other Receipts' },
+  ];
+
+  const normalizeGigPlatform = (platform) => {
+    const value = String(platform || '').trim().toLowerCase();
+
+    switch (value) {
+      case 'uber':
+        return 'uber';
+      case 'doordash':
+        return 'doordash';
+      case 'skipthedishes':
+      case 'skip':
+        return 'skip';
+      case 'instacart':
+        return 'instacart';
+      case 'amazon flex':
+      case 'amazon_flex':
+      case 'amazonflex':
+        return 'amazon_flex';
+      case 'lyft':
+        return 'lyft';
+      case 'taskrabbit':
+        return 'taskrabbit';
+      case 'fiverr':
+        return 'fiverr';
+      case 'upwork':
+        return 'upwork';
+      case 'other':
+        return 'other';
+      default:
+        return value.replace(/\s+/g, '_');
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -246,13 +367,27 @@ const Register = () => {
   };
 
   const handleTaxProfileToggle = (key) => {
-    setFormData((prev) => ({
-      ...prev,
-      taxProfile: {
+    setFormData((prev) => {
+      const nextTaxProfile = {
         ...prev.taxProfile,
         [key]: !prev.taxProfile[key],
-      },
-    }));
+      };
+
+      const nextFormData = {
+        ...prev,
+        taxProfile: nextTaxProfile,
+      };
+
+      if (key === 'gigWork' && prev.taxProfile.gigWork) {
+        nextFormData.platforms = [];
+        nextFormData.documentPreferences = {
+          ...prev.documentPreferences,
+          gigPlatforms: [],
+        };
+      }
+
+      return nextFormData;
+    });
 
     if (errors.taxProfile) {
       setErrors((prev) => ({ ...prev, taxProfile: '' }));
@@ -260,11 +395,55 @@ const Register = () => {
   };
 
   const handleArrayChange = (field, value) => {
+    setFormData((prev) => {
+      const exists = prev[field].includes(value);
+      const nextValues = exists
+        ? prev[field].filter((item) => item !== value)
+        : [...prev[field], value];
+
+      const nextState = {
+        ...prev,
+        [field]: nextValues,
+      };
+
+      if (field === 'platforms') {
+        nextState.documentPreferences = {
+          ...prev.documentPreferences,
+          gigPlatforms: nextValues.map(normalizeGigPlatform),
+        };
+      }
+
+      return nextState;
+    });
+  };
+
+  const handleDocumentPreferenceToggle = (field, value) => {
     setFormData((prev) => ({
       ...prev,
-      [field]: prev[field].includes(value)
-        ? prev[field].filter((item) => item !== value)
-        : [...prev[field], value],
+      documentPreferences: {
+        ...prev.documentPreferences,
+        [field]: prev.documentPreferences[field].includes(value)
+          ? prev.documentPreferences[field].filter((item) => item !== value)
+          : [...prev.documentPreferences[field], value],
+      },
+    }));
+
+    if (errors.selectedSlips || errors.selectedReceiptCategories) {
+      setErrors((prev) => ({
+        ...prev,
+        selectedSlips: '',
+        selectedReceiptCategories: '',
+      }));
+    }
+  };
+
+  const updateDocumentPreferences = (patch) => {
+    setFormData((prev) => ({
+      ...prev,
+      documentPreferences: {
+        ...prev.documentPreferences,
+        ...patch,
+      },
     }));
   };
 
@@ -272,6 +451,103 @@ const Register = () => {
   const hasGigWork = !!formData.taxProfile.gigWork;
   const hasSelfEmployment = !!formData.taxProfile.selfEmployment;
   const hasBusiness = !!formData.taxProfile.incorporatedBusiness;
+
+  const normalizedGigPlatforms = useMemo(
+    () => formData.platforms.map(normalizeGigPlatform).filter(Boolean),
+    [formData.platforms]
+  );
+
+  const suggestedSlips = useMemo(() => {
+    const suggestions = new Set();
+
+    if (hasEmployment) suggestions.add('T4');
+    if (hasGigWork || hasSelfEmployment) suggestions.add('T4A');
+    if (formData.hasInvestments || formData.hasT5) suggestions.add('T5');
+    if (formData.hasT3) suggestions.add('T3');
+    if (formData.hasT5008) suggestions.add('T5008');
+    if (formData.hasRRSP) suggestions.add('RRSP');
+    if (formData.hasFHSA) suggestions.add('FHSA');
+    if (formData.hasTFSA) suggestions.add('TFSA');
+    if (formData.hasTuition) suggestions.add('TUITION');
+    if (formData.hasMedicalExpenses) suggestions.add('MEDICAL');
+    if (formData.hasCharitableDonations) suggestions.add('DONATIONS');
+    if (formData.hasChildCareExpenses) suggestions.add('CHILD_CARE');
+    if (formData.hasMovingExpenses) suggestions.add('MOVING');
+    if (formData.hasRentalIncome) suggestions.add('RENTAL');
+    if (formData.hasForeignIncome) suggestions.add('FOREIGN');
+    if (formData.hasCrypto) suggestions.add('CRYPTO');
+
+    if (hasBusiness) {
+      suggestions.add('BUSINESS_RECORDS');
+      suggestions.add('GST_HST');
+      suggestions.add('PAYROLL');
+      suggestions.add('INVENTORY');
+    }
+
+    return Array.from(suggestions);
+  }, [
+    hasEmployment,
+    hasGigWork,
+    hasSelfEmployment,
+    hasBusiness,
+    formData.hasInvestments,
+    formData.hasT5,
+    formData.hasT3,
+    formData.hasT5008,
+    formData.hasRRSP,
+    formData.hasFHSA,
+    formData.hasTFSA,
+    formData.hasTuition,
+    formData.hasMedicalExpenses,
+    formData.hasCharitableDonations,
+    formData.hasChildCareExpenses,
+    formData.hasMovingExpenses,
+    formData.hasRentalIncome,
+    formData.hasForeignIncome,
+    formData.hasCrypto,
+  ]);
+
+  const suggestedReceipts = useMemo(() => {
+    const suggestions = new Set();
+
+    if (hasGigWork) {
+      suggestions.add('fuel');
+      suggestions.add('maintenance');
+      suggestions.add('parking_tolls');
+      suggestions.add('mobile_internet');
+      suggestions.add('vehicle_expenses');
+      suggestions.add('insurance');
+    }
+
+    if (hasSelfEmployment) {
+      suggestions.add('mobile_internet');
+      suggestions.add('supplies');
+      suggestions.add('equipment');
+      suggestions.add('professional_fees');
+      suggestions.add('home_office');
+    }
+
+    if (hasBusiness) {
+      suggestions.add('rent_utilities');
+      suggestions.add('payroll_expenses');
+      suggestions.add('inventory_purchases');
+      suggestions.add('insurance');
+      suggestions.add('supplies');
+      suggestions.add('equipment');
+      suggestions.add('professional_fees');
+    }
+
+    if (formData.hasHomeOffice) suggestions.add('home_office');
+    if (formData.hasVehicleExpenses) suggestions.add('vehicle_expenses');
+
+    return Array.from(suggestions);
+  }, [
+    hasGigWork,
+    hasSelfEmployment,
+    hasBusiness,
+    formData.hasHomeOffice,
+    formData.hasVehicleExpenses,
+  ]);
 
   const validateStep = () => {
     const newErrors = {};
@@ -282,7 +558,9 @@ const Register = () => {
       if (!formData.email) newErrors.email = 'Email is required';
       else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
       if (!formData.password) newErrors.password = 'Password is required';
-      else if (formData.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
+      else if (formData.password.length < 8) {
+        newErrors.password = 'Password must be at least 8 characters';
+      }
       if (formData.password !== formData.confirmPassword) {
         newErrors.confirmPassword = 'Passwords do not match';
       }
@@ -318,7 +596,29 @@ const Register = () => {
       }
     }
 
-    if (currentStep === 7) {
+    if (currentStep === 4) {
+      if (hasGigWork && formData.platforms.length === 0) {
+        newErrors.platforms = 'Select at least one gig platform.';
+      }
+    }
+
+    if (currentStep === 6) {
+      const {
+        knowsSlipTypes,
+        needsSuggestions,
+        selectedSlips,
+        selectedReceiptCategories,
+      } = formData.documentPreferences;
+
+      if (!needsSuggestions && knowsSlipTypes) {
+        if (selectedSlips.length === 0 && selectedReceiptCategories.length === 0) {
+          newErrors.selectedSlips =
+            'Select at least one slip or receipt category, or choose suggest for me later.';
+        }
+      }
+    }
+
+    if (currentStep === 8) {
       if (!termsAccepted) newErrors.terms = 'You must agree to the Terms and Conditions';
       if (!privacyAccepted) newErrors.privacy = 'You must agree to the Privacy Policy';
       if (!formData.confirmAccuracy) newErrors.confirmAccuracy = 'You must confirm accuracy';
@@ -354,17 +654,21 @@ const Register = () => {
 
     setLoading(true);
     try {
+      const cleanGigPlatforms = normalizedGigPlatforms;
+      const finalDocumentPreferences = {
+        ...formData.documentPreferences,
+        gigPlatforms: cleanGigPlatforms,
+      };
+
       const result = await register({
         name: `${formData.firstName} ${formData.lastName}`,
         email: formData.email,
         password: formData.password,
-
-        // backward compatibility
         userType: getLegacyUserType(),
-
-        // new structure
-        taxProfile: formData.taxProfile,
-
+        taxProfile: {
+          ...formData.taxProfile,
+          business: formData.taxProfile.incorporatedBusiness,
+        },
         maritalStatus: formData.maritalStatus,
         spouseInfo:
           formData.maritalStatus === 'Married' ||
@@ -378,7 +682,22 @@ const Register = () => {
               }
             : null,
         dependents: formData.children,
-        profile: formData,
+        gigPlatforms: cleanGigPlatforms,
+        documentPreferences: finalDocumentPreferences,
+        onboarding: {
+          needsSuggestions: formData.documentPreferences.needsSuggestions,
+          selectedSlips: formData.documentPreferences.selectedSlips,
+          selectedReceiptCategories: formData.documentPreferences.selectedReceiptCategories,
+          skippedAtRegistration: formData.documentPreferences.skippedAtRegistration,
+          gigPlatforms: cleanGigPlatforms,
+          suggestedSlips,
+          suggestedReceiptCategories: suggestedReceipts,
+        },
+        profile: {
+          ...formData,
+          gigPlatforms: cleanGigPlatforms,
+          documentPreferences: finalDocumentPreferences,
+        },
         termsAccepted: true,
         privacyAccepted: true,
         termsAcceptedAt: new Date().toISOString(),
@@ -401,8 +720,9 @@ const Register = () => {
     { number: 3, title: 'Tax Profile', icon: FileText },
     { number: 4, title: 'Income', icon: DollarSign },
     { number: 5, title: 'Deductions', icon: Heart },
-    { number: 6, title: 'Family', icon: Users },
-    { number: 7, title: 'Review', icon: Check },
+    { number: 6, title: 'Documents', icon: FolderPlus },
+    { number: 7, title: 'Family', icon: Users },
+    { number: 8, title: 'Review', icon: Check },
   ];
 
   const getIconColor = (type) => {
@@ -421,6 +741,18 @@ const Register = () => {
     (option) => formData.taxProfile[option.key]
   );
 
+  const selectedSlipLabels = slipOptions
+    .filter((item) => formData.documentPreferences.selectedSlips.includes(item.key))
+    .map((item) => item.label);
+
+  const selectedReceiptLabels = receiptOptions
+    .filter((item) => formData.documentPreferences.selectedReceiptCategories.includes(item.key))
+    .map((item) => item.label);
+
+  const selectedPlatformLabels = platforms.filter((platform) =>
+    formData.platforms.includes(platform)
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-gray-100 py-12">
       <button
@@ -431,7 +763,7 @@ const Register = () => {
         <span>Back to role selection</span>
       </button>
 
-      <div className="container mx-auto max-w-4xl px-4">
+      <div className="container mx-auto max-w-5xl px-4">
         <div className="mb-8 text-center">
           <Link to="/" className="inline-block">
             <h1 className="text-3xl font-bold text-primary-600">TaxVault</h1>
@@ -440,12 +772,12 @@ const Register = () => {
             Create Your Account
           </h2>
           <p className="mt-2 text-gray-600">
-            Join thousands of Canadians who organize their taxes year-round
+            Set up your account, tax profile, and the documents you expect to store.
           </p>
         </div>
 
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+        <div className="mb-8 overflow-x-auto">
+          <div className="flex min-w-[820px] items-center justify-between">
             {steps.map((step, index) => (
               <React.Fragment key={step.number}>
                 <div className="flex flex-col items-center">
@@ -479,6 +811,12 @@ const Register = () => {
         <Card className="shadow-xl">
           <Card.Body className="p-8">
             <form onSubmit={handleSubmit}>
+              {errors.general && (
+                <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                  {errors.general}
+                </div>
+              )}
+
               {currentStep === 1 && (
                 <div className="space-y-6">
                   <h3 className="mb-6 text-xl font-semibold text-gray-800">
@@ -576,9 +914,7 @@ const Register = () => {
                         />
                         <button
                           type="button"
-                          onClick={() =>
-                            setShowConfirmPassword(!showConfirmPassword)
-                          }
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 transform"
                         >
                           {showConfirmPassword ? (
@@ -619,7 +955,7 @@ const Register = () => {
                           Secure & Encrypted
                         </p>
                         <p className="mt-1 text-xs text-primary-600">
-                          Your information is protected with bank-level AES-256 encryption.
+                          Your information is protected with bank-level encryption.
                         </p>
                       </div>
                     </div>
@@ -761,11 +1097,17 @@ const Register = () => {
                                 <div className="rounded-lg bg-white p-2 shadow-sm">
                                   <option.icon
                                     size={20}
-                                    className={selected ? getIconColor(option.color) : 'text-gray-400'}
+                                    className={
+                                      selected
+                                        ? getIconColor(option.color)
+                                        : 'text-gray-400'
+                                    }
                                   />
                                 </div>
                                 <div>
-                                  <p className="font-medium text-gray-900">{option.label}</p>
+                                  <p className="font-medium text-gray-900">
+                                    {option.label}
+                                  </p>
                                   <p className="mt-1 text-sm text-gray-500">
                                     {option.description}
                                   </p>
@@ -970,6 +1312,19 @@ const Register = () => {
                             </label>
                           ))}
                         </div>
+                        {errors.platforms && (
+                          <p className="mt-2 text-xs text-red-500">{errors.platforms}</p>
+                        )}
+
+                        {selectedPlatformLabels.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {selectedPlatformLabels.map((platform) => (
+                              <Badge key={platform} variant="success">
+                                {platform}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -1094,9 +1449,7 @@ const Register = () => {
                           onChange={handleChange}
                           className="h-4 w-4 rounded text-primary-500"
                         />
-                        <span className="ml-2 text-sm text-gray-700">
-                          Investments
-                        </span>
+                        <span className="ml-2 text-sm text-gray-700">Investments</span>
                       </label>
 
                       <label className="flex items-center">
@@ -1107,9 +1460,7 @@ const Register = () => {
                           onChange={handleChange}
                           className="h-4 w-4 rounded text-primary-500"
                         />
-                        <span className="ml-2 text-sm text-gray-700">
-                          Rental Income
-                        </span>
+                        <span className="ml-2 text-sm text-gray-700">Rental Income</span>
                       </label>
 
                       <label className="flex items-center">
@@ -1120,9 +1471,7 @@ const Register = () => {
                           onChange={handleChange}
                           className="h-4 w-4 rounded text-primary-500"
                         />
-                        <span className="ml-2 text-sm text-gray-700">
-                          Foreign Income
-                        </span>
+                        <span className="ml-2 text-sm text-gray-700">Foreign Income</span>
                       </label>
 
                       <label className="flex items-center">
@@ -1133,9 +1482,7 @@ const Register = () => {
                           onChange={handleChange}
                           className="h-4 w-4 rounded text-primary-500"
                         />
-                        <span className="ml-2 text-sm text-gray-700">
-                          Cryptocurrency
-                        </span>
+                        <span className="ml-2 text-sm text-gray-700">Cryptocurrency</span>
                       </label>
                     </div>
                   </div>
@@ -1183,6 +1530,295 @@ const Register = () => {
 
               {currentStep === 6 && (
                 <div className="space-y-6">
+                  <div>
+                    <h3 className="mb-2 text-xl font-semibold text-gray-800">
+                      Slips & Receipt Setup
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Tell us what you already know you may store. You can skip this now and
+                      add or edit everything later.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-primary-200 bg-primary-50 p-4">
+                    <div className="flex items-start gap-3">
+                      <Sparkles className="mt-0.5 h-5 w-5 text-primary-600" />
+                      <div>
+                        <p className="font-medium text-primary-800">
+                          Smart suggestions are available
+                        </p>
+                        <p className="mt-1 text-sm text-primary-700">
+                          If you are not sure which slips apply, the app will suggest them
+                          later based on your profile, income type, family status, and deductions.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateDocumentPreferences({
+                          knowsSlipTypes: true,
+                          needsSuggestions: false,
+                          skippedAtRegistration: false,
+                        })
+                      }
+                      className={`rounded-xl border p-4 text-left transition ${
+                        formData.documentPreferences.knowsSlipTypes &&
+                        !formData.documentPreferences.needsSuggestions
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-200 hover:border-primary-300'
+                      }`}
+                    >
+                      <FileText className="mb-3 h-5 w-5 text-primary-600" />
+                      <p className="font-medium text-gray-900">I know some of my slips</p>
+                      <p className="mt-1 text-sm text-gray-500">
+                        I want to select documents and receipt types now.
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateDocumentPreferences({
+                          knowsSlipTypes: false,
+                          needsSuggestions: true,
+                          skippedAtRegistration: false,
+                        })
+                      }
+                      className={`rounded-xl border p-4 text-left transition ${
+                        formData.documentPreferences.needsSuggestions &&
+                        !formData.documentPreferences.knowsSlipTypes
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-200 hover:border-primary-300'
+                      }`}
+                    >
+                      <Sparkles className="mb-3 h-5 w-5 text-primary-600" />
+                      <p className="font-medium text-gray-900">Suggest for me later</p>
+                      <p className="mt-1 text-sm text-gray-500">
+                        I’m not sure which slips or receipts I will have.
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateDocumentPreferences({
+                          knowsSlipTypes: false,
+                          needsSuggestions: true,
+                          skippedAtRegistration: true,
+                          selectedSlips: [],
+                          selectedReceiptCategories: [],
+                        })
+                      }
+                      className={`rounded-xl border p-4 text-left transition ${
+                        formData.documentPreferences.skippedAtRegistration
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-200 hover:border-primary-300'
+                      }`}
+                    >
+                      <ChevronRight className="mb-3 h-5 w-5 text-primary-600" />
+                      <p className="font-medium text-gray-900">Skip for now</p>
+                      <p className="mt-1 text-sm text-gray-500">
+                        I’ll complete this later from my dashboard or tax profile.
+                      </p>
+                    </button>
+                  </div>
+
+                  {hasGigWork && (
+                    <div className="rounded-xl border border-green-200 bg-green-50 p-5">
+                      <div className="mb-3 flex items-center gap-2">
+                        <Car className="h-5 w-5 text-green-600" />
+                        <h4 className="font-semibold text-green-900">
+                          Gig platforms that will personalize your dashboard
+                        </h4>
+                      </div>
+                      <p className="mb-4 text-sm text-green-800">
+                        These selected platforms will be saved and used to show platform-specific
+                        cards like Uber Records, DoorDash Records, Skip Records, and Instacart
+                        Records.
+                      </p>
+
+                      <div className="flex flex-wrap gap-2">
+                        {normalizedGigPlatforms.length > 0 ? (
+                          normalizedGigPlatforms.map((platform) => (
+                            <Badge key={platform} variant="success">
+                              {platform}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-sm text-green-800">
+                            Select gig platforms in the Income step.
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {formData.documentPreferences.knowsSlipTypes &&
+                    !formData.documentPreferences.needsSuggestions && (
+                      <>
+                        <div className="rounded-xl border border-gray-200 bg-white p-5">
+                          <div className="mb-4 flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-primary-600" />
+                            <h4 className="font-semibold text-gray-900">
+                              Known tax slips and records
+                            </h4>
+                          </div>
+
+                          <p className="mb-4 text-sm text-gray-500">
+                            Select what you already know you may store.
+                          </p>
+
+                          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                            {slipOptions.map((slip) => {
+                              const checked =
+                                formData.documentPreferences.selectedSlips.includes(slip.key);
+
+                              return (
+                                <button
+                                  key={slip.key}
+                                  type="button"
+                                  onClick={() =>
+                                    handleDocumentPreferenceToggle('selectedSlips', slip.key)
+                                  }
+                                  className={`flex items-center justify-between rounded-lg border p-3 text-left transition ${
+                                    checked
+                                      ? 'border-primary-500 bg-primary-50'
+                                      : 'border-gray-200 hover:border-primary-300'
+                                  }`}
+                                >
+                                  <span className="text-sm text-gray-800">{slip.label}</span>
+                                  {checked ? (
+                                    <CheckSquare size={18} className="text-primary-600" />
+                                  ) : (
+                                    <Square size={18} className="text-gray-300" />
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {errors.selectedSlips && (
+                            <p className="mt-3 text-xs text-red-500">{errors.selectedSlips}</p>
+                          )}
+                        </div>
+
+                        <div className="rounded-xl border border-gray-200 bg-white p-5">
+                          <div className="mb-4 flex items-center gap-2">
+                            <Receipt className="h-5 w-5 text-primary-600" />
+                            <h4 className="font-semibold text-gray-900">
+                              Receipt categories
+                            </h4>
+                          </div>
+
+                          <p className="mb-4 text-sm text-gray-500">
+                            Select the receipt types you expect to upload.
+                          </p>
+
+                          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                            {receiptOptions.map((receipt) => {
+                              const checked =
+                                formData.documentPreferences.selectedReceiptCategories.includes(
+                                  receipt.key
+                                );
+
+                              return (
+                                <button
+                                  key={receipt.key}
+                                  type="button"
+                                  onClick={() =>
+                                    handleDocumentPreferenceToggle(
+                                      'selectedReceiptCategories',
+                                      receipt.key
+                                    )
+                                  }
+                                  className={`flex items-center justify-between rounded-lg border p-3 text-left transition ${
+                                    checked
+                                      ? 'border-primary-500 bg-primary-50'
+                                      : 'border-gray-200 hover:border-primary-300'
+                                  }`}
+                                >
+                                  <span className="text-sm text-gray-800">
+                                    {receipt.label}
+                                  </span>
+                                  {checked ? (
+                                    <CheckSquare size={18} className="text-primary-600" />
+                                  ) : (
+                                    <Square size={18} className="text-gray-300" />
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                  {(formData.documentPreferences.needsSuggestions ||
+                    formData.documentPreferences.skippedAtRegistration) && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
+                      <h4 className="font-semibold text-amber-900">
+                        Suggested based on your profile
+                      </h4>
+                      <p className="mt-2 text-sm text-amber-800">
+                        These are examples the app can suggest after account creation.
+                      </p>
+
+                      <div className="mt-4 grid gap-4 md:grid-cols-2">
+                        <div>
+                          <p className="mb-2 text-sm font-medium text-amber-900">
+                            Suggested slips
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {suggestedSlips.length > 0 ? (
+                              suggestedSlips.map((key) => {
+                                const match = slipOptions.find((item) => item.key === key);
+                                return (
+                                  <Badge key={key} variant="warning">
+                                    {match?.label || key}
+                                  </Badge>
+                                );
+                              })
+                            ) : (
+                              <span className="text-sm text-amber-800">
+                                Suggestions will appear after onboarding.
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="mb-2 text-sm font-medium text-amber-900">
+                            Suggested receipts
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {suggestedReceipts.length > 0 ? (
+                              suggestedReceipts.map((key) => {
+                                const match = receiptOptions.find((item) => item.key === key);
+                                return (
+                                  <Badge key={key} variant="warning">
+                                    {match?.label || key}
+                                  </Badge>
+                                );
+                              })
+                            ) : (
+                              <span className="text-sm text-amber-800">
+                                Receipt suggestions will appear later.
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {currentStep === 7 && (
+                <div className="space-y-6">
                   <h3 className="mb-6 text-xl font-semibold text-gray-800">
                     Children & Dependents
                   </h3>
@@ -1211,9 +1847,7 @@ const Register = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          const newChildren = formData.children.filter(
-                            (_, i) => i !== index
-                          );
+                          const newChildren = formData.children.filter((_, i) => i !== index);
                           setFormData((prev) => ({ ...prev, children: newChildren }));
                         }}
                         className="absolute right-2 top-2 text-gray-400 hover:text-red-500"
@@ -1256,7 +1890,7 @@ const Register = () => {
                 </div>
               )}
 
-              {currentStep === 7 && (
+              {currentStep === 8 && (
                 <div className="space-y-6">
                   <h3 className="mb-6 text-xl font-semibold text-gray-800">
                     Review & Submit
@@ -1303,6 +1937,73 @@ const Register = () => {
                             {profile.label}
                           </Badge>
                         ))}
+                      </Card.Body>
+                    </Card>
+
+                    <Card>
+                      <Card.Header>
+                        <h4 className="font-medium">Gig Platforms</h4>
+                      </Card.Header>
+                      <Card.Body className="space-y-2 text-sm">
+                        {normalizedGigPlatforms.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {normalizedGigPlatforms.map((platform) => (
+                              <Badge key={platform} variant="success">
+                                {platform}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-gray-500">No gig platforms selected</span>
+                        )}
+                      </Card.Body>
+                    </Card>
+
+                    <Card className="md:col-span-2">
+                      <Card.Header>
+                        <h4 className="font-medium">Document Setup</h4>
+                      </Card.Header>
+                      <Card.Body className="space-y-4 text-sm">
+                        <p>
+                          <span className="text-gray-500">Mode:</span>{' '}
+                          {formData.documentPreferences.skippedAtRegistration
+                            ? 'Skipped for now'
+                            : formData.documentPreferences.needsSuggestions
+                              ? 'Suggest for me later'
+                              : 'Selected manually'}
+                        </p>
+
+                        <div>
+                          <p className="mb-2 text-gray-500">Selected slips</p>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedSlipLabels.length > 0 ? (
+                              selectedSlipLabels.map((label) => (
+                                <Badge key={label} variant="info">
+                                  {label}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-gray-500">No slips selected yet</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="mb-2 text-gray-500">Selected receipts</p>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedReceiptLabels.length > 0 ? (
+                              selectedReceiptLabels.map((label) => (
+                                <Badge key={label} variant="success">
+                                  {label}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-gray-500">
+                                No receipt categories selected yet
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </Card.Body>
                     </Card>
                   </div>
@@ -1445,4 +2146,3 @@ const Register = () => {
 };
 
 export default Register;
-

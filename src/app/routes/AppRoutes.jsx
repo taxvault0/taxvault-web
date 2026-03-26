@@ -50,6 +50,7 @@ import Consultations from 'features/consultations/pages/Consultations';
 import ConsultationRequest from 'features/consultations/pages/ConsultationRequest';
 import ConsultationDetail from 'features/consultations/pages/ConsultationDetail';
 import CAAvailability from 'features/consultations/pages/CAAvailability';
+import CAPricing from 'features/ca/pages/CAPricing';
 
 // Gig / Tax
 import GSTDashboard from 'features/dashboard/pages/GSTDashboard';
@@ -80,6 +81,8 @@ import CARequestDashboard from 'features/dashboard/pages/CARequestDashboard';
 import CARequestDetail from 'features/ca/pages/CARequestDetail';
 import CACalendar from 'features/ca/pages/CACalendar';
 import CAEarnings from 'features/ca/pages/CAEarnings';
+import CAReviews from 'features/ca/pages/CAReviews';
+import ClientFilingSummary from 'features/ca/pages/ClientFilingSummary';
 
 const PublicRoutes = () => (
   <Routes>
@@ -459,6 +462,14 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
           }
         />
         <Route
+          path="/ca/clients/:id/filing-summary"
+          element={
+            <PrivateRoute allowedRoles={['ca']}>
+              {renderWithShell(<ClientFilingSummary />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/ca/search"
           element={
             <PrivateRoute allowedRoles={['ca']}>
@@ -486,7 +497,7 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
           path="/ca/reviews"
           element={
             <PrivateRoute allowedRoles={['ca']}>
-              {renderWithShell(<CARequestDashboard />)}
+              {renderWithShell(<CAReviews />)}
             </PrivateRoute>
           }
         />
@@ -511,6 +522,15 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
           element={
             <PrivateRoute allowedRoles={['ca']}>
               {renderWithShell(<CAEarnings />)}
+            </PrivateRoute>
+          }
+        />
+        
+        <Route
+          path="/ca/pricing"
+          element={
+            <PrivateRoute allowedRoles={['ca']}>
+              {renderWithShell(<CAPricing />)}
             </PrivateRoute>
           }
         />

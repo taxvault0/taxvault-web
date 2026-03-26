@@ -1,4 +1,3 @@
-// user/TaxChecklist.jsx
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -30,6 +29,9 @@ import {
   Smartphone,
   Hammer,
   Receipt,
+  Building2,
+  Package,
+  Wallet,
 } from 'lucide-react';
 import Card from 'components/ui/Card';
 import Button from 'components/ui/Button';
@@ -37,36 +39,447 @@ import Badge from 'components/ui/Badge';
 import { useAuth } from '../../auth/context/AuthContext';
 import { PROVINCES } from 'constants/provinces';
 
+const SLIP_CONFIG = {
+  T4: {
+    id: 't4',
+    name: 'T4 - Employment Income',
+    description: 'Statement of remuneration from employer',
+    category: 'income',
+    deadline: 'February 28, 2026',
+    taxSlip: true,
+    estimatedValue: 45000,
+    taxImpact: 'Report employment income',
+    icon: FileText,
+  },
+  T4A: {
+    id: 't4a',
+    name: 'T4A - Self-Employed / Gig Income',
+    description:
+      'Annual income slips or platform summaries from Uber, DoorDash, Skip, Instacart, and similar apps',
+    category: 'income',
+    deadline: 'February 28, 2026',
+    taxSlip: true,
+    estimatedValue: 12000,
+    taxImpact: 'Report self-employment income',
+    icon: Briefcase,
+  },
+  T5: {
+    id: 't5',
+    name: 'T5 - Investment Income',
+    description: 'Dividends, interest from investments',
+    category: 'investment',
+    deadline: 'February 28, 2026',
+    taxSlip: true,
+    estimatedValue: 3500,
+    taxImpact: 'Report dividends and interest',
+    icon: TrendingUp,
+  },
+  T3: {
+    id: 't3',
+    name: 'T3 - Trust Income',
+    description: 'Income from trusts, mutual funds',
+    category: 'investment',
+    deadline: 'March 31, 2026',
+    taxSlip: true,
+    estimatedValue: 1200,
+    taxImpact: 'Report trust income',
+    icon: FileText,
+  },
+  T5008: {
+    id: 't5008',
+    name: 'T5008 - Securities Transactions',
+    description: 'Stock sales, capital gains/losses',
+    category: 'investment',
+    deadline: 'February 28, 2026',
+    taxSlip: true,
+    estimatedValue: 5000,
+    taxImpact: 'Report capital gains/losses',
+    icon: TrendingUp,
+  },
+  RRSP: {
+    id: 'rrsp-contributions',
+    name: 'RRSP Contribution Receipts',
+    description: 'Receipts for RRSP contributions',
+    category: 'savings',
+    deadline: 'March 1, 2026',
+    taxSlip: true,
+    estimatedValue: 5000,
+    taxImpact: 'Reduce taxable income',
+    icon: PiggyBank,
+  },
+  FHSA: {
+    id: 'fhsa-contributions',
+    name: 'FHSA Contribution Receipts',
+    description: 'First Home Savings Account contributions',
+    category: 'savings',
+    deadline: 'December 31, 2026',
+    taxSlip: true,
+    estimatedValue: 8000,
+    taxImpact: 'Reduce taxable income',
+    icon: Home,
+  },
+  TFSA: {
+    id: 'tfsa-records',
+    name: 'TFSA Records',
+    description: 'Tax-Free Savings Account contribution and activity records',
+    category: 'savings',
+    deadline: 'December 31, 2026',
+    taxSlip: true,
+    estimatedValue: 3000,
+    taxImpact: 'Track contribution room and account activity',
+    icon: Wallet,
+  },
+  TUITION: {
+    id: 'tuition-slips',
+    name: 'Tuition Slips (T2202)',
+    description: 'Post-secondary education amounts',
+    category: 'education',
+    deadline: 'February 28, 2026',
+    taxSlip: true,
+    estimatedValue: 5000,
+    taxImpact: 'Tax credit (15%)',
+    icon: GraduationCap,
+  },
+  MEDICAL: {
+    id: 'medical-expenses',
+    name: 'Medical Expense Receipts',
+    description: 'Eligible medical expenses',
+    category: 'deductions',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 1500,
+    taxImpact: 'Tax credit (15% of eligible amount)',
+    icon: Heart,
+  },
+  DONATIONS: {
+    id: 'charitable-donations',
+    name: 'Charitable Donation Receipts',
+    description: 'Donations to registered charities',
+    category: 'deductions',
+    deadline: 'December 31, 2026',
+    taxSlip: true,
+    estimatedValue: 500,
+    taxImpact: 'Tax credit (15-29%)',
+    icon: Gift,
+  },
+  CHILD_CARE: {
+    id: 'child-care-expenses',
+    name: 'Child Care Expense Receipts',
+    description: 'Daycare, babysitting, camps',
+    category: 'deductions',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 5000,
+    taxImpact: 'Deduct from income (lower earner)',
+    icon: Baby,
+  },
+  MOVING: {
+    id: 'moving-expenses',
+    name: 'Moving Expense Receipts',
+    description: 'Expenses for work/school move (40km+)',
+    category: 'deductions',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 2000,
+    taxImpact: 'Deduct from income',
+    icon: Car,
+  },
+  RENTAL: {
+    id: 'rental-income',
+    name: 'Rental Income Records',
+    description: 'Rental income and expense records',
+    category: 'income',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 10000,
+    taxImpact: 'Report rental income and deductions',
+    icon: Home,
+  },
+  FOREIGN: {
+    id: 'foreign-income',
+    name: 'Foreign Income Documents',
+    description: 'Foreign income statements and supporting documents',
+    category: 'income',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 5000,
+    taxImpact: 'Report foreign income and credits',
+    icon: FileText,
+  },
+  CRYPTO: {
+    id: 'crypto-transactions',
+    name: 'Crypto Transaction Records',
+    description: 'Cryptocurrency buys, sells, swaps, and income records',
+    category: 'investment',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 2500,
+    taxImpact: 'Report capital gains/losses or income',
+    icon: TrendingUp,
+  },
+  BUSINESS_RECORDS: {
+    id: 'business-records',
+    name: 'Business Records / Statements',
+    description: 'Business income, expense, and account records',
+    category: 'business',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 15000,
+    taxImpact: 'Support business income and deductions',
+    icon: Building2,
+  },
+  GST_HST: {
+    id: 'gst-hst',
+    name: 'GST / HST Records',
+    description: 'GST/HST returns, remittances, and supporting records',
+    category: 'business',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 3500,
+    taxImpact: 'Support GST/HST filing',
+    icon: Percent,
+  },
+  PAYROLL: {
+    id: 'payroll',
+    name: 'Payroll Records',
+    description: 'Employee payroll summaries and remittances',
+    category: 'business',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 8000,
+    taxImpact: 'Support payroll deductions and business reporting',
+    icon: Briefcase,
+  },
+  INVENTORY: {
+    id: 'inventory',
+    name: 'Inventory Records',
+    description: 'Stock purchases, valuations, and inventory counts',
+    category: 'business',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 6000,
+    taxImpact: 'Support inventory and cost calculations',
+    icon: Package,
+  },
+  HOME_OFFICE: {
+    id: 'home-office-expenses',
+    name: 'Home Office Expense Records',
+    description: 'T2200, T777, utilities, rent share, internet, and workspace expenses',
+    category: 'deductions',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 1200,
+    taxImpact: 'Deduct home office costs',
+    icon: Home,
+  },
+};
+
+const RECEIPT_CONFIG = {
+  fuel: {
+    id: 'fuel-receipts',
+    name: 'Fuel Receipts',
+    description: 'Recurring fuel receipts for work-related driving',
+    category: 'business',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 3200,
+    taxImpact: 'Deduct business use portion',
+    icon: Flame,
+  },
+  maintenance: {
+    id: 'maintenance-receipts',
+    name: 'Maintenance & Parts Receipts',
+    description: 'Oil changes, repairs, tires, and vehicle maintenance',
+    category: 'business',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 850,
+    taxImpact: 'Deduct business use portion',
+    icon: Wrench,
+  },
+  parking_tolls: {
+    id: 'parking-receipts',
+    name: 'Parking & Tolls',
+    description: 'Business parking, highway tolls',
+    category: 'business',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 450,
+    taxImpact: 'Fully deductible',
+    icon: MapPin,
+  },
+  meals: {
+    id: 'meals-receipts',
+    name: 'Meals & Entertainment',
+    description: 'Client meetings, business meals',
+    category: 'business',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 600,
+    taxImpact: '50% deductible',
+    icon: Receipt,
+  },
+  mobile_internet: {
+    id: 'service-receipts',
+    name: 'Mobile / Internet Bills',
+    description: 'Phone and internet bills used for work',
+    category: 'business',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 1800,
+    taxImpact: 'Deduct business-use portion',
+    icon: Smartphone,
+  },
+  supplies: {
+    id: 'supplies-receipts',
+    name: 'Office Supplies',
+    description: 'Paper, ink, office expenses, and supplies',
+    category: 'business',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 350,
+    taxImpact: 'Fully deductible',
+    icon: Receipt,
+  },
+  equipment: {
+    id: 'equipment-receipts',
+    name: 'Equipment Purchases',
+    description: 'Tools, devices, and work equipment',
+    category: 'business',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 950,
+    taxImpact: 'Capital cost allowance',
+    icon: Hammer,
+  },
+  insurance: {
+    id: 'insurance-receipts',
+    name: 'Insurance Receipts',
+    description: 'Vehicle, business, or liability insurance',
+    category: 'business',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 1200,
+    taxImpact: 'Deduct eligible portion',
+    icon: Shield,
+  },
+  rent_utilities: {
+    id: 'rent-utilities',
+    name: 'Rent / Utilities Records',
+    description: 'Office rent, utilities, and related occupancy expenses',
+    category: 'business',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 4000,
+    taxImpact: 'Deduct business occupancy expenses',
+    icon: Home,
+  },
+  home_office: {
+    id: 'home-office',
+    name: 'Home Office Expenses',
+    description: 'Workspace-at-home utility, rent, and internet support',
+    category: 'deductions',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 900,
+    taxImpact: 'Deduct eligible workspace expenses',
+    icon: Home,
+  },
+  vehicle_expenses: {
+    id: 'vehicle-expenses',
+    name: 'Vehicle Expense Records',
+    description: 'Combined vehicle logs, insurance, fuel, and maintenance support',
+    category: 'business',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 2500,
+    taxImpact: 'Deduct business-use portion',
+    icon: Car,
+  },
+  payroll_expenses: {
+    id: 'payroll-expenses',
+    name: 'Payroll Expense Records',
+    description: 'Payroll summaries, wages, and remittance support',
+    category: 'business',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 5000,
+    taxImpact: 'Support payroll expenses',
+    icon: Briefcase,
+  },
+  inventory_purchases: {
+    id: 'inventory-purchases',
+    name: 'Inventory Purchase Records',
+    description: 'Purchase invoices and stock cost records',
+    category: 'business',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 3000,
+    taxImpact: 'Support cost of goods sold',
+    icon: Package,
+  },
+  professional_fees: {
+    id: 'professional-fees',
+    name: 'Professional Fees',
+    description: 'Legal, accounting, and professional service invoices',
+    category: 'business',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 1200,
+    taxImpact: 'Deduct professional fees',
+    icon: Receipt,
+  },
+  other: {
+    id: 'other-receipts',
+    name: 'Other Receipts',
+    description: 'Other eligible work or tax-related receipts',
+    category: 'business',
+    deadline: 'December 31, 2026',
+    taxSlip: false,
+    estimatedValue: 500,
+    taxImpact: 'Review for eligibility',
+    icon: Receipt,
+  },
+};
+
 const getDocumentRoute = (doc) => {
   const map = {
-    t4: '/documents',
-    t4a: '/gig/documents/income-records',
-    t5: '/documents',
-    t3: '/documents',
-    t5008: '/documents',
-
-    'rrsp-contributions': '/documents',
-    'fhsa-contributions': '/documents',
-    t4fhsa: '/documents',
-    t4rsp: '/documents',
-    t4rif: '/documents',
-    'resp-contributions': '/documents',
-
-    'fuel-receipts': '/gig/documents/fuel-receipts',
-    'maintenance-receipts': '/gig/documents/maintenance',
-    'insurance-receipts': '/gig/documents/insurance',
-    'service-receipts': '/gig/documents/mobile-bills',
-    'equipment-receipts': '/gig/documents/other-deductions',
-    'parking-receipts': '/gig/documents/other-deductions',
-    'meals-receipts': '/gig/documents/other-deductions',
-    'supplies-receipts': '/gig/documents/other-deductions',
-
-    'medical-expenses': '/documents',
-    'charitable-donations': '/documents',
-    'child-care-expenses': '/documents',
-    'moving-expenses': '/documents',
-    'home-office-expenses': '/documents',
-    'tuition-slips': '/documents',
+    t4: '/documents?category=t4',
+    t4a: '/documents?category=t4a',
+    t5: '/documents?category=investments',
+    t3: '/documents?category=investments',
+    t5008: '/documents?category=investments',
+    'rrsp-contributions': '/documents?category=rrsp',
+    'fhsa-contributions': '/documents?category=fhsa',
+    'tfsa-records': '/documents?category=tfsa',
+    'fuel-receipts': '/receipts',
+    'maintenance-receipts': '/receipts',
+    'insurance-receipts': '/receipts',
+    'service-receipts': '/receipts',
+    'equipment-receipts': '/receipts',
+    'parking-receipts': '/receipts',
+    'meals-receipts': '/receipts',
+    'supplies-receipts': '/receipts',
+    'medical-expenses': '/documents?category=medical',
+    'charitable-donations': '/documents?category=donations',
+    'child-care-expenses': '/documents?category=child-care',
+    'moving-expenses': '/documents?category=moving',
+    'home-office-expenses': '/receipts',
+    'home-office': '/receipts',
+    'tuition-slips': '/documents?category=tuition',
+    'rental-income': '/documents?category=rental',
+    'foreign-income': '/documents?category=foreign-income',
+    'crypto-transactions': '/documents?category=crypto',
+    'business-records': '/business/sales-income',
+    'gst-hst': '/business/gst-records',
+    payroll: '/business/payroll',
+    inventory: '/business/inventory',
+    'rent-utilities': '/business/rent-utilities',
+    'vehicle-expenses': '/receipts',
+    'payroll-expenses': '/business/payroll',
+    'inventory-purchases': '/business/inventory',
+    'professional-fees': '/receipts',
+    'other-receipts': '/receipts',
     'ccb-notice': '/documents',
     'rent-receipts': '/documents',
   };
@@ -91,10 +504,7 @@ const ProvinceChangeModal = ({ onClose, currentProvince, onUpdate }) => {
           <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-900">Change Province</h3>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-500"
-              >
+              <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
                 <X size={20} />
               </button>
             </div>
@@ -181,8 +591,8 @@ const DocumentRow = ({ document }) => {
             document.uploaded
               ? 'bg-success-100'
               : document.notRequired
-              ? 'bg-gray-100'
-              : 'bg-warning-100'
+                ? 'bg-gray-100'
+                : 'bg-warning-100'
           }`}
         >
           <Icon
@@ -191,8 +601,8 @@ const DocumentRow = ({ document }) => {
               document.uploaded
                 ? 'text-success-600'
                 : document.notRequired
-                ? 'text-gray-400'
-                : 'text-warning-600'
+                  ? 'text-gray-400'
+                  : 'text-warning-600'
             }
           />
         </div>
@@ -293,6 +703,17 @@ const CategoryTabs = ({ categories, activeCategory, setActiveCategory, documents
   );
 };
 
+const SavingsItem = ({ label, amount, isHighlighted }) => (
+  <div
+    className={`flex justify-between ${
+      isHighlighted ? 'font-medium text-green-600' : 'text-gray-700'
+    }`}
+  >
+    <span className="text-sm">{label}</span>
+    <span className="font-medium">${amount.toFixed(2)}</span>
+  </div>
+);
+
 const TaxChecklist = () => {
   const { user } = useAuth();
   const [selectedProvince, setSelectedProvince] = useState(
@@ -303,405 +724,142 @@ const TaxChecklist = () => {
   const [taxNews] = useState([
     {
       id: 1,
-      title: '2024 Tax Rates Announced',
-      date: '2024-03-15',
-      content:
-        'CRA has announced new tax brackets and rates for 2024. The basic personal amount has increased to $15,705.',
+      title: 'Review all slips before filing',
+      date: '2026-03-15',
+      content: 'Make sure all selected and suggested documents are reviewed before filing.',
       priority: 'high',
       read: false,
     },
     {
       id: 2,
-      title: 'First Home Savings Account (FHSA) Updates',
-      date: '2024-03-10',
-      content:
-        'Remember that FHSA contributions are tax-deductible up to $8,000 annually. First-time home buyers can now combine FHSA with HBP.',
+      title: 'FHSA and RRSP records can affect your deduction room',
+      date: '2026-03-10',
+      content: 'Keep contribution records organized for faster tax preparation.',
       priority: 'medium',
       read: false,
     },
     {
       id: 3,
-      title: 'RRSP Deadline Approaching',
-      date: '2024-02-28',
-      content:
-        'The RRSP contribution deadline for the 2023 tax year is March 1, 2024. Contributions made between March 2, 2023 and March 1, 2024 can be deducted.',
-      priority: 'high',
+      title: 'Receipt categories can be updated later',
+      date: '2026-03-01',
+      content: 'You can manage receipt categories from your profile and documents flow.',
+      priority: 'low',
       read: true,
     },
   ]);
 
-  const getDocumentChecklist = () => {
-    const hasGigWork =
-      user?.userType === 'gig-worker' ||
-      user?.userType === 'self-employed' ||
-      user?.taxProfile?.gigWork ||
-      user?.taxProfile?.selfEmployment;
+  const selectedSlips = user?.documentPreferences?.selectedSlips || [];
+  const selectedReceiptCategories =
+    user?.documentPreferences?.selectedReceiptCategories || [];
+  const suggestedSlips = user?.onboarding?.suggestedSlips || [];
+  const suggestedReceiptCategories =
+    user?.onboarding?.suggestedReceiptCategories || [];
 
-    return [
-      {
-        id: 't4',
-        name: 'T4 - Employment Income',
-        description: 'Statement of remuneration from employer',
-        category: 'income',
-        deadline: 'February 28, 2024',
-        taxSlip: true,
-        estimatedValue: 45000,
-        taxImpact: 'Report employment income',
-        uploaded: true,
-        notRequired: false,
-        icon: FileText,
-      },
-      {
-        id: 't4a',
-        name: 'T4A - Self-Employed / Gig Income',
-        description:
-          'Annual income slips or platform summaries from Uber, DoorDash, Skip, Instacart, and similar apps',
-        category: 'income',
-        deadline: 'February 28, 2024',
-        taxSlip: true,
-        estimatedValue: 12000,
-        taxImpact: 'Report self-employment income',
-        uploaded: false,
-        notRequired: !hasGigWork,
-        icon: Briefcase,
-      },
-      {
-        id: 't5',
-        name: 'T5 - Investment Income',
-        description: 'Dividends, interest from investments',
-        category: 'income',
-        deadline: 'February 28, 2024',
-        taxSlip: true,
-        estimatedValue: 3500,
-        taxImpact: 'Report dividends and interest',
-        uploaded: false,
-        notRequired: false,
-        icon: TrendingUp,
-      },
-      {
-        id: 't3',
-        name: 'T3 - Trust Income',
-        description: 'Income from trusts, mutual funds',
-        category: 'investment',
-        deadline: 'March 31, 2024',
-        taxSlip: true,
-        estimatedValue: 1200,
-        taxImpact: 'Report trust income',
-        uploaded: false,
-        notRequired: true,
-        icon: FileText,
-      },
-      {
-        id: 't5008',
-        name: 'T5008 - Securities Transactions',
-        description: 'Stock sales, capital gains/losses',
-        category: 'investment',
-        deadline: 'February 28, 2024',
-        taxSlip: true,
-        estimatedValue: 5000,
-        taxImpact: 'Report capital gains/losses',
-        uploaded: false,
-        notRequired: false,
-        icon: TrendingUp,
-      },
-      {
-        id: 'rrsp-contributions',
-        name: 'RRSP Contribution Receipts',
-        description: 'Receipts for RRSP contributions',
-        category: 'savings',
-        deadline: 'March 1, 2024',
-        taxSlip: true,
-        estimatedValue: 5000,
-        taxImpact: 'Reduce taxable income',
-        uploaded: true,
-        notRequired: false,
-        icon: PiggyBank,
-      },
-      {
-        id: 'fhsa-contributions',
-        name: 'FHSA Contribution Receipts',
-        description: 'First Home Savings Account contributions',
-        category: 'savings',
-        deadline: 'December 31, 2024',
-        taxSlip: true,
-        estimatedValue: 8000,
-        taxImpact: 'Reduce taxable income',
-        uploaded: false,
-        notRequired: false,
-        icon: Home,
-      },
-      {
-        id: 't4fhsa',
-        name: 'T4FHSA - FHSA Statement',
-        description: 'Annual FHSA statement',
-        category: 'savings',
-        deadline: 'February 28, 2024',
-        taxSlip: true,
-        estimatedValue: null,
-        taxImpact: 'Report FHSA activity',
-        uploaded: false,
-        notRequired: true,
-        icon: FileText,
-      },
-      {
-        id: 't4rsp',
-        name: 'T4RSP - RRSP Withdrawal',
-        description: 'RRSP withdrawal statement',
-        category: 'savings',
-        deadline: 'February 28, 2024',
-        taxSlip: true,
-        estimatedValue: null,
-        taxImpact: 'Taxable withdrawal',
-        uploaded: false,
-        notRequired: true,
-        icon: PiggyBank,
-      },
-      {
-        id: 't4rif',
-        name: 'T4RIF - RRIF Income',
-        description: 'RRIF income statement',
-        category: 'retirement',
-        deadline: 'February 28, 2024',
-        taxSlip: true,
-        estimatedValue: null,
-        taxImpact: 'Taxable retirement income',
-        uploaded: false,
-        notRequired: true,
-        icon: Heart,
-      },
-      {
-        id: 'resp-contributions',
-        name: 'RESP Contribution Receipts',
-        description: 'Registered Education Savings Plan contributions',
-        category: 'education',
-        deadline: 'December 31, 2024',
-        taxSlip: true,
-        estimatedValue: 2500,
-        taxImpact: 'CESG grants available',
-        uploaded: false,
-        notRequired: !user?.hasChildren,
-        icon: GraduationCap,
-      },
-      ...(hasGigWork
-        ? [
-            {
-              id: 'fuel-receipts',
-              name: 'Fuel Receipts',
-              description:
-                'Recurring fuel receipts for work-related driving. You may upload many throughout the year.',
-              category: 'business',
-              deadline: 'December 31, 2024',
-              taxSlip: false,
-              estimatedValue: 3200,
-              taxImpact: 'Deduct business use portion',
-              uploaded: true,
-              notRequired: false,
-              icon: Flame,
-            },
-            {
-              id: 'maintenance-receipts',
-              name: 'Maintenance & Parts Receipts',
-              description:
-                'Oil changes, repairs, tires, and vehicle maintenance. Multiple uploads allowed.',
-              category: 'business',
-              deadline: 'December 31, 2024',
-              taxSlip: false,
-              estimatedValue: 850,
-              taxImpact: 'Deduct business use portion',
-              uploaded: true,
-              notRequired: false,
-              icon: Wrench,
-            },
-            {
-              id: 'insurance-receipts',
-              name: 'Vehicle Insurance',
-              description:
-                'Usually one main policy or annual renewal document each year.',
-              category: 'business',
-              deadline: 'December 31, 2024',
-              taxSlip: false,
-              estimatedValue: 1200,
-              taxImpact: 'Deduct business use portion',
-              uploaded: false,
-              notRequired: false,
-              icon: Shield,
-            },
-            {
-              id: 'service-receipts',
-              name: 'Mobile / Service Bills',
-              description:
-                'Monthly phone or service bills used for gig work. Usually recurring through the year.',
-              category: 'business',
-              deadline: 'December 31, 2024',
-              taxSlip: false,
-              estimatedValue: 1800,
-              taxImpact: 'Deduct business expenses',
-              uploaded: false,
-              notRequired: false,
-              icon: Smartphone,
-            },
-            {
-              id: 'equipment-receipts',
-              name: 'Equipment Purchases',
-              description: 'Tools, devices, work equipment',
-              category: 'business',
-              deadline: 'December 31, 2024',
-              taxSlip: false,
-              estimatedValue: 950,
-              taxImpact: 'Capital cost allowance',
-              uploaded: false,
-              notRequired: false,
-              icon: Hammer,
-            },
-            {
-              id: 'parking-receipts',
-              name: 'Parking & Tolls',
-              description: 'Business parking, highway tolls',
-              category: 'business',
-              deadline: 'December 31, 2024',
-              taxSlip: false,
-              estimatedValue: 450,
-              taxImpact: 'Fully deductible',
-              uploaded: false,
-              notRequired: false,
-              icon: MapPin,
-            },
-            {
-              id: 'meals-receipts',
-              name: 'Meals & Entertainment',
-              description: 'Client meetings, business meals',
-              category: 'business',
-              deadline: 'December 31, 2024',
-              taxSlip: false,
-              estimatedValue: 600,
-              taxImpact: '50% deductible',
-              uploaded: false,
-              notRequired: false,
-              icon: Receipt,
-            },
-            {
-              id: 'supplies-receipts',
-              name: 'Office Supplies',
-              description: 'Paper, ink, office expenses',
-              category: 'business',
-              deadline: 'December 31, 2024',
-              taxSlip: false,
-              estimatedValue: 350,
-              taxImpact: 'Fully deductible',
-              uploaded: false,
-              notRequired: false,
-              icon: Receipt,
-            },
-          ]
-        : []),
-      {
-        id: 'medical-expenses',
-        name: 'Medical Expense Receipts',
-        description: 'Eligible medical expenses',
-        category: 'deductions',
-        deadline: 'December 31, 2024',
-        taxSlip: false,
-        estimatedValue: 1500,
-        taxImpact: 'Tax credit (15% of eligible amount)',
-        uploaded: false,
-        notRequired: false,
-        icon: Heart,
-      },
-      {
-        id: 'charitable-donations',
-        name: 'Charitable Donation Receipts',
-        description: 'Donations to registered charities',
-        category: 'deductions',
-        deadline: 'December 31, 2024',
-        taxSlip: true,
-        estimatedValue: 500,
-        taxImpact: 'Tax credit (15-29%)',
-        uploaded: false,
-        notRequired: false,
-        icon: Gift,
-      },
-      {
-        id: 'child-care-expenses',
-        name: 'Child Care Expense Receipts',
-        description: 'Daycare, babysitting, camps',
-        category: 'deductions',
-        deadline: 'December 31, 2024',
-        taxSlip: false,
-        estimatedValue: 5000,
-        taxImpact: 'Deduct from income (lower earner)',
-        uploaded: false,
-        notRequired: !user?.hasChildren,
-        icon: Baby,
-      },
-      {
-        id: 'moving-expenses',
-        name: 'Moving Expense Receipts',
-        description: 'Expenses for work/school move (40km+)',
-        category: 'deductions',
-        deadline: 'December 31, 2024',
-        taxSlip: false,
-        estimatedValue: 2000,
-        taxImpact: 'Deduct from income',
-        uploaded: false,
-        notRequired: true,
-        icon: Car,
-      },
-      {
-        id: 'home-office-expenses',
-        name: 'Home Office Expense Form',
-        description: 'T2200 or T777 for home office',
-        category: 'deductions',
-        deadline: 'December 31, 2024',
-        taxSlip: false,
-        estimatedValue: 500,
-        taxImpact: 'Deduct home office costs',
-        uploaded: false,
-        notRequired: !user?.worksFromHome,
-        icon: Home,
-      },
-      {
-        id: 'tuition-slips',
-        name: 'Tuition Slips (T2202)',
-        description: 'Post-secondary education amounts',
-        category: 'education',
-        deadline: 'February 28, 2024',
-        taxSlip: true,
-        estimatedValue: 5000,
-        taxImpact: 'Tax credit (15%)',
-        uploaded: false,
-        notRequired: user?.userType !== 'student',
-        icon: GraduationCap,
-      },
-      {
+  const finalSlips =
+    selectedSlips.length > 0 ? selectedSlips : suggestedSlips;
+  const finalReceiptCategories =
+    selectedReceiptCategories.length > 0
+      ? selectedReceiptCategories
+      : suggestedReceiptCategories;
+
+  const getDocumentChecklist = () => {
+    const uploadedSeed = new Set([
+      'T4',
+      'RRSP',
+      ...(user?.taxProfile?.gigWork || user?.taxProfile?.selfEmployment ? ['fuel'] : []),
+    ]);
+
+    const slipDocs = finalSlips
+      .map((slipKey) => {
+        const config = SLIP_CONFIG[slipKey];
+        if (!config) return null;
+
+        return {
+          ...config,
+          uploaded: uploadedSeed.has(slipKey),
+          notRequired: false,
+          source: selectedSlips.includes(slipKey) ? 'selected' : 'suggested',
+        };
+      })
+      .filter(Boolean);
+
+    const receiptDocs = finalReceiptCategories
+      .map((receiptKey) => {
+        const config = RECEIPT_CONFIG[receiptKey];
+        if (!config) return null;
+
+        return {
+          ...config,
+          uploaded: uploadedSeed.has(receiptKey),
+          notRequired: false,
+          source: selectedReceiptCategories.includes(receiptKey)
+            ? 'selected'
+            : 'suggested',
+        };
+      })
+      .filter(Boolean);
+
+    const extraDocs = [];
+
+    if (user?.hasChildren) {
+      extraDocs.push({
         id: 'ccb-notice',
         name: 'Canada Child Benefit Notice',
         description: 'CCB annual notice from CRA',
         category: 'benefits',
-        deadline: 'July 2024',
+        deadline: 'July 2026',
         taxSlip: true,
         estimatedValue: 7200,
         taxImpact: 'Tax-free benefit',
         uploaded: false,
-        notRequired: !user?.hasChildren,
+        notRequired: false,
         icon: Baby,
-      },
-      {
+        source: 'profile',
+      });
+    }
+
+    if (selectedProvince === 'QC' || selectedProvince === 'MB') {
+      extraDocs.push({
         id: 'rent-receipts',
         name: 'Rent Receipts',
         description: 'Rent paid for principal residence',
         category: 'credits',
-        deadline: 'December 31, 2024',
+        deadline: 'December 31, 2026',
         taxSlip: false,
         estimatedValue: 12000,
         taxImpact: 'Provincial tax credit',
         uploaded: false,
-        notRequired: !(selectedProvince === 'QC' || selectedProvince === 'MB'),
+        notRequired: false,
         icon: Home,
-      },
-    ];
+        source: 'province',
+      });
+    }
+
+    const combined = [...slipDocs, ...receiptDocs, ...extraDocs];
+
+    const uniqueById = new Map();
+    combined.forEach((doc) => {
+      if (!uniqueById.has(doc.id)) {
+        uniqueById.set(doc.id, doc);
+      }
+    });
+
+    return Array.from(uniqueById.values());
   };
 
-  const documents = getDocumentChecklist();
+  const documents = useMemo(
+    () => getDocumentChecklist(),
+    [
+      finalSlips,
+      finalReceiptCategories,
+      selectedProvince,
+      user?.hasChildren,
+      user?.taxProfile?.gigWork,
+      user?.taxProfile?.selfEmployment,
+      selectedSlips,
+      selectedReceiptCategories,
+    ]
+  );
 
   const totalDocs = documents.filter((d) => !d.notRequired).length;
   const uploadedDocs = documents.filter((d) => d.uploaded && !d.notRequired).length;
@@ -713,7 +871,7 @@ const TaxChecklist = () => {
       income: { id: 'income', name: 'Income', icon: DollarSign },
       investment: { id: 'investment', name: 'Investment', icon: TrendingUp },
       savings: { id: 'savings', name: 'Savings', icon: PiggyBank },
-      business: { id: 'business', name: 'Gig Work', icon: Briefcase },
+      business: { id: 'business', name: 'Business / Gig', icon: Briefcase },
       deductions: { id: 'deductions', name: 'Deductions', icon: Percent },
       education: { id: 'education', name: 'Education', icon: GraduationCap },
       benefits: { id: 'benefits', name: 'Benefits', icon: Baby },
@@ -729,12 +887,14 @@ const TaxChecklist = () => {
     const provinceInfo = PROVINCES.find((p) => p.id === selectedProvince);
     const taxRate = provinceInfo?.hst || provinceInfo?.gst || 5;
 
-    const rrspSavings = 5000 * (taxRate / 100);
-    const fhsaSavings = 8000 * (taxRate / 100);
-    const donationSavings = 500 * 0.25;
-    const medicalSavings = 1500 * 0.15;
+    const rrspSavings = finalSlips.includes('RRSP') ? 5000 * (taxRate / 100) : 0;
+    const fhsaSavings = finalSlips.includes('FHSA') ? 8000 * (taxRate / 100) : 0;
+    const donationSavings = finalSlips.includes('DONATIONS') ? 500 * 0.25 : 0;
+    const medicalSavings = finalSlips.includes('MEDICAL') ? 1500 * 0.15 : 0;
     const businessSavings =
-      user?.userType === 'gig-worker' || user?.userType === 'self-employed'
+      finalSlips.includes('T4A') ||
+      finalSlips.includes('BUSINESS_RECORDS') ||
+      finalReceiptCategories.length > 0
         ? 1250
         : 0;
 
@@ -767,9 +927,7 @@ const TaxChecklist = () => {
               )}
             </div>
             <div>
-              <h3 className="font-semibold text-primary-800">
-                Tax Updates & Reminders
-              </h3>
+              <h3 className="font-semibold text-primary-800">Tax Updates & Reminders</h3>
               <p className="text-sm text-primary-600">
                 {unreadNews} new update{unreadNews !== 1 ? 's' : ''} available
               </p>
@@ -783,25 +941,40 @@ const TaxChecklist = () => {
     );
   };
 
+  const setupMode = user?.documentPreferences?.skippedAtRegistration
+    ? 'Skipped at registration'
+    : user?.documentPreferences?.needsSuggestions
+      ? 'Suggested by app'
+      : 'Selected by user';
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       <TaxNewsBar />
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Tax Document Checklist</h1>
           <p className="mt-1 text-gray-500">
-            Track your documents and maximize your tax savings
+            Track your selected and suggested documents and maximize your tax savings
           </p>
         </div>
+
+        <Button variant="outline" onClick={() => setShowProvinceModal(true)}>
+          Change Province
+        </Button>
       </div>
 
       <Card className="border-blue-200 bg-blue-50">
-        <Card.Body>
+        <Card.Body className="space-y-3">
           <p className="text-sm text-blue-800">
-            This checklist shows what you need. Click <strong>Upload</strong> to
-            open the correct page and manage documents.
+            This checklist is now built from your onboarding setup. Click <strong>Upload</strong>{' '}
+            to open the correct page and manage documents.
           </p>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="info">{setupMode}</Badge>
+            <Badge variant="success">{finalSlips.length} slips</Badge>
+            <Badge variant="warning">{finalReceiptCategories.length} receipt categories</Badge>
+          </div>
         </Card.Body>
       </Card>
 
@@ -866,123 +1039,125 @@ const TaxChecklist = () => {
           />
 
           <div className="space-y-3">
-            {activeDocuments.map((doc) => (
-              <DocumentRow key={doc.id} document={doc} />
-            ))}
+            {activeDocuments.length > 0 ? (
+              activeDocuments.map((doc) => <DocumentRow key={doc.id} document={doc} />)
+            ) : (
+              <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-6 text-sm text-gray-500">
+                No documents in this category yet.
+              </div>
+            )}
           </div>
         </Card.Body>
       </Card>
 
-<div className="flex flex-col gap-4 md:flex-row">
-  <div className="min-w-0 flex-1">
-    <Card className="h-full border-green-200 bg-gradient-to-br from-green-50 to-white">
-      <Card.Body className="p-4">
-        <div className="mb-3 flex items-center">
-          <TrendingUp className="mr-2 text-green-600" size={18} />
-          <h3 className="text-sm font-semibold text-green-800">
-            Estimated Tax Savings
-          </h3>
-        </div>
+      <div className="flex flex-col gap-4 md:flex-row">
+        <div className="min-w-0 flex-1">
+          <Card className="h-full border-green-200 bg-gradient-to-br from-green-50 to-white">
+            <Card.Body className="p-4">
+              <div className="mb-3 flex items-center">
+                <TrendingUp className="mr-2 text-green-600" size={18} />
+                <h3 className="text-sm font-semibold text-green-800">
+                  Estimated Tax Savings
+                </h3>
+              </div>
 
-        <p className="mb-3 text-2xl font-bold text-green-700">
-          ${taxSavings.total.toFixed(2)}
-        </p>
-
-        <div className="space-y-1.5 text-xs">
-          <SavingsItem
-            label="RRSP/FHSA"
-            amount={taxSavings.rrsp + taxSavings.fhsa}
-          />
-          <SavingsItem label="Donations" amount={taxSavings.donations} />
-          <SavingsItem label="Medical" amount={taxSavings.medical} />
-
-          {(user?.userType === 'gig-worker' ||
-            user?.userType === 'self-employed' ||
-            user?.taxProfile?.gigWork ||
-            user?.taxProfile?.selfEmployment) && (
-            <SavingsItem
-              label="Business Expenses"
-              amount={taxSavings.business}
-              isHighlighted
-            />
-          )}
-
-          <div className="mt-2 border-t border-green-200 pt-2">
-            <div className="flex justify-between text-sm font-bold">
-              <span>Total</span>
-              <span className="text-green-700">
+              <p className="mb-3 text-2xl font-bold text-green-700">
                 ${taxSavings.total.toFixed(2)}
-              </span>
-            </div>
-          </div>
-        </div>
-      </Card.Body>
-    </Card>
-  </div>
+              </p>
 
-  <div className="min-w-0 flex-1">
-    <Card className="h-full border-orange-200 bg-orange-50">
-      <Card.Body className="p-4">
-        <div className="mb-3 flex items-center">
-          <Calendar size={18} className="mr-2 text-orange-600" />
-          <h3 className="text-sm font-semibold text-orange-800">
-            Upcoming Deadlines
-          </h3>
-        </div>
+              <div className="space-y-1.5 text-xs">
+                <SavingsItem
+                  label="RRSP/FHSA"
+                  amount={taxSavings.rrsp + taxSavings.fhsa}
+                />
+                <SavingsItem label="Donations" amount={taxSavings.donations} />
+                <SavingsItem label="Medical" amount={taxSavings.medical} />
 
-        <div className="space-y-2">
-          <div className="rounded-lg bg-white p-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="text-xs font-medium">RRSP Contribution</p>
-                <p className="text-[11px] text-gray-500">March 1, 2024</p>
+                {(finalSlips.includes('T4A') ||
+                  finalSlips.includes('BUSINESS_RECORDS') ||
+                  finalReceiptCategories.length > 0) && (
+                  <SavingsItem
+                    label="Business Expenses"
+                    amount={taxSavings.business}
+                    isHighlighted
+                  />
+                )}
+
+                <div className="mt-2 border-t border-green-200 pt-2">
+                  <div className="flex justify-between text-sm font-bold">
+                    <span>Total</span>
+                    <span className="text-green-700">
+                      ${taxSavings.total.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <Badge variant="warning">14 days</Badge>
-            </div>
-          </div>
-
-          <div className="rounded-lg bg-white p-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="text-xs font-medium">Tax Filing Deadline</p>
-                <p className="text-[11px] text-gray-500">April 30, 2024</p>
-              </div>
-              <Badge variant="info">45 days</Badge>
-            </div>
-          </div>
-
-          <div className="rounded-lg bg-white p-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="text-xs font-medium">GST/HST Filing</p>
-                <p className="text-[11px] text-gray-500">April 30, 2024</p>
-              </div>
-              <Badge variant="info">45 days</Badge>
-            </div>
-          </div>
-        </div>
-      </Card.Body>
-    </Card>
-  </div>
-
-  <div className="min-w-0 flex-1">
-    <Card className="h-full border-blue-200 bg-blue-50">
-      <Card.Body className="p-4">
-        <div className="mb-3 flex items-center">
-          <Info size={18} className="mr-2 text-blue-600" />
-          <h3 className="text-sm font-semibold text-blue-800">
-            Did you know?
-          </h3>
+            </Card.Body>
+          </Card>
         </div>
 
-        <p className="text-sm leading-6 text-blue-700">
-          This checklist is your progress page. Upload and review happen in the
-          linked document pages, so both flows stay connected and easy to understand.
-        </p>
-      </Card.Body>
-    </Card>
-  </div>
-</div>
+        <div className="min-w-0 flex-1">
+          <Card className="h-full border-orange-200 bg-orange-50">
+            <Card.Body className="p-4">
+              <div className="mb-3 flex items-center">
+                <Calendar size={18} className="mr-2 text-orange-600" />
+                <h3 className="text-sm font-semibold text-orange-800">
+                  Upcoming Deadlines
+                </h3>
+              </div>
+
+              <div className="space-y-2">
+                <div className="rounded-lg bg-white p-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-medium">RRSP Contribution</p>
+                      <p className="text-[11px] text-gray-500">March 1, 2026</p>
+                    </div>
+                    <Badge variant="warning">Soon</Badge>
+                  </div>
+                </div>
+
+                <div className="rounded-lg bg-white p-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-medium">Tax Filing Deadline</p>
+                      <p className="text-[11px] text-gray-500">April 30, 2026</p>
+                    </div>
+                    <Badge variant="info">Upcoming</Badge>
+                  </div>
+                </div>
+
+                <div className="rounded-lg bg-white p-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-medium">GST/HST Filing</p>
+                      <p className="text-[11px] text-gray-500">April 30, 2026</p>
+                    </div>
+                    <Badge variant="info">Upcoming</Badge>
+                  </div>
+                </div>
+              </div>
+            </Card.Body>
+          </Card>
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <Card className="h-full border-blue-200 bg-blue-50">
+            <Card.Body className="p-4">
+              <div className="mb-3 flex items-center">
+                <Info size={18} className="mr-2 text-blue-600" />
+                <h3 className="text-sm font-semibold text-blue-800">Did you know?</h3>
+              </div>
+
+              <p className="text-sm leading-6 text-blue-700">
+                This checklist is now personalized from your onboarding choices. You can
+                still add new slips and receipt categories later from your profile,
+                documents, or receipts pages.
+              </p>
+            </Card.Body>
+          </Card>
+        </div>
+      </div>
 
       {showProvinceModal && (
         <ProvinceChangeModal
@@ -994,16 +1169,5 @@ const TaxChecklist = () => {
     </div>
   );
 };
-
-const SavingsItem = ({ label, amount, isHighlighted }) => (
-  <div
-    className={`flex justify-between ${
-      isHighlighted ? 'font-medium text-green-600' : 'text-gray-700'
-    }`}
-  >
-    <span className="text-sm">{label}</span>
-    <span className="font-medium">${amount.toFixed(2)}</span>
-  </div>
-);
 
 export default TaxChecklist;

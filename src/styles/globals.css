@@ -120,6 +120,22 @@ html {
   font-size: 16px;
   scroll-behavior: smooth;
 }
+@keyframes scroll-x {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll-x {
+  animation: scroll-x 30s linear infinite;
+}
+
+.animate-scroll-x:hover {
+  animation-play-state: paused;
+}
 
 body {
   font-family: var(--font-family);

@@ -13,7 +13,7 @@ export const useAuth = () => {
 };
 
 const normalizeTaxProfile = (user) => {
-  const raw = user?.taxProfile || {};
+  const raw = user?.taxProfile || user?.profile?.taxProfile || {};
 
   return {
     employment: !!raw.employment,
@@ -63,6 +63,107 @@ const normalizeSpouseData = (spouse) => {
   };
 };
 
+const normalizeDocumentPreferences = (rawUser) => {
+  const source =
+    rawUser?.documentPreferences ||
+    rawUser?.onboarding ||
+    rawUser?.profile?.documentPreferences ||
+    {};
+
+  return {
+    knowsSlipTypes:
+      source.knowsSlipTypes !== undefined ? !!source.knowsSlipTypes : true,
+    needsSuggestions: !!source.needsSuggestions,
+    skippedAtRegistration: !!source.skippedAtRegistration,
+    selectedSlips: Array.isArray(source.selectedSlips) ? source.selectedSlips : [],
+    selectedReceiptCategories: Array.isArray(source.selectedReceiptCategories)
+      ? source.selectedReceiptCategories
+      : [],
+  };
+};
+
+const deriveIncomeSources = (rawUser, taxProfile) => {
+  if (Array.isArray(rawUser?.incomeSources) && rawUser.incomeSources.length > 0) {
+    return rawUser.incomeSources;
+  }
+
+  const sources = [];
+  if (taxProfile.employment) sources.push('employment');
+  if (taxProfile.gigWork) sources.push('gig_work');
+  if (taxProfile.selfEmployment) sources.push('self_employed');
+  if (taxProfile.incorporatedBusiness) sources.push('business');
+  return sources;
+};
+
+const buildChecklistSuggestions = (taxProfile, profile = {}, documentPreferences = {}) => {
+  const suggestedSlips = new Set(documentPreferences.selectedSlips || []);
+  const suggestedReceipts = new Set(
+    documentPreferences.selectedReceiptCategories || []
+  );
+
+  if (taxProfile.employment) {
+    suggestedSlips.add('T4');
+    if (profile.workFromHome || taxProfile.workFromHome) {
+      suggestedSlips.add('HOME_OFFICE');
+    }
+  }
+
+  if (taxProfile.gigWork) {
+    suggestedSlips.add('T4A');
+    suggestedReceipts.add('fuel');
+    suggestedReceipts.add('maintenance');
+    suggestedReceipts.add('parking_tolls');
+    suggestedReceipts.add('mobile_internet');
+    suggestedReceipts.add('vehicle_expenses');
+    suggestedReceipts.add('insurance');
+  }
+
+  if (taxProfile.selfEmployment) {
+    suggestedSlips.add('T4A');
+    suggestedReceipts.add('mobile_internet');
+    suggestedReceipts.add('supplies');
+    suggestedReceipts.add('equipment');
+    suggestedReceipts.add('professional_fees');
+    suggestedReceipts.add('home_office');
+  }
+
+  if (taxProfile.incorporatedBusiness) {
+    suggestedSlips.add('BUSINESS_RECORDS');
+    suggestedSlips.add('GST_HST');
+    suggestedSlips.add('PAYROLL');
+    suggestedSlips.add('INVENTORY');
+    suggestedReceipts.add('rent_utilities');
+    suggestedReceipts.add('payroll_expenses');
+    suggestedReceipts.add('inventory_purchases');
+    suggestedReceipts.add('insurance');
+    suggestedReceipts.add('supplies');
+    suggestedReceipts.add('equipment');
+    suggestedReceipts.add('professional_fees');
+  }
+
+  if (profile.hasInvestments || taxProfile.investments) suggestedSlips.add('T5');
+  if (profile.hasT3) suggestedSlips.add('T3');
+  if (profile.hasT5008) suggestedSlips.add('T5008');
+  if (profile.hasRRSP || taxProfile.rrsp) suggestedSlips.add('RRSP');
+  if (profile.hasFHSA || taxProfile.fhsa) suggestedSlips.add('FHSA');
+  if (profile.hasTFSA || taxProfile.tfsa) suggestedSlips.add('TFSA');
+  if (profile.hasTuition) suggestedSlips.add('TUITION');
+  if (profile.hasMedicalExpenses) suggestedSlips.add('MEDICAL');
+  if (profile.hasCharitableDonations || taxProfile.donations) suggestedSlips.add('DONATIONS');
+  if (profile.hasChildCareExpenses) suggestedSlips.add('CHILD_CARE');
+  if (profile.hasMovingExpenses) suggestedSlips.add('MOVING');
+  if (profile.hasRentalIncome) suggestedSlips.add('RENTAL');
+  if (profile.hasForeignIncome) suggestedSlips.add('FOREIGN');
+  if (profile.hasCrypto) suggestedSlips.add('CRYPTO');
+  if (profile.hasHomeOffice || taxProfile.workFromHome) suggestedReceipts.add('home_office');
+  if (profile.hasVehicleExpenses) suggestedReceipts.add('vehicle_expenses');
+
+  return {
+    suggestedSlips: Array.from(suggestedSlips),
+    suggestedReceiptCategories: Array.from(suggestedReceipts),
+  };
+};
+
 const buildUserData = (rawUser) => {
   const taxProfile = normalizeTaxProfile(rawUser);
 
@@ -70,9 +171,24 @@ const buildUserData = (rawUser) => {
     rawUser?.spouse ||
     rawUser?.spouseProfile ||
     rawUser?.spouseInfo ||
+    rawUser?.profile?.spouseInfo ||
     null;
 
   const normalizedSpouse = normalizeSpouseData(spouseRaw);
+  const profile = rawUser.profile || {};
+  const documentPreferences = normalizeDocumentPreferences(rawUser);
+  const onboardingSuggestions = buildChecklistSuggestions(
+    taxProfile,
+    profile,
+    documentPreferences
+  );
+
+  const hasSpouse =
+    !!rawUser.hasSpouse ||
+    !!rawUser.isMarried ||
+    rawUser?.maritalStatus === 'Married' ||
+    rawUser?.maritalStatus === 'Common-Law' ||
+    !!normalizedSpouse;
 
   return {
     id: rawUser.id,
@@ -80,30 +196,38 @@ const buildUserData = (rawUser) => {
     email: rawUser.email,
     role: rawUser.role || 'user',
     userType: rawUser.userType || getPrimaryUserType(taxProfile),
-    incomeSources: rawUser.incomeSources || [],
+    incomeSources: deriveIncomeSources(rawUser, taxProfile),
     taxProfile,
-    phone: rawUser.phone || rawUser.phoneNumber || '',
-    address: rawUser.address || '',
-    city: rawUser.city || '',
-    province: rawUser.province || '',
-    postalCode: rawUser.postalCode || '',
-    country: rawUser.country || 'Canada',
+
+    phone: rawUser.phone || rawUser.phoneNumber || profile.phone || '',
+    address: rawUser.address || profile.address || '',
+    city: rawUser.city || profile.city || '',
+    province: rawUser.province || profile.province || '',
+    postalCode: rawUser.postalCode || profile.postalCode || '',
+    country: rawUser.country || profile.country || 'Canada',
+
     assignedCAId: rawUser.assignedCAId || rawUser.caId || null,
     assignedCA: rawUser.assignedCA || null,
 
-    hasSpouse: !!rawUser.hasSpouse,
-    isMarried: !!rawUser.isMarried,
-    maritalStatus: rawUser.maritalStatus || (rawUser.hasSpouse ? 'married' : ''),
+    hasSpouse,
+    isMarried: hasSpouse,
+    maritalStatus: rawUser.maritalStatus || (hasSpouse ? 'Married' : 'Single'),
 
     spouse: normalizedSpouse,
     spouseProfile: normalizedSpouse,
     spouseInfo: normalizedSpouse,
 
-    dependents: rawUser.dependents || [],
-    profile: rawUser.profile || {},
+    dependents: rawUser.dependents || profile.children || [],
+    profile,
+    documentPreferences,
+    onboarding: {
+      ...documentPreferences,
+      ...onboardingSuggestions,
+    },
+
     clientId: rawUser.clientId || `TV-${String(rawUser.id || '0001').toUpperCase()}`,
     memberSince: rawUser.memberSince || new Date().getFullYear().toString(),
-    businessInfo: rawUser.businessInfo || {},
+    businessInfo: rawUser.businessInfo || profile.businessInfo || {},
     householdProfile: rawUser.householdProfile || null,
     householdIncomeSources: rawUser.householdIncomeSources || [],
 
@@ -129,6 +253,15 @@ const DEMO_USERS = {
       selfEmployment: false,
       incorporatedBusiness: false,
       spouse: false,
+      rrsp: true,
+      donations: true,
+    },
+    documentPreferences: {
+      knowsSlipTypes: true,
+      needsSuggestions: false,
+      skippedAtRegistration: false,
+      selectedSlips: ['T4', 'RRSP', 'DONATIONS'],
+      selectedReceiptCategories: ['medical', 'donations'],
     },
     hasSpouse: false,
     isMarried: false,
@@ -153,14 +286,14 @@ const DEMO_USERS = {
     role: 'business_owner',
     userType: 'business_owner',
     password: 'demo1234',
-    incomeSources: ['self_employed'],
+    incomeSources: ['self_employed', 'business'],
     businessName: 'Wilson Retail',
     businessInfo: {
       businessName: 'Wilson Retail',
       businessType: 'Sole Proprietor',
       gstRegistered: false,
       hasEmployees: false,
-      hasInventory: false,
+      hasInventory: true,
     },
     taxProfile: {
       employment: false,
@@ -168,6 +301,13 @@ const DEMO_USERS = {
       selfEmployment: true,
       incorporatedBusiness: true,
       spouse: false,
+    },
+    documentPreferences: {
+      knowsSlipTypes: false,
+      needsSuggestions: true,
+      skippedAtRegistration: false,
+      selectedSlips: [],
+      selectedReceiptCategories: [],
     },
     hasSpouse: false,
     isMarried: false,
@@ -189,6 +329,13 @@ const DEMO_USERS = {
       incorporatedBusiness: false,
       spouse: false,
     },
+    documentPreferences: {
+      knowsSlipTypes: false,
+      needsSuggestions: true,
+      skippedAtRegistration: false,
+      selectedSlips: [],
+      selectedReceiptCategories: [],
+    },
     hasSpouse: false,
     isMarried: false,
     maritalStatus: 'single',
@@ -208,6 +355,14 @@ const DEMO_USERS = {
       selfEmployment: false,
       incorporatedBusiness: false,
       spouse: false,
+      workFromHome: true,
+    },
+    documentPreferences: {
+      knowsSlipTypes: true,
+      needsSuggestions: false,
+      skippedAtRegistration: false,
+      selectedSlips: ['T4'],
+      selectedReceiptCategories: ['home_office'],
     },
     hasSpouse: false,
     isMarried: false,
@@ -221,7 +376,7 @@ const DEMO_USERS = {
     role: 'business_owner',
     userType: 'business_owner',
     password: 'password123',
-    incomeSources: ['employment', 'gig_work', 'self_employed'],
+    incomeSources: ['employment', 'gig_work', 'self_employed', 'business'],
     assignedCAId: 'demo-ca-1',
     assignedCA: {
       id: 'demo-ca-1',
@@ -234,6 +389,8 @@ const DEMO_USERS = {
       selfEmployment: true,
       incorporatedBusiness: true,
       spouse: false,
+      rrsp: true,
+      investments: true,
     },
     hasSpouse: false,
     isMarried: false,
@@ -245,6 +402,20 @@ const DEMO_USERS = {
       gstRegistered: true,
       hasEmployees: true,
       hasInventory: false,
+    },
+    documentPreferences: {
+      knowsSlipTypes: true,
+      needsSuggestions: false,
+      skippedAtRegistration: false,
+      selectedSlips: ['T4', 'T4A', 'RRSP', 'T5', 'BUSINESS_RECORDS', 'GST_HST'],
+      selectedReceiptCategories: [
+        'fuel',
+        'maintenance',
+        'mobile_internet',
+        'supplies',
+        'equipment',
+        'professional_fees',
+      ],
     },
     clientId: 'TV-MIXED-1001',
   },
@@ -353,6 +524,8 @@ export const AuthProvider = ({ children }) => {
       role: 'user',
       ...userData,
       profile: userData.profile || {},
+      documentPreferences: userData.documentPreferences || {},
+      onboarding: userData.onboarding || {},
       memberSince: new Date().getFullYear().toString(),
       clientId: `TV-${Date.now().toString().slice(-8)}`,
     });
@@ -406,10 +579,28 @@ export const AuthProvider = ({ children }) => {
         workFromHome: !!nextTaxProfile.workFromHome,
       };
 
+      const nextDocumentPreferences = prev.documentPreferences || {
+        knowsSlipTypes: true,
+        needsSuggestions: false,
+        skippedAtRegistration: false,
+        selectedSlips: [],
+        selectedReceiptCategories: [],
+      };
+
+      const onboarding = buildChecklistSuggestions(
+        updatedTaxProfile,
+        prev.profile || {},
+        nextDocumentPreferences
+      );
+
       const updated = {
         ...prev,
         taxProfile: updatedTaxProfile,
         userType: getPrimaryUserType(updatedTaxProfile),
+        onboarding: {
+          ...nextDocumentPreferences,
+          ...onboarding,
+        },
       };
 
       localStorage.setItem('user', JSON.stringify(updated));
@@ -417,6 +608,49 @@ export const AuthProvider = ({ children }) => {
     });
 
     toast.success('Tax profiles updated');
+  };
+
+  const updateDocumentPreferences = (nextPreferences) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+
+      const normalized = {
+        knowsSlipTypes:
+          nextPreferences?.knowsSlipTypes !== undefined
+            ? !!nextPreferences.knowsSlipTypes
+            : true,
+        needsSuggestions: !!nextPreferences?.needsSuggestions,
+        skippedAtRegistration: !!nextPreferences?.skippedAtRegistration,
+        selectedSlips: Array.isArray(nextPreferences?.selectedSlips)
+          ? nextPreferences.selectedSlips
+          : [],
+        selectedReceiptCategories: Array.isArray(
+          nextPreferences?.selectedReceiptCategories
+        )
+          ? nextPreferences.selectedReceiptCategories
+          : [],
+      };
+
+      const onboarding = buildChecklistSuggestions(
+        prev.taxProfile || {},
+        prev.profile || {},
+        normalized
+      );
+
+      const updated = {
+        ...prev,
+        documentPreferences: normalized,
+        onboarding: {
+          ...normalized,
+          ...onboarding,
+        },
+      };
+
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
+
+    toast.success('Document preferences updated');
   };
 
   const value = {
@@ -430,6 +664,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateUserType,
     updateTaxProfile,
+    updateDocumentPreferences,
     isAuthenticated: !!user,
     isCA: user?.role === 'ca',
     isAdmin: user?.role === 'admin',
