@@ -1,16 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
-  DollarSign,
   Eye,
   FileUp,
   Folder,
   List,
   Plus,
   Search,
-  Tag,
-  Trash2,
   Wrench,
   Fuel,
   Car,
@@ -30,6 +27,7 @@ import {
   Briefcase,
   Package,
   Receipt,
+  Trash2,
 } from 'lucide-react';
 import Card from 'components/ui/Card';
 import Button from 'components/ui/Button';
@@ -181,6 +179,14 @@ const CATEGORY_META = {
     iconColor: 'text-orange-700',
     chip: 'bg-orange-100 text-orange-700',
   },
+  vehicle_purchase: {
+    label: 'Vehicle Bill of Sale',
+    description: 'Bill of sale, lease, finance, and purchase paperwork for a work vehicle.',
+    icon: Car,
+    iconWrap: 'bg-orange-100',
+    iconColor: 'text-orange-700',
+    chip: 'bg-orange-100 text-orange-700',
+  },
   payroll_expenses: {
     label: 'Payroll Expenses',
     description: 'Payroll cost records and wage support.',
@@ -235,6 +241,7 @@ const GIG_FALLBACK = [
   'insurance',
   'meals',
   'vehicle_expenses',
+  'vehicle_purchase',
   'other',
 ];
 
@@ -251,6 +258,7 @@ const BUSINESS_FALLBACK = [
   'inventory_purchases',
   'professional_fees',
   'home_office',
+  'vehicle_purchase',
   'other',
 ];
 
@@ -265,10 +273,102 @@ const mapLegacyCategory = (category) => {
   return aliasMap[category] || category;
 };
 
+const InfoTile = ({ label, value }) => (
+  <div className="rounded-2xl border border-gray-200 bg-white p-4">
+    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{label}</p>
+    <p className="mt-2 text-sm font-semibold text-gray-900">{value}</p>
+  </div>
+);
+
+function generateMockReceipts(categories) {
+  const today = new Date();
+
+  const buildReceipt = (
+    id,
+    vendor,
+    category,
+    amount,
+    daysAgo,
+    notes,
+    paymentMethod = 'Credit Card'
+  ) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - daysAgo);
+
+    return {
+      id,
+      vendor,
+      category,
+      amount,
+      date: date.toISOString().split('T')[0],
+      gst: Math.round(amount * 0.05 * 100) / 100,
+      paymentMethod,
+      notes,
+      imageUrl: `https://placehold.co/900x1200/f8fafc/334155?text=${encodeURIComponent(
+        `${vendor} Receipt`
+      )}`,
+    };
+  };
+
+  const templates = {
+    fuel: ['Shell', 'Petro-Canada', 'Esso'],
+    maintenance: ['Canadian Tire', 'Midas', 'Jiffy Lube'],
+    parking_tolls: ['Green P', 'Impark', '407 ETR'],
+    mobile_internet: ['Rogers', 'Bell', 'Telus'],
+    supplies: ['Staples', 'Walmart', 'Costco'],
+    equipment: ['Best Buy', 'Amazon', 'Home Depot'],
+    insurance: ['Intact Insurance', 'Aviva', 'TD Insurance'],
+    meals: ['Tim Hortons', 'A&W', 'Subway'],
+    medical: ['Shoppers Drug Mart', 'Dental Clinic', 'Pharmacy'],
+    tuition: ['University Payment', 'College Fees', 'Course Portal'],
+    donations: ['United Way', 'Red Cross', 'Local Charity'],
+    rrsp: ['RBC', 'TD Direct Investing', 'Wealthsimple'],
+    childcare: ['BrightPath', 'Daycare Center', 'Child Care Provider'],
+    moving: ['U-Haul', 'Moving Supplies', 'Truck Rental'],
+    home_office: ['Staples', 'Telus', 'IKEA'],
+    rent_utilities: ['Landlord Payment', 'ATCO', 'Enmax'],
+    vehicle_expenses: ['Auto Expense Bundle', 'Vehicle Log Upload', 'Driving Costs'],
+    vehicle_purchase: ['Toyota Edmonton', 'Westgate Chevrolet', 'Honda Dealership'],
+    payroll_expenses: ['Payroll Provider', 'Wage Summary', 'Salary Records'],
+    inventory_purchases: ['Wholesale Supplier', 'Inventory Vendor', 'Stock Purchase'],
+    professional_fees: ['Accountant Invoice', 'Legal Invoice', 'Consulting Fee'],
+    other: ['Other Expense', 'Misc Expense', 'General Receipt'],
+  };
+
+  let id = 1;
+  const rows = [];
+
+  categories.forEach((category, index) => {
+    const vendors = templates[category] || templates.other;
+
+    vendors.slice(0, 2).forEach((vendor, vendorIndex) => {
+      const isVehiclePurchase = category === 'vehicle_purchase';
+
+      rows.push(
+        buildReceipt(
+          id++,
+          vendor,
+          category,
+          isVehiclePurchase
+            ? Number((38250 + vendorIndex * 1750).toFixed(2))
+            : Number((25 + index * 17 + vendorIndex * 21.35).toFixed(2)),
+          2 + index * 3 + vendorIndex * 5,
+          isVehiclePurchase
+            ? 'Vehicle bill of sale uploaded for tax support.'
+            : `${CATEGORY_META[category]?.label || 'Receipt'} uploaded for tax support.`,
+          isVehiclePurchase ? 'Financing' : 'Credit Card'
+        )
+      );
+    });
+  });
+
+  return rows;
+}
+
 const Receipts = () => {
   const { user } = useAuth();
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [viewMode, setViewMode] = useState('folders');
@@ -276,8 +376,10 @@ const Receipts = () => {
   const [sortBy, setSortBy] = useState('date-desc');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
+  const [previewReceipt, setPreviewReceipt] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [receipts, setReceipts] = useState([]);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const selectedReceiptCategories =
     user?.documentPreferences?.selectedReceiptCategories || [];
@@ -286,8 +388,7 @@ const Receipts = () => {
   const selectedSlips = user?.documentPreferences?.selectedSlips || [];
   const suggestedSlips = user?.onboarding?.suggestedSlips || [];
 
-  const finalSlips =
-    selectedSlips.length > 0 ? selectedSlips : suggestedSlips;
+  const finalSlips = selectedSlips.length > 0 ? selectedSlips : suggestedSlips;
 
   const fallbackCategories = useMemo(() => {
     const taxProfile = user?.taxProfile || {};
@@ -328,6 +429,12 @@ const Receipts = () => {
     if (finalSlips.includes('HOME_OFFICE') && !normalized.includes('home_office')) {
       normalized.push('home_office');
     }
+    if (
+      user?.vehiclePurchase?.wantsBillOfSaleUpload &&
+      !normalized.includes('vehicle_purchase')
+    ) {
+      normalized.push('vehicle_purchase');
+    }
 
     return Array.from(new Set(normalized)).filter((key) => CATEGORY_META[key]);
   }, [
@@ -335,6 +442,7 @@ const Receipts = () => {
     suggestedReceiptCategories,
     fallbackCategories,
     finalSlips,
+    user?.vehiclePurchase?.wantsBillOfSaleUpload,
   ]);
 
   const visibleCategories = useMemo(() => {
@@ -342,26 +450,63 @@ const Receipts = () => {
   }, [finalReceiptCategories]);
 
   useEffect(() => {
-    const loadReceipts = async () => {
-      setLoading(true);
-      try {
-        await new Promise((resolve) => setTimeout(resolve, 400));
-        setReceipts(generateMockReceipts(finalReceiptCategories));
-      } catch (error) {
-        console.error('Error loading receipts:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const mockReceipts = generateMockReceipts(finalReceiptCategories);
 
-    loadReceipts();
-  }, [finalReceiptCategories, dateRange, sortBy]);
+    if (user?.vehiclePurchase?.wantsBillOfSaleUpload) {
+      const hasVehiclePurchase = mockReceipts.some(
+        (receipt) => receipt.category === 'vehicle_purchase'
+      );
+
+      if (!hasVehiclePurchase) {
+        mockReceipts.push({
+          id: 'vehicle-purchase-1',
+          category: 'vehicle_purchase',
+          vendor: 'Toyota Edmonton',
+          amount: 38250,
+          gst: 1912.5,
+          date: '2026-02-14',
+          paymentMethod: 'Financing',
+          status: 'uploaded',
+          notes: '2024 Toyota Corolla bill of sale for gig work vehicle',
+          fileName: 'toyota-bill-of-sale.pdf',
+          imageUrl:
+            'https://placehold.co/900x1200/f8fafc/334155?text=Toyota%20Edmonton%20Bill%20of%20Sale',
+        });
+      }
+    }
+
+    setReceipts(mockReceipts);
+    setLoading(false);
+  }, [finalReceiptCategories, user?.vehiclePurchase?.wantsBillOfSaleUpload]);
+
+  useEffect(() => {
+    const categoryFromUrl = searchParams.get('category');
+
+    if (categoryFromUrl && visibleCategories.includes(categoryFromUrl)) {
+      setSelectedCategory(categoryFromUrl);
+      setViewMode('list');
+    } else if (!categoryFromUrl) {
+      setSelectedCategory('all');
+    }
+  }, [searchParams, visibleCategories]);
 
   useEffect(() => {
     if (!visibleCategories.includes(selectedCategory)) {
       setSelectedCategory('all');
+      setSearchParams({});
     }
-  }, [visibleCategories, selectedCategory]);
+  }, [visibleCategories, selectedCategory, setSearchParams]);
+
+  const handleCategoryChange = (categoryKey, mode = 'list') => {
+    setSelectedCategory(categoryKey);
+    setViewMode(mode);
+
+    if (categoryKey === 'all') {
+      setSearchParams({});
+    } else {
+      setSearchParams({ category: categoryKey });
+    }
+  };
 
   const categoryCounts = useMemo(() => {
     const counts = visibleCategories.reduce((acc, category) => {
@@ -381,8 +526,38 @@ const Receipts = () => {
   }, [receipts, visibleCategories]);
 
   const filteredReceipts = useMemo(() => {
+    const now = new Date();
+
+    const matchesDateRange = (receiptDate) => {
+      const d = new Date(receiptDate);
+
+      if (dateRange === 'month') {
+        const cutoff = new Date(now);
+        cutoff.setDate(now.getDate() - 30);
+        return d >= cutoff;
+      }
+
+      if (dateRange === 'quarter') {
+        const cutoff = new Date(now);
+        cutoff.setMonth(now.getMonth() - 3);
+        return d >= cutoff;
+      }
+
+      if (dateRange === 'year') {
+        return d.getFullYear() === now.getFullYear();
+      }
+
+      return true;
+    };
+
     const list = receipts.filter((receipt) => {
-      if (selectedCategory !== 'all' && receipt.category !== selectedCategory) return false;
+      if (selectedCategory !== 'all' && receipt.category !== selectedCategory) {
+        return false;
+      }
+
+      if (!matchesDateRange(receipt.date)) {
+        return false;
+      }
 
       if (!searchTerm.trim()) return true;
 
@@ -408,7 +583,7 @@ const Receipts = () => {
           return new Date(b.date) - new Date(a.date);
       }
     });
-  }, [receipts, selectedCategory, searchTerm, sortBy]);
+  }, [receipts, selectedCategory, searchTerm, sortBy, dateRange]);
 
   const totalAmount = filteredReceipts.reduce((sum, item) => sum + item.amount, 0);
   const totalGST = filteredReceipts.reduce((sum, item) => sum + (item.gst || 0), 0);
@@ -456,6 +631,7 @@ const Receipts = () => {
               >
                 Cancel
               </Button>
+
               <button
                 className="flex-1 rounded-lg border border-red-200 bg-red-50 px-4 py-2 font-medium text-red-700 transition hover:bg-red-100"
                 onClick={() => {
@@ -464,10 +640,122 @@ const Receipts = () => {
                   );
                   setShowDeleteModal(false);
                   setSelectedReceipt(null);
+                  if (previewReceipt?.id === selectedReceipt.id) {
+                    setPreviewReceipt(null);
+                  }
                 }}
               >
                 Delete
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const ReceiptPreviewModal = () => {
+    if (!previewReceipt) return null;
+
+    const meta = CATEGORY_META[previewReceipt.category] || CATEGORY_META.other;
+    const Icon = meta.icon;
+
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="flex min-h-screen items-center justify-center px-4 py-8">
+          <div
+            className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm"
+            onClick={() => setPreviewReceipt(null)}
+          />
+
+          <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-400">
+                  Receipt Preview
+                </p>
+                <h3 className="mt-1 text-xl font-semibold text-gray-900">
+                  {previewReceipt.vendor}
+                </h3>
+              </div>
+
+              <button
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:bg-gray-50 hover:text-gray-700"
+                onClick={() => setPreviewReceipt(null)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-0 lg:grid-cols-[1.15fr_0.85fr]">
+              <div className="border-b border-gray-100 bg-gray-50 p-5 lg:border-b-0 lg:border-r">
+                <div className="flex h-full min-h-[420px] items-center justify-center overflow-hidden rounded-2xl border border-dashed border-gray-200 bg-white">
+                  <img
+                    src={previewReceipt.imageUrl}
+                    alt={`${previewReceipt.vendor} receipt`}
+                    className="h-full max-h-[70vh] w-full object-contain"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-5 p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div
+                      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${meta.chip}`}
+                    >
+                      <Icon size={12} className="mr-2" />
+                      {meta.label}
+                    </div>
+                    <p className="mt-3 text-sm text-gray-500">
+                      Uploaded • {formatDate(previewReceipt.date)}
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                      Total
+                    </p>
+                    <p className="mt-1 text-3xl font-bold text-gray-900">
+                      ${previewReceipt.amount.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <InfoTile label="GST/HST" value={`$${previewReceipt.gst.toFixed(2)}`} />
+                  <InfoTile label="Payment" value={previewReceipt.paymentMethod} />
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    Note
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-gray-700">
+                    {previewReceipt.notes || 'No notes added for this receipt.'}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Link to={`/receipts/${previewReceipt.id}`}>
+                    <Button variant="outline" className="w-full">
+                      <Eye size={16} className="mr-2" />
+                      Open details page
+                    </Button>
+                  </Link>
+
+                  <button
+                    className="inline-flex w-full items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 transition hover:bg-red-100"
+                    onClick={() => {
+                      setSelectedReceipt(previewReceipt);
+                      setShowDeleteModal(true);
+                    }}
+                  >
+                    <Trash2 size={16} className="mr-2" />
+                    Delete receipt
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -480,65 +768,77 @@ const Receipts = () => {
     const Icon = meta.icon;
 
     return (
-      <Card className="transition hover:shadow-md">
-        <Card.Body>
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="flex flex-1 gap-4">
-              <div className={`mt-1 rounded-xl p-3 ${meta.iconWrap}`}>
-                <Icon size={20} className={meta.iconColor} />
+      <button
+        type="button"
+        onClick={() => setPreviewReceipt(receipt)}
+        className="w-full text-left"
+      >
+        <Card className="group h-full overflow-hidden border border-gray-200 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+          <Card.Body className="p-0">
+            <div className="relative">
+              <div className="h-32 overflow-hidden bg-gray-100">
+                <img
+                  src={receipt.imageUrl}
+                  alt={`${receipt.vendor} receipt`}
+                  className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                />
               </div>
 
-              <div className="flex-1">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{receipt.vendor}</h3>
-                  <p className="text-sm text-gray-500">
-                    Frequent expense upload • {formatDate(receipt.date)}
+              <div className="absolute left-3 top-3">
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium shadow-sm ${meta.chip}`}
+                >
+                  <Icon size={11} className="mr-1.5" />
+                  {meta.label}
+                </span>
+              </div>
+
+              <div className="absolute right-3 top-3 rounded-full bg-white/95 px-3 py-1.5 shadow-sm">
+                <span className="text-sm font-bold text-gray-900">
+                  ${receipt.amount.toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-3 p-4">
+              <div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-base font-semibold text-gray-900">
+                      {receipt.vendor}
+                    </h3>
+                    <p className="mt-1 text-xs text-gray-500">{formatDate(receipt.date)}</p>
+                  </div>
+
+                  <div className="rounded-full bg-primary-50 px-2.5 py-1 text-[11px] font-semibold text-primary-700">
+                    View
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="rounded-xl bg-gray-50 px-3 py-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                    GST/HST
+                  </p>
+                  <p className="mt-1 font-semibold text-gray-800">
+                    ${receipt.gst.toFixed(2)}
                   </p>
                 </div>
 
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${meta.chip}`}>
-                    <Tag size={12} className="mr-1" />
-                    {meta.label}
-                  </span>
-                  <span className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
-                    <DollarSign size={12} className="mr-1" />
-                    {receipt.amount.toFixed(2)}
-                  </span>
-                  <span className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
-                    GST/HST {receipt.gst.toFixed(2)}
-                  </span>
-                  <span className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
+                <div className="rounded-xl bg-gray-50 px-3 py-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                    Payment
+                  </p>
+                  <p className="mt-1 truncate font-semibold text-gray-800">
                     {receipt.paymentMethod}
-                  </span>
+                  </p>
                 </div>
-
-                {receipt.notes && <p className="mt-3 text-sm text-gray-600">{receipt.notes}</p>}
               </div>
             </div>
-
-            <div className="flex flex-wrap gap-2 lg:justify-end">
-              <Link to={`/receipts/${receipt.id}`}>
-                <button className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-primary-500 hover:text-primary-600">
-                  <Eye size={16} className="mr-2" />
-                  View
-                </button>
-              </Link>
-
-              <button
-                className="inline-flex items-center rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100"
-                onClick={() => {
-                  setSelectedReceipt(receipt);
-                  setShowDeleteModal(true);
-                }}
-              >
-                <Trash2 size={16} className="mr-2" />
-                Delete
-              </button>
-            </div>
-          </div>
-        </Card.Body>
-      </Card>
+          </Card.Body>
+        </Card>
+      </button>
     );
   };
 
@@ -694,10 +994,7 @@ const Receipts = () => {
           return (
             <button
               key={categoryKey}
-              onClick={() => {
-                setSelectedCategory(categoryKey);
-                setViewMode('list');
-              }}
+              onClick={() => handleCategoryChange(categoryKey, 'list')}
               className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                 isActive
                   ? 'bg-primary-600 text-white'
@@ -750,10 +1047,7 @@ const Receipts = () => {
                 className={`cursor-pointer transition hover:shadow-md ${
                   selectedCategory === categoryKey ? 'ring-2 ring-primary-500' : ''
                 }`}
-                onClick={() => {
-                  setSelectedCategory(categoryKey);
-                  setViewMode('list');
-                }}
+                onClick={() => handleCategoryChange(categoryKey, 'list')}
               >
                 <Card.Body>
                   <div className="mb-4 flex items-center justify-between">
@@ -772,90 +1066,17 @@ const Receipts = () => {
       ) : filteredReceipts.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {filteredReceipts.map((receipt) => (
             <ReceiptCard key={receipt.id} receipt={receipt} />
           ))}
         </div>
       )}
 
+      <ReceiptPreviewModal />
       <DeleteModal />
     </div>
   );
 };
-
-function generateMockReceipts(categories) {
-  const today = new Date();
-
-  const buildReceipt = (
-    id,
-    vendor,
-    category,
-    amount,
-    daysAgo,
-    notes,
-    paymentMethod = 'Credit Card'
-  ) => {
-    const date = new Date(today);
-    date.setDate(today.getDate() - daysAgo);
-
-    return {
-      id,
-      vendor,
-      category,
-      amount,
-      date: date.toISOString().split('T')[0],
-      gst: Math.round(amount * 0.05 * 100) / 100,
-      paymentMethod,
-      notes,
-    };
-  };
-
-  const templates = {
-    fuel: ['Shell', 'Petro-Canada', 'Esso'],
-    maintenance: ['Canadian Tire', 'Midas', 'Jiffy Lube'],
-    parking_tolls: ['Green P', 'Impark', '407 ETR'],
-    mobile_internet: ['Rogers', 'Bell', 'Telus'],
-    supplies: ['Staples', 'Walmart', 'Costco'],
-    equipment: ['Best Buy', 'Amazon', 'Home Depot'],
-    insurance: ['Intact Insurance', 'Aviva', 'TD Insurance'],
-    meals: ['Tim Hortons', 'A&W', 'Subway'],
-    medical: ['Shoppers Drug Mart', 'Dental Clinic', 'Pharmacy'],
-    tuition: ['University Payment', 'College Fees', 'Course Portal'],
-    donations: ['United Way', 'Red Cross', 'Local Charity'],
-    rrsp: ['RBC', 'TD Direct Investing', 'Wealthsimple'],
-    childcare: ['BrightPath', 'Daycare Center', 'Child Care Provider'],
-    moving: ['U-Haul', 'Moving Supplies', 'Truck Rental'],
-    home_office: ['Staples', 'Telus', 'IKEA'],
-    rent_utilities: ['Landlord Payment', 'ATCO', 'Enmax'],
-    vehicle_expenses: ['Auto Expense Bundle', 'Vehicle Log Upload', 'Driving Costs'],
-    payroll_expenses: ['Payroll Provider', 'Wage Summary', 'Salary Records'],
-    inventory_purchases: ['Wholesale Supplier', 'Inventory Vendor', 'Stock Purchase'],
-    professional_fees: ['Accountant Invoice', 'Legal Invoice', 'Consulting Fee'],
-    other: ['Other Expense', 'Misc Expense', 'General Receipt'],
-  };
-
-  let id = 1;
-  const rows = [];
-
-  categories.forEach((category, index) => {
-    const vendors = templates[category] || templates.other;
-
-    vendors.slice(0, 2).forEach((vendor, vendorIndex) => {
-      rows.push(
-        buildReceipt(
-          id++,
-          vendor,
-          category,
-          Number((25 + index * 17 + vendorIndex * 21.35).toFixed(2)),
-          2 + index * 3 + vendorIndex * 5,
-          `${CATEGORY_META[category]?.label || 'Receipt'} uploaded for tax support.`
-        )
-      );
-    });
-  });
-
-  return rows;
-}
 
 export default Receipts;

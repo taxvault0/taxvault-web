@@ -178,7 +178,162 @@ const TABS = Object.keys(CATEGORY_META);
 
 const normalizeQueryCategory = (value) => {
   const category = String(value || '').trim().toLowerCase();
-  return TABS.includes(category) ? category : 'all';
+
+  const aliasMap = {
+    medical: 'medical-donations',
+    donations: 'medical-donations',
+    'child-care': 'medical-donations',
+    moving: 'medical-donations',
+    foreign: 'foreign-income',
+  };
+
+  const normalized = aliasMap[category] || category;
+  return TABS.includes(normalized) ? normalized : 'all';
+};
+
+const deriveProfileFlags = (user) => {
+  const taxProfile = user?.taxProfile || {};
+  const dependents = Array.isArray(user?.dependents) ? user.dependents : [];
+
+  return {
+    employment: !!taxProfile.employment,
+    gig: !!taxProfile.gigWork || !!taxProfile.selfEmployment,
+    business: !!taxProfile.business || !!taxProfile.incorporatedBusiness,
+    investments: !!taxProfile.investments,
+    rrsp: !!taxProfile.rrsp,
+    fhsa: !!taxProfile.fhsa,
+    tfsa: !!taxProfile.tfsa,
+    donations: !!taxProfile.donations,
+    workFromHome: !!taxProfile.workFromHome,
+    ccb: !!taxProfile.ccb,
+    hasChildren: !!user?.hasChildren || dependents.length > 0,
+  };
+};
+
+const deriveFinalSlips = ({
+  selectedSlips = [],
+  suggestedSlips = [],
+  profileFlags,
+}) => {
+  const baseSlips =
+    selectedSlips.length > 0 ? [...selectedSlips] : [...suggestedSlips];
+
+  if (profileFlags.employment && !baseSlips.includes('T4')) {
+    baseSlips.push('T4');
+  }
+
+  if (profileFlags.gig && !baseSlips.includes('T4A')) {
+    baseSlips.push('T4A');
+  }
+
+  if (profileFlags.investments) {
+    ['T5', 'T3', 'T5008'].forEach((slip) => {
+      if (!baseSlips.includes(slip)) {
+        baseSlips.push(slip);
+      }
+    });
+  }
+
+  if (
+    (profileFlags.employment ||
+      profileFlags.gig ||
+      profileFlags.business ||
+      profileFlags.rrsp) &&
+    !baseSlips.includes('RRSP')
+  ) {
+    baseSlips.push('RRSP');
+  }
+
+  if (profileFlags.fhsa && !baseSlips.includes('FHSA')) {
+    baseSlips.push('FHSA');
+  }
+
+  if (profileFlags.tfsa && !baseSlips.includes('TFSA')) {
+    baseSlips.push('TFSA');
+  }
+
+  if (!baseSlips.includes('MEDICAL')) {
+    baseSlips.push('MEDICAL');
+  }
+
+  if (!baseSlips.includes('DONATIONS')) {
+    baseSlips.push('DONATIONS');
+  }
+
+  if (profileFlags.hasChildren && !baseSlips.includes('CHILD_CARE')) {
+    baseSlips.push('CHILD_CARE');
+  }
+
+  if (profileFlags.workFromHome && !baseSlips.includes('HOME_OFFICE')) {
+    baseSlips.push('HOME_OFFICE');
+  }
+
+  if (!baseSlips.includes('TUITION')) {
+    baseSlips.push('TUITION');
+  }
+
+  if (!baseSlips.includes('MOVING')) {
+    baseSlips.push('MOVING');
+  }
+
+  return Array.from(new Set(baseSlips));
+};
+
+const deriveFinalReceiptCategories = ({
+  selectedReceiptCategories = [],
+  suggestedReceiptCategories = [],
+  profileFlags,
+  wantsBillOfSaleUpload,
+}) => {
+  const baseCategories =
+    selectedReceiptCategories.length > 0
+      ? [...selectedReceiptCategories]
+      : [...suggestedReceiptCategories];
+
+  if (profileFlags.gig) {
+    [
+      'fuel',
+      'maintenance',
+      'parking_tolls',
+      'mobile_internet',
+      'insurance',
+      'meals',
+      'vehicle_expenses',
+      'supplies',
+    ].forEach((category) => {
+      if (!baseCategories.includes(category)) {
+        baseCategories.push(category);
+      }
+    });
+  }
+
+  if (profileFlags.business) {
+    [
+      'supplies',
+      'equipment',
+      'professional_fees',
+      'rent_utilities',
+      'insurance',
+      'payroll_expenses',
+      'inventory_purchases',
+      'home_office',
+      'mobile_internet',
+    ].forEach((category) => {
+      if (!baseCategories.includes(category)) {
+        baseCategories.push(category);
+      }
+    });
+  }
+
+  if (profileFlags.workFromHome && !baseCategories.includes('home_office')) {
+    baseCategories.push('home_office');
+  }
+
+  if (wantsBillOfSaleUpload && !baseCategories.includes('vehicle_purchase')) {
+    baseCategories.push('vehicle_purchase');
+  }
+
+  return Array.from(new Set(baseCategories));
 };
 
 const mapSlipToDocumentCategory = (slip) => {
@@ -455,6 +610,12 @@ const getReceiptMeta = (receipt) => {
       documentType: 'Expense Bundle',
       notes: 'Other eligible receipt records.',
     },
+    vehicle_purchase: {
+      name: 'Vehicle Bill of Sale',
+      issuer: 'Dealer / Seller',
+      documentType: 'Purchase Record',
+      notes: 'Vehicle bill of sale and purchase support.',
+    },
   };
 
   return metaMap[receipt] || {
@@ -465,12 +626,202 @@ const getReceiptMeta = (receipt) => {
   };
 };
 
+const InfoItem = ({ label, value }) => (
+  <div className="rounded-xl bg-gray-50 p-4">
+    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
+    <p className="mt-1 text-sm font-medium text-gray-900">{value || '—'}</p>
+  </div>
+);
+
+function generateMockDocuments(user) {
+  const household = buildHouseholdProfile(user);
+  const spouse = household.spouse;
+
+  const selectedSlips = user?.documentPreferences?.selectedSlips || [];
+  const selectedReceiptCategories =
+    user?.documentPreferences?.selectedReceiptCategories || [];
+  const suggestedSlips = user?.onboarding?.suggestedSlips || [];
+  const suggestedReceiptCategories =
+    user?.onboarding?.suggestedReceiptCategories || [];
+
+  const profileFlags = deriveProfileFlags(user);
+
+  const finalSlips = deriveFinalSlips({
+    selectedSlips,
+    suggestedSlips,
+    profileFlags,
+  });
+
+  const finalReceiptCategories = deriveFinalReceiptCategories({
+    selectedReceiptCategories,
+    suggestedReceiptCategories,
+    profileFlags,
+    wantsBillOfSaleUpload: user?.vehiclePurchase?.wantsBillOfSaleUpload,
+  });
+
+  let id = 1;
+  const nextId = () => id++;
+
+  const docs = [];
+
+  finalSlips.forEach((slip, index) => {
+    const meta = getSlipMeta(slip);
+    const category = mapSlipToDocumentCategory(slip);
+
+    docs.push({
+      id: nextId(),
+      category,
+      documentType: meta.documentType,
+      name: meta.name,
+      fileName: `${slip.toLowerCase()}_2025.pdf`,
+      issuer: meta.issuer,
+      taxYear: 2025,
+      uploadDate: `2026-02-${String(10 + index).padStart(2, '0')}`,
+      size: `${150 + index * 12} KB`,
+      permissions: 'view-only',
+      viewedBy: index % 2 === 0 ? ['You', 'David Chen (CA)'] : ['You'],
+      lastViewed: `2026-03-${String(10 + index).padStart(2, '0')}`,
+      notes: meta.notes,
+    });
+  });
+
+  finalReceiptCategories.forEach((receipt, index) => {
+    const meta = getReceiptMeta(receipt);
+
+    docs.push({
+      id: nextId(),
+      category:
+        receipt === 'insurance'
+          ? 'insurance'
+          : receipt === 'home_office'
+            ? 'home-office'
+            : receipt === 'rent_utilities'
+              ? 'business'
+              : receipt === 'inventory_purchases'
+                ? 'inventory'
+                : receipt === 'payroll_expenses'
+                  ? 'payroll'
+                  : 'gig-income',
+      documentType: meta.documentType,
+      name: meta.name,
+      fileName: `${receipt}_bundle_2025.pdf`,
+      issuer: meta.issuer,
+      taxYear: 2025,
+      uploadDate: `2026-03-${String(1 + index).padStart(2, '0')}`,
+      size: `${210 + index * 8} KB`,
+      permissions: 'view-only',
+      viewedBy: ['You'],
+      lastViewed: `2026-03-${String(15 + index).padStart(2, '0')}`,
+      notes: meta.notes,
+    });
+  });
+
+  if (household.hasSpouse && spouse?.employment) {
+    docs.push({
+      id: nextId(),
+      category: 'spouse-t4',
+      documentType: 'T4 Slip',
+      name: 'Spouse T4 - Employment Slip',
+      fileName: 'spouse_t4_2025.pdf',
+      issuer: spouse?.employerName || 'Spouse Employer',
+      taxYear: 2025,
+      uploadDate: '2026-02-27',
+      size: '148 KB',
+      permissions: 'view-only',
+      viewedBy: ['You', 'David Chen (CA)'],
+      lastViewed: '2026-03-18',
+      notes: 'Spouse employment income slip.',
+    });
+  }
+
+  if (household.hasSpouse && spouse?.gigWork) {
+    docs.push(
+      {
+        id: nextId(),
+        category: 'spouse-gig',
+        documentType: 'T4A / Platform Income',
+        name: 'Spouse Gig Income Summary',
+        fileName: 'spouse_gig_income_2025.pdf',
+        issuer: 'Gig Platform',
+        taxYear: 2025,
+        uploadDate: '2026-02-23',
+        size: '232 KB',
+        permissions: 'view-only',
+        viewedBy: ['You'],
+        lastViewed: '2026-03-17',
+        notes: 'Spouse annual gig income record.',
+      },
+      {
+        id: nextId(),
+        category: 'spouse-gig-expenses',
+        documentType: 'Expense Summary',
+        name: 'Spouse Gig Expense Bundle',
+        fileName: 'spouse_gig_expenses_2025.pdf',
+        issuer: 'Uploaded by user',
+        taxYear: 2025,
+        uploadDate: '2026-03-02',
+        size: '410 KB',
+        permissions: 'view-only',
+        viewedBy: ['You'],
+        lastViewed: '2026-03-19',
+        notes: 'Fuel, maintenance, phone, and insurance for spouse gig work.',
+      }
+    );
+  }
+
+  if (household.hasSpouse && spouse?.business) {
+    docs.push({
+      id: nextId(),
+      category: 'spouse-business',
+      documentType: 'Business Records',
+      name: 'Spouse Business Record Package',
+      fileName: 'spouse_business_records_2025.pdf',
+      issuer: spouse?.businessInfo?.businessName || 'Spouse Business',
+      taxYear: 2025,
+      uploadDate: '2026-03-03',
+      size: '520 KB',
+      permissions: 'downloadable',
+      viewedBy: ['You', 'David Chen (CA)'],
+      lastViewed: '2026-03-20',
+      notes: 'Spouse business income, expenses, and related records.',
+    });
+  }
+
+  if (
+    household.hasSpouse &&
+    (spouse?.unemployed ||
+      spouse?.rrsp ||
+      spouse?.tfsa ||
+      spouse?.fhsa ||
+      spouse?.ccb ||
+      spouse?.investments ||
+      spouse?.donations)
+  ) {
+    docs.push({
+      id: nextId(),
+      category: 'spouse-optional',
+      documentType: 'Optional Tax Records',
+      name: 'Spouse RRSP / TFSA / FHSA Bundle',
+      fileName: 'spouse_optional_records_2025.pdf',
+      issuer: 'Multiple issuers',
+      taxYear: 2025,
+      uploadDate: '2026-03-05',
+      size: '290 KB',
+      permissions: 'view-only',
+      viewedBy: ['You'],
+      lastViewed: '2026-03-20',
+      notes: 'Optional spouse tax account records and supporting slips.',
+    });
+  }
+
+  return docs;
+}
+
 const Documents = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const household = useMemo(() => buildHouseholdProfile(user), [user]);
-
   const initialCategory = normalizeQueryCategory(searchParams.get('category'));
 
   const [loading, setLoading] = useState(true);
@@ -490,12 +841,33 @@ const Documents = () => {
   const suggestedReceiptCategories =
     user?.onboarding?.suggestedReceiptCategories || [];
 
-  const finalSlips =
-    selectedSlips.length > 0 ? selectedSlips : suggestedSlips;
-  const finalReceiptCategories =
-    selectedReceiptCategories.length > 0
-      ? selectedReceiptCategories
-      : suggestedReceiptCategories;
+  const profileFlags = useMemo(() => deriveProfileFlags(user), [user]);
+
+  const finalSlips = useMemo(
+    () =>
+      deriveFinalSlips({
+        selectedSlips,
+        suggestedSlips,
+        profileFlags,
+      }),
+    [selectedSlips, suggestedSlips, profileFlags]
+  );
+
+  const finalReceiptCategories = useMemo(
+    () =>
+      deriveFinalReceiptCategories({
+        selectedReceiptCategories,
+        suggestedReceiptCategories,
+        profileFlags,
+        wantsBillOfSaleUpload: user?.vehiclePurchase?.wantsBillOfSaleUpload,
+      }),
+    [
+      selectedReceiptCategories,
+      suggestedReceiptCategories,
+      profileFlags,
+      user?.vehiclePurchase?.wantsBillOfSaleUpload,
+    ]
+  );
 
   useEffect(() => {
     const queryCategory = normalizeQueryCategory(searchParams.get('category'));
@@ -1227,177 +1599,5 @@ const Documents = () => {
     </div>
   );
 };
-
-const InfoItem = ({ label, value }) => (
-  <div className="rounded-xl bg-gray-50 p-4">
-    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
-    <p className="mt-1 text-sm font-medium text-gray-900">{value || '—'}</p>
-  </div>
-);
-
-function generateMockDocuments(user) {
-  const household = buildHouseholdProfile(user);
-  const spouse = household.spouse;
-
-  const selectedSlips = user?.documentPreferences?.selectedSlips || [];
-  const selectedReceiptCategories =
-    user?.documentPreferences?.selectedReceiptCategories || [];
-  const suggestedSlips = user?.onboarding?.suggestedSlips || [];
-  const suggestedReceiptCategories =
-    user?.onboarding?.suggestedReceiptCategories || [];
-
-  const finalSlips =
-    selectedSlips.length > 0 ? selectedSlips : suggestedSlips;
-  const finalReceiptCategories =
-    selectedReceiptCategories.length > 0
-      ? selectedReceiptCategories
-      : suggestedReceiptCategories;
-
-  let id = 1;
-  const nextId = () => id++;
-
-  const docs = [];
-
-  finalSlips.forEach((slip, index) => {
-    const meta = getSlipMeta(slip);
-    const category = mapSlipToDocumentCategory(slip);
-
-    docs.push({
-      id: nextId(),
-      category,
-      documentType: meta.documentType,
-      name: meta.name,
-      fileName: `${slip.toLowerCase()}_2025.pdf`,
-      issuer: meta.issuer,
-      taxYear: 2025,
-      uploadDate: `2026-02-${String(10 + index).padStart(2, '0')}`,
-      size: `${150 + index * 12} KB`,
-      permissions: 'view-only',
-      viewedBy: index % 2 === 0 ? ['You', 'David Chen (CA)'] : ['You'],
-      lastViewed: `2026-03-${String(10 + index).padStart(2, '0')}`,
-      notes: meta.notes,
-    });
-  });
-
-  finalReceiptCategories.forEach((receipt, index) => {
-    const meta = getReceiptMeta(receipt);
-
-    docs.push({
-      id: nextId(),
-      category: receipt === 'insurance' ? 'insurance' : receipt === 'home_office' ? 'home-office' : receipt === 'rent_utilities' ? 'business' : receipt === 'inventory_purchases' ? 'inventory' : receipt === 'payroll_expenses' ? 'payroll' : 'gig-income',
-      documentType: meta.documentType,
-      name: meta.name,
-      fileName: `${receipt}_bundle_2025.pdf`,
-      issuer: meta.issuer,
-      taxYear: 2025,
-      uploadDate: `2026-03-${String(1 + index).padStart(2, '0')}`,
-      size: `${210 + index * 8} KB`,
-      permissions: 'view-only',
-      viewedBy: ['You'],
-      lastViewed: `2026-03-${String(15 + index).padStart(2, '0')}`,
-      notes: meta.notes,
-    });
-  });
-
-  if (household.hasSpouse && spouse?.employment) {
-    docs.push({
-      id: nextId(),
-      category: 'spouse-t4',
-      documentType: 'T4 Slip',
-      name: 'Spouse T4 - Employment Slip',
-      fileName: 'spouse_t4_2025.pdf',
-      issuer: spouse?.employerName || 'Spouse Employer',
-      taxYear: 2025,
-      uploadDate: '2026-02-27',
-      size: '148 KB',
-      permissions: 'view-only',
-      viewedBy: ['You', 'David Chen (CA)'],
-      lastViewed: '2026-03-18',
-      notes: 'Spouse employment income slip.',
-    });
-  }
-
-  if (household.hasSpouse && spouse?.gigWork) {
-    docs.push(
-      {
-        id: nextId(),
-        category: 'spouse-gig',
-        documentType: 'T4A / Platform Income',
-        name: 'Spouse Gig Income Summary',
-        fileName: 'spouse_gig_income_2025.pdf',
-        issuer: 'Gig Platform',
-        taxYear: 2025,
-        uploadDate: '2026-02-23',
-        size: '232 KB',
-        permissions: 'view-only',
-        viewedBy: ['You'],
-        lastViewed: '2026-03-17',
-        notes: 'Spouse annual gig income record.',
-      },
-      {
-        id: nextId(),
-        category: 'spouse-gig-expenses',
-        documentType: 'Expense Summary',
-        name: 'Spouse Gig Expense Bundle',
-        fileName: 'spouse_gig_expenses_2025.pdf',
-        issuer: 'Uploaded by user',
-        taxYear: 2025,
-        uploadDate: '2026-03-02',
-        size: '410 KB',
-        permissions: 'view-only',
-        viewedBy: ['You'],
-        lastViewed: '2026-03-19',
-        notes: 'Fuel, maintenance, phone, and insurance for spouse gig work.',
-      }
-    );
-  }
-
-  if (household.hasSpouse && spouse?.business) {
-    docs.push({
-      id: nextId(),
-      category: 'spouse-business',
-      documentType: 'Business Records',
-      name: 'Spouse Business Record Package',
-      fileName: 'spouse_business_records_2025.pdf',
-      issuer: spouse?.businessInfo?.businessName || 'Spouse Business',
-      taxYear: 2025,
-      uploadDate: '2026-03-03',
-      size: '520 KB',
-      permissions: 'downloadable',
-      viewedBy: ['You', 'David Chen (CA)'],
-      lastViewed: '2026-03-20',
-      notes: 'Spouse business income, expenses, and related records.',
-    });
-  }
-
-  if (
-    household.hasSpouse &&
-    (spouse?.unemployed ||
-      spouse?.rrsp ||
-      spouse?.tfsa ||
-      spouse?.fhsa ||
-      spouse?.ccb ||
-      spouse?.investments ||
-      spouse?.donations)
-  ) {
-    docs.push({
-      id: nextId(),
-      category: 'spouse-optional',
-      documentType: 'Optional Tax Records',
-      name: 'Spouse RRSP / TFSA / FHSA Bundle',
-      fileName: 'spouse_optional_records_2025.pdf',
-      issuer: 'Multiple issuers',
-      taxYear: 2025,
-      uploadDate: '2026-03-05',
-      size: '290 KB',
-      permissions: 'view-only',
-      viewedBy: ['You'],
-      lastViewed: '2026-03-20',
-      notes: 'Optional spouse tax account records and supporting slips.',
-    });
-  }
-
-  return docs;
-}
 
 export default Documents;

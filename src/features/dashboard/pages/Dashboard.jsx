@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Bell,
-  Calendar,
   MapPin,
   FileText,
   TrendingUp,
@@ -13,7 +12,6 @@ import {
   Car,
   Receipt,
   ChevronRight,
-  Megaphone,
   Building2,
   CheckCircle2,
   PiggyBank,
@@ -26,15 +24,16 @@ import {
   Package,
   Percent,
   HeartHandshake,
+  Target,
+  ShieldCheck,
+  Sparkles,
 } from 'lucide-react';
+
 import { useAuth } from '../../auth/context/AuthContext';
 import Card from 'components/ui/Card';
 import Button from 'components/ui/Button';
 import Badge from 'components/ui/Badge';
-import {
-  buildHouseholdProfile,
-  getOptionalProfiles,
-} from 'utils/taxProfile';
+import { buildHouseholdProfile, getOptionalProfiles } from 'utils/taxProfile';
 
 const SLIP_LABELS = {
   T4: 'T4 Employment Slip',
@@ -140,6 +139,15 @@ const GIG_PLATFORM_CONFIG = {
   },
 };
 
+const money = (value) =>
+  new Intl.NumberFormat('en-CA', {
+    style: 'currency',
+    currency: 'CAD',
+    maximumFractionDigits: 0,
+  }).format(Math.max(0, Number(value || 0)));
+
+const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
+
 const getSlipAttentionText = (slip) => {
   switch (slip) {
     case 'T4':
@@ -231,9 +239,7 @@ const getSlipRoute = (slip, isSpouse = false) => {
     case 'T4':
       return `/documents?category=${prefix}t4`;
     case 'T4A':
-      return isSpouse
-        ? '/documents?category=spouse-gig'
-        : '/documents?category=t4a';
+      return isSpouse ? '/documents?category=spouse-gig' : '/documents?category=t4a';
     case 'RRSP':
       return `/documents?category=${prefix}rrsp`;
     case 'FHSA':
@@ -410,25 +416,69 @@ const IncomeGuideCard = ({ title, icon: Icon, colorClass, documents }) => (
   </Card>
 );
 
+const SavingOpportunityCard = ({ item }) => {
+  const Icon = item.icon;
+  const progress = clamp(item.progress || 0);
+  const remaining = Math.max(0, item.maxSaving - item.currentSaving);
+
+  return (
+    <Link
+      to={item.to}
+      className="group rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-green-300 hover:shadow-md"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${item.iconBg}`}>
+          <Icon size={20} className={item.iconColor} />
+        </div>
+        <Badge variant={item.variant || 'success'}>{item.tag}</Badge>
+      </div>
+
+      <div className="mt-4">
+        <h3 className="text-sm font-semibold text-gray-900">{item.title}</h3>
+        <p className="mt-1 text-xs text-gray-500">{item.description}</p>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-gray-500">Captured</span>
+          <span className="font-medium text-gray-700">
+            {money(item.currentSaving)} / {money(item.maxSaving)}
+          </span>
+        </div>
+
+        <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+          <div
+            className="h-full rounded-full bg-green-500 transition-all"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-green-700 font-medium">
+            {money(remaining)} still possible
+          </span>
+          <span className="text-gray-400 group-hover:text-gray-600">Open</span>
+        </div>
+      </div>
+    </Link>
+  );
+};
+
 const Dashboard = () => {
   const { user } = useAuth();
 
   const household = useMemo(() => buildHouseholdProfile(user), [user]);
-
   const profile = household.user;
   const spouse = household.spouse;
-
   const hasSpouse = household.hasSpouse;
 
   const myOptionalProfiles = getOptionalProfiles(profile);
   const spouseOptionalProfiles = getOptionalProfiles(spouse || {});
 
   const selectedSlips = user?.documentPreferences?.selectedSlips || [];
-  const selectedReceiptCategories =
-    user?.documentPreferences?.selectedReceiptCategories || [];
+  const selectedReceiptCategories = user?.documentPreferences?.selectedReceiptCategories || [];
   const suggestedSlips = user?.onboarding?.suggestedSlips || [];
-  const suggestedReceiptCategories =
-    user?.onboarding?.suggestedReceiptCategories || [];
+  const suggestedReceiptCategories = user?.onboarding?.suggestedReceiptCategories || [];
 
   const baseSlipKeys = useMemo(() => {
     const merged = new Set([...selectedSlips, ...suggestedSlips]);
@@ -461,6 +511,7 @@ const Dashboard = () => {
       merged.add('mobile_internet');
       merged.add('vehicle_expenses');
       merged.add('insurance');
+      merged.add('meals');
     }
 
     if (profile.selfEmployment) {
@@ -469,6 +520,7 @@ const Dashboard = () => {
       merged.add('equipment');
       merged.add('professional_fees');
       merged.add('home_office');
+      merged.add('meals');
     }
 
     if (profile.business) {
@@ -522,6 +574,7 @@ const Dashboard = () => {
     profile.employment ? 'My T4' : null,
     profile.gigWork ? 'My Gig Work' : null,
     profile.business ? 'My Business' : null,
+    profile.selfEmployment ? 'My Self-Employment' : null,
     ...myOptionalProfiles.map((item) => `My ${item.label}`),
   ].filter(Boolean);
 
@@ -568,7 +621,7 @@ const Dashboard = () => {
       description: 'Track work trips',
       icon: MapPin,
       classes: 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600',
-      show: profile.gigWork,
+      show: profile.gigWork || profile.selfEmployment,
     },
     {
       to: '/business/dashboard',
@@ -643,7 +696,9 @@ const Dashboard = () => {
 
             return {
               key: `spouse-optional-${item.key}`,
-              text: `Review spouse ${mapped.text.replace(/^Upload your |^Review your /, '').toLowerCase()}`,
+              text: `Review spouse ${mapped.text
+                .replace(/^Upload your |^Review your /, '')
+                .toLowerCase()}`,
               to: item.to || mapped.to,
             };
           })
@@ -698,6 +753,213 @@ const Dashboard = () => {
     hasSpouse,
   ]);
 
+  const savingsOpportunities = useMemo(() => {
+    const items = [];
+
+    const pushItem = (item) => items.push(item);
+
+    if (profile.gigWork || profile.selfEmployment) {
+      pushItem({
+        key: 'vehicle',
+        title: 'Vehicle Expenses',
+        description: 'Fuel, maintenance, insurance, parking, mileage and work driving',
+        to: '/receipts',
+        icon: Car,
+        maxSaving: 1400,
+        currentSaving: finalReceiptCategories.includes('fuel') ? 350 : 0,
+        tag: 'High impact',
+        variant: 'success',
+        iconBg: 'bg-emerald-100',
+        iconColor: 'text-emerald-700',
+      });
+    }
+
+    if (profile.selfEmployment || profile.business) {
+      pushItem({
+        key: 'home-office',
+        title: 'Home Office',
+        description: 'Workspace, utilities, internet and eligible home-use expenses',
+        to: '/receipts',
+        icon: Home,
+        maxSaving: 850,
+        currentSaving: finalReceiptCategories.includes('home_office') ? 150 : 0,
+        tag: 'Often missed',
+        variant: 'warning',
+        iconBg: 'bg-amber-100',
+        iconColor: 'text-amber-700',
+      });
+    }
+
+    if (profile.selfEmployment || profile.business) {
+      pushItem({
+        key: 'phone-internet',
+        title: 'Phone & Internet',
+        description: 'Business-use portion of mobile and internet costs',
+        to: '/receipts',
+        icon: MapPin,
+        maxSaving: 450,
+        currentSaving: finalReceiptCategories.includes('mobile_internet') ? 120 : 0,
+        tag: 'Easy win',
+        variant: 'info',
+        iconBg: 'bg-blue-100',
+        iconColor: 'text-blue-700',
+      });
+    }
+
+    if (profile.selfEmployment || profile.business) {
+      pushItem({
+        key: 'supplies-fees',
+        title: 'Supplies & Professional Fees',
+        description: 'Tools, supplies, subscriptions, accounting and service fees',
+        to: '/receipts',
+        icon: Receipt,
+        maxSaving: 950,
+        currentSaving:
+          finalReceiptCategories.includes('supplies') ||
+          finalReceiptCategories.includes('professional_fees')
+            ? 250
+            : 0,
+        tag: 'Business write-off',
+        variant: 'success',
+        iconBg: 'bg-green-100',
+        iconColor: 'text-green-700',
+      });
+    }
+
+    if (profile.business) {
+      pushItem({
+        key: 'business-overhead',
+        title: 'Rent, Utilities & Operations',
+        description: 'Business overhead that can directly lower taxable profit',
+        to: '/business/rent-utilities',
+        icon: Building2,
+        maxSaving: 1200,
+        currentSaving: finalReceiptCategories.includes('rent_utilities') ? 350 : 0,
+        tag: 'Core business',
+        variant: 'warning',
+        iconBg: 'bg-indigo-100',
+        iconColor: 'text-indigo-700',
+      });
+    }
+
+    if (profile.business) {
+      pushItem({
+        key: 'inventory-payroll',
+        title: 'Inventory & Payroll',
+        description: 'Track stock purchases and payroll costs correctly',
+        to: '/business/dashboard',
+        icon: Package,
+        maxSaving: 900,
+        currentSaving:
+          finalReceiptCategories.includes('inventory_purchases') ||
+          finalReceiptCategories.includes('payroll_expenses')
+            ? 220
+            : 0,
+        tag: 'Track properly',
+        variant: 'default',
+        iconBg: 'bg-slate-100',
+        iconColor: 'text-slate-700',
+      });
+    }
+
+    if (profile.employment || baseSlipKeys.includes('RRSP')) {
+      pushItem({
+        key: 'rrsp',
+        title: 'RRSP Contributions',
+        description: 'Contributions can reduce taxable income and improve refund outcome',
+        to: '/documents?category=rrsp',
+        icon: PiggyBank,
+        maxSaving: 2000,
+        currentSaving: baseSlipKeys.includes('RRSP') ? 600 : 0,
+        tag: 'Powerful lever',
+        variant: 'success',
+        iconBg: 'bg-purple-100',
+        iconColor: 'text-purple-700',
+      });
+    }
+
+    if (baseSlipKeys.includes('FHSA')) {
+      pushItem({
+        key: 'fhsa',
+        title: 'FHSA Contributions',
+        description: 'A strong tax-saving account if the user is contributing',
+        to: '/documents?category=fhsa',
+        icon: Landmark,
+        maxSaving: 1600,
+        currentSaving: 500,
+        tag: 'Smart account',
+        variant: 'info',
+        iconBg: 'bg-cyan-100',
+        iconColor: 'text-cyan-700',
+      });
+    }
+
+    if (baseSlipKeys.includes('DONATIONS')) {
+      pushItem({
+        key: 'donations',
+        title: 'Donation Credits',
+        description: 'Eligible charitable receipts can increase credits at filing time',
+        to: '/documents?category=donations',
+        icon: Gift,
+        maxSaving: 300,
+        currentSaving: 90,
+        tag: 'Extra credit',
+        variant: 'warning',
+        iconBg: 'bg-rose-100',
+        iconColor: 'text-rose-700',
+      });
+    }
+
+    return items.map((item) => ({
+      ...item,
+      progress: clamp((item.currentSaving / item.maxSaving) * 100),
+    }));
+  }, [profile, finalReceiptCategories, baseSlipKeys]);
+
+  const totalPossibleSavings = savingsOpportunities.reduce(
+    (sum, item) => sum + item.maxSaving,
+    0
+  );
+
+  const capturedSavings = savingsOpportunities.reduce(
+    (sum, item) => sum + item.currentSaving,
+    0
+  );
+
+  const remainingSavings = Math.max(0, totalPossibleSavings - capturedSavings);
+  const savingsCompletion = totalPossibleSavings
+    ? Math.round((capturedSavings / totalPossibleSavings) * 100)
+    : 0;
+
+  const topSavings = savingsOpportunities
+    .slice()
+    .sort((a, b) => b.maxSaving - a.maxSaving)
+    .slice(0, 4);
+
+  const savingsHeadline = useMemo(() => {
+    if (profile.business && (profile.gigWork || profile.selfEmployment) && profile.employment) {
+      return 'Business + Employment + Self-Employment detected';
+    }
+
+    if (profile.business && profile.employment) return 'Business + Employment detected';
+    if (profile.business && (profile.gigWork || profile.selfEmployment))
+      return 'Business + Self-Employment detected';
+    if (profile.employment && (profile.gigWork || profile.selfEmployment))
+      return 'Employment + Self-Employment detected';
+    if (profile.business) return 'Business profile detected';
+    if (profile.gigWork || profile.selfEmployment) return 'Self-employment profile detected';
+    if (profile.employment) return 'Employment profile detected';
+
+    return 'Profile detected';
+  }, [profile]);
+
+  const taxHealth = useMemo(() => {
+    if (remainingSavings >= 3000) return 'Large tax-saving opportunity still open';
+    if (remainingSavings >= 1500) return 'Good tax-saving opportunity still open';
+    if (remainingSavings > 0) return 'Some deductions are already being captured';
+    return 'Great job - most visible savings areas are covered';
+  }, [remainingSavings]);
+
   const upcomingDeadlines = [
     {
       id: 1,
@@ -713,9 +975,9 @@ const Dashboard = () => {
       daysLeft: 30,
       priority: 'info',
     },
-    profile.gigWork && {
+    (profile.gigWork || profile.selfEmployment) && {
       id: 3,
-      task: 'Review Gig Expenses',
+      task: 'Review Self-Employment Expenses',
       date: 'Apr 15, 2026',
       daysLeft: 25,
       priority: 'warning',
@@ -730,8 +992,9 @@ const Dashboard = () => {
   ].filter(Boolean);
 
   const taxNews = [
-    { id: 1, title: 'Review all slips before filing', date: 'Mar 2026' },
-    { id: 2, title: 'Keep household records organized year-round', date: 'Mar 2026' },
+    { id: 1, title: 'Track expenses year-round to reduce missed deductions', date: 'Mar 2026' },
+    { id: 2, title: 'Separate business and personal receipts for cleaner filing', date: 'Mar 2026' },
+    { id: 3, title: 'RRSP and FHSA contributions can improve final tax outcome', date: 'Mar 2026' },
   ];
 
   return (
@@ -742,18 +1005,144 @@ const Dashboard = () => {
         </h1>
         <p className="text-gray-600">
           {hasSpouse
-            ? 'Your dashboard now reflects both your profile and your spouse profile.'
-            : 'Your tax dashboard changes based on your tax profile, accounts, and onboarding selections.'}
+            ? 'Your dashboard reflects both your profile and your spouse profile.'
+            : 'Your dashboard changes based on your tax profile, accounts, and uploaded records.'}
         </p>
       </div>
 
       {hasSpouse && <HouseholdSummaryCard household={household} />}
 
+      <Card className="overflow-hidden border border-green-200 bg-gradient-to-r from-green-50 via-white to-emerald-50">
+        <Card.Body>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+            <div className="xl:col-span-8">
+              <div className="flex items-start gap-4">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100 text-green-700">
+                  <Sparkles size={24} />
+                </div>
+
+                <div className="min-w-0">
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <Badge variant="success">Tax Savings Engine</Badge>
+                    <Badge variant="info">{savingsHeadline}</Badge>
+                  </div>
+
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    You can still save about {money(remainingSavings)} in taxes
+                  </h2>
+
+                  <p className="mt-2 max-w-3xl text-sm text-gray-600">
+                    This is the main value of your platform: show users where money is still
+                    being missed before they file. Right now, the biggest savings appear to be
+                    in expenses, business overhead, registered accounts, and properly tracked
+                    write-offs.
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {topSavings.map((item) => (
+                      <Link
+                        key={item.key}
+                        to={item.to}
+                        className="inline-flex items-center rounded-full border border-green-200 bg-white px-3 py-1.5 text-xs font-medium text-green-800 transition hover:bg-green-50"
+                      >
+                        <span className="mr-2 h-2 w-2 rounded-full bg-green-500" />
+                        {item.title}
+                      </Link>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <Link to="/receipts">
+                      <Button>Start Saving More</Button>
+                    </Link>
+
+                    <Link to="/tax-checklist">
+                      <Button variant="outline">Review Tax Checklist</Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="xl:col-span-4">
+              <div className="rounded-2xl border border-green-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-gray-700">Savings Progress</p>
+                  <Target size={18} className="text-green-600" />
+                </div>
+
+                <p className="mt-3 text-3xl font-bold text-green-700">
+                  {money(capturedSavings)}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Captured so far out of {money(totalPossibleSavings)} visible opportunity
+                </p>
+
+                <div className="mt-4 h-3 overflow-hidden rounded-full bg-green-100">
+                  <div
+                    className="h-full rounded-full bg-green-500 transition-all"
+                    style={{ width: `${clamp(savingsCompletion)}%` }}
+                  />
+                </div>
+
+                <div className="mt-3 flex items-center justify-between text-xs">
+                  <span className="text-gray-500">{savingsCompletion}% captured</span>
+                  <span className="font-medium text-green-700">
+                    {money(remainingSavings)} left
+                  </span>
+                </div>
+
+                <div className="mt-4 rounded-xl bg-green-50 p-3">
+                  <div className="flex items-start gap-2">
+                    <ShieldCheck size={16} className="mt-0.5 text-green-700" />
+                    <div>
+                      <p className="text-sm font-medium text-green-900">{taxHealth}</p>
+                      <p className="mt-1 text-xs text-green-700">
+                        Make this visible at first glance so users instantly understand why
+                        they should keep uploading receipts here.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card.Body>
+      </Card>
+
+      <Card>
+        <Card.Header>
+          <h2 className="flex items-center text-xl font-bold">
+            <TrendingUp size={20} className="mr-2 text-green-600" />
+            Where You Can Reduce Tax
+          </h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Show deduction opportunities first, not just uploads. This is what makes the
+            platform valuable.
+          </p>
+        </Card.Header>
+
+        <Card.Body>
+          {savingsOpportunities.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {savingsOpportunities.map((item) => (
+                <SavingOpportunityCard key={item.key} item={item} />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-5 text-sm text-gray-600">
+              No tax-saving opportunities are visible yet. Update the user profile or upload
+              records to unlock savings guidance.
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+
       <Card>
         <Card.Header>
           <h2 className="text-xl font-bold">Quick Actions</h2>
           <p className="mt-1 text-sm text-gray-500">
-            Start with the most common household tasks first.
+            Start with the most common actions first.
           </p>
         </Card.Header>
 
@@ -781,6 +1170,14 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
           <Card.Body>
+            <p className="text-sm text-gray-500">Potential Savings Left</p>
+            <p className="mt-2 text-3xl font-bold text-green-700">{money(remainingSavings)}</p>
+            <p className="mt-1 text-xs text-gray-500">Visible opportunities still open</p>
+          </Card.Body>
+        </Card>
+
+        <Card>
+          <Card.Body>
             <p className="text-sm text-gray-500">Documents Uploaded</p>
             <p className="mt-2 text-3xl font-bold text-primary-600">{documentStats.uploaded}</p>
             <p className="mt-1 text-xs text-gray-500">Estimated from selected setup</p>
@@ -801,22 +1198,6 @@ const Dashboard = () => {
             <p className="mt-2 text-3xl font-bold text-blue-700">{activeProfiles.length}</p>
             <p className="mt-1 text-xs text-gray-500">
               {hasSpouse ? 'User + spouse combined' : 'Primary user only'}
-            </p>
-          </Card.Body>
-        </Card>
-
-        <Card>
-          <Card.Body>
-            <p className="text-sm text-gray-500">Account Type</p>
-            <p
-              className={`mt-2 text-3xl font-bold ${
-                hasSpouse ? 'text-green-700' : 'text-blue-700'
-              }`}
-            >
-              {hasSpouse ? 'HOUSEHOLD' : 'SINGLE'}
-            </p>
-            <p className="mt-1 text-xs text-gray-500">
-              {hasSpouse ? 'User + spouse profile active' : 'Only primary user profile active'}
             </p>
           </Card.Body>
         </Card>
@@ -877,7 +1258,7 @@ const Dashboard = () => {
 
           {baseSlipKeys.includes('T4A') && (
             <IncomeGuideCard
-              title="Gig Platforms & Income"
+              title="Gig Platforms & Self-Employment"
               icon={Car}
               colorClass="border-green-500"
               documents={gigDocuments}
@@ -1072,7 +1453,7 @@ const Dashboard = () => {
                           <p className="text-sm font-medium">
                             {RECEIPT_LABELS[receipt] || receipt}
                           </p>
-                          <p className="text-xs text-gray-500">Upload related receipts</p>
+                          <p className="text-xs text-gray-500">Track this to reduce missed deductions</p>
                         </div>
                         <ChevronRight size={16} className="mt-1 shrink-0 text-gray-400" />
                       </div>
@@ -1083,10 +1464,12 @@ const Dashboard = () => {
             </Card>
           )}
 
-          <OptionalProfilesGuide
-            title="My Optional Tax Accounts"
-            optionalProfiles={myOptionalProfiles}
-          />
+          {myOptionalProfiles.length > 0 && (
+            <OptionalProfilesGuide
+              title="Optional Tax Accounts & Deductions"
+              optionalProfiles={myOptionalProfiles}
+            />
+          )}
 
           {hasSpouse && spouseOptionalProfiles.length > 0 && (
             <OptionalProfilesGuide
@@ -1155,44 +1538,21 @@ const Dashboard = () => {
                   <TrendingUp size={20} className="mr-2 text-green-600" />
                   Estimated Tax Savings
                 </h3>
+                <Badge variant="success">Live guidance</Badge>
               </div>
 
-              <p className="mb-2 text-3xl font-bold text-green-700">$2,450</p>
+              <p className="mb-2 text-3xl font-bold text-green-700">{money(capturedSavings)}</p>
               <p className="mb-4 text-xs text-gray-600">
-                Based on uploaded household documents and tracked deductions
+                Estimated savings already being captured from visible deductions and tracked records
               </p>
 
               <div className="space-y-2 text-sm">
-                {baseSlipKeys.includes('T4') && (
-                  <div className="flex justify-between rounded bg-white p-2">
-                    <span className="text-gray-600">Employment Credits</span>
-                    <span className="font-medium">$750</span>
+                {savingsOpportunities.slice(0, 5).map((item) => (
+                  <div key={item.key} className="flex justify-between rounded bg-white p-2">
+                    <span className="text-gray-600">{item.title}</span>
+                    <span className="font-medium">{money(item.currentSaving)}</span>
                   </div>
-                )}
-                {baseSlipKeys.includes('T4A') && (
-                  <div className="flex justify-between rounded bg-white p-2">
-                    <span className="text-gray-600">Gig / Self-Employment</span>
-                    <span className="font-medium">$600</span>
-                  </div>
-                )}
-                {(baseSlipKeys.includes('RRSP') || baseSlipKeys.includes('FHSA')) && (
-                  <div className="flex justify-between rounded bg-white p-2">
-                    <span className="text-gray-600">Registered Accounts</span>
-                    <span className="font-medium">$500</span>
-                  </div>
-                )}
-                {baseSlipKeys.includes('DONATIONS') && (
-                  <div className="flex justify-between rounded bg-white p-2">
-                    <span className="text-gray-600">Donations</span>
-                    <span className="font-medium">$200</span>
-                  </div>
-                )}
-                {hasSpouse && spouse?.employment && (
-                  <div className="flex justify-between rounded bg-white p-2">
-                    <span className="text-gray-600">Spouse Employment Credits</span>
-                    <span className="font-medium">$450</span>
-                  </div>
-                )}
+                ))}
               </div>
             </Card.Body>
           </Card>
@@ -1216,17 +1576,16 @@ const Dashboard = () => {
                       <p className="text-sm font-medium">{deadline.task}</p>
                       <p className="text-xs text-gray-500">Due: {deadline.date}</p>
                     </div>
-
                     <Badge
                       variant={
                         deadline.priority === 'high'
-                          ? 'warning'
+                          ? 'danger'
                           : deadline.priority === 'warning'
-                            ? 'warning'
-                            : 'info'
+                          ? 'warning'
+                          : 'info'
                       }
                     >
-                      {deadline.daysLeft}d left
+                      {deadline.daysLeft} days
                     </Badge>
                   </div>
                 ))}
@@ -1234,36 +1593,19 @@ const Dashboard = () => {
             </Card.Body>
           </Card>
 
-          <Card className="border border-blue-200 bg-gradient-to-br from-slate-50 to-blue-50">
+          <Card className="border-blue-200 bg-blue-50">
             <Card.Body>
-              <div className="mb-3 flex items-center">
-                <Megaphone size={18} className="mr-2 text-blue-600" />
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Recommended
-                </p>
-              </div>
-
-              <h3 className="text-lg font-bold text-gray-900">Need expert tax help?</h3>
-              <p className="mt-2 text-sm text-gray-600">
-                Connect with a verified CA to review your household tax readiness.
-              </p>
-
-              <Link to="/find-ca" className="mt-4 block">
-                <Button variant="primary" fullWidth>
-                  Book Consultation
-                </Button>
-              </Link>
-            </Card.Body>
-          </Card>
-
-          <Card className="border-primary-200 bg-primary-50">
-            <Card.Body>
-              <div className="flex items-center">
-                <Calendar size={20} className="mr-3 text-primary-600" />
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+                  <DollarSign size={18} />
+                </div>
                 <div>
-                  <p className="text-sm font-medium text-primary-800">Current Tax Year</p>
-                  <p className="text-xs text-primary-600">
-                    Keep user and spouse records updated throughout the year
+                  <p className="text-sm font-semibold text-blue-900">
+                    Why this dashboard works
+                  </p>
+                  <p className="mt-1 text-sm text-blue-800">
+                    Users do not come here only to upload documents. They come here to
+                    understand where they are overpaying and what will reduce their tax bill.
                   </p>
                 </div>
               </div>

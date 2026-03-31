@@ -166,29 +166,41 @@ const buildChecklistSuggestions = (taxProfile, profile = {}, documentPreferences
 
 const buildUserData = (rawUser) => {
   const taxProfile = normalizeTaxProfile(rawUser);
-
-  const spouseRaw =
-    rawUser?.spouse ||
-    rawUser?.spouseProfile ||
-    rawUser?.spouseInfo ||
-    rawUser?.profile?.spouseInfo ||
-    null;
-
+  const spouseRaw = rawUser?.spouse || rawUser?.spouseProfile || rawUser?.spouseInfo || null;
   const normalizedSpouse = normalizeSpouseData(spouseRaw);
-  const profile = rawUser.profile || {};
-  const documentPreferences = normalizeDocumentPreferences(rawUser);
-  const onboardingSuggestions = buildChecklistSuggestions(
-    taxProfile,
-    profile,
-    documentPreferences
-  );
 
-  const hasSpouse =
-    !!rawUser.hasSpouse ||
-    !!rawUser.isMarried ||
-    rawUser?.maritalStatus === 'Married' ||
-    rawUser?.maritalStatus === 'Common-Law' ||
-    !!normalizedSpouse;
+  const profile = rawUser.profile || {};
+  const vehiclePurchase =
+    profile.vehiclePurchase ||
+    rawUser.vehiclePurchase || {
+      ownershipType: '',
+      use: '',
+      purchaseDate: '',
+      purchasePrice: '',
+      gst: '',
+      vin: '',
+      wantsBillOfSaleUpload: false,
+      uploaded: false,
+    };
+
+  const documentPreferences = {
+    selectedReceiptCategories:
+      profile.documentPreferences?.selectedReceiptCategories ||
+      rawUser.documentPreferences?.selectedReceiptCategories ||
+      [],
+    selectedSlips:
+      profile.documentPreferences?.selectedSlips ||
+      rawUser.documentPreferences?.selectedSlips ||
+      [],
+    skippedAtRegistration:
+      profile.documentPreferences?.skippedAtRegistration ||
+      rawUser.documentPreferences?.skippedAtRegistration ||
+      false,
+    needsSuggestions:
+      profile.documentPreferences?.needsSuggestions ||
+      rawUser.documentPreferences?.needsSuggestions ||
+      false,
+  };
 
   return {
     id: rawUser.id,
@@ -196,41 +208,31 @@ const buildUserData = (rawUser) => {
     email: rawUser.email,
     role: rawUser.role || 'user',
     userType: rawUser.userType || getPrimaryUserType(taxProfile),
-    incomeSources: deriveIncomeSources(rawUser, taxProfile),
+    incomeSources: rawUser.incomeSources || [],
     taxProfile,
-
-    phone: rawUser.phone || rawUser.phoneNumber || profile.phone || '',
-    address: rawUser.address || profile.address || '',
-    city: rawUser.city || profile.city || '',
-    province: rawUser.province || profile.province || '',
-    postalCode: rawUser.postalCode || profile.postalCode || '',
-    country: rawUser.country || profile.country || 'Canada',
-
+    phone: rawUser.phone || rawUser.phoneNumber || '',
+    address: rawUser.address || '',
+    city: rawUser.city || '',
+    province: rawUser.province || '',
+    postalCode: rawUser.postalCode || '',
+    country: rawUser.country || 'Canada',
     assignedCAId: rawUser.assignedCAId || rawUser.caId || null,
     assignedCA: rawUser.assignedCA || null,
-
-    hasSpouse,
-    isMarried: hasSpouse,
-    maritalStatus: rawUser.maritalStatus || (hasSpouse ? 'Married' : 'Single'),
-
+    hasSpouse: !!rawUser.hasSpouse,
+    isMarried: !!rawUser.isMarried,
+    maritalStatus: rawUser.maritalStatus || (rawUser.hasSpouse ? 'married' : ''),
     spouse: normalizedSpouse,
     spouseProfile: normalizedSpouse,
     spouseInfo: normalizedSpouse,
-
-    dependents: rawUser.dependents || profile.children || [],
+    dependents: rawUser.dependents || [],
     profile,
+    vehiclePurchase,
     documentPreferences,
-    onboarding: {
-      ...documentPreferences,
-      ...onboardingSuggestions,
-    },
-
     clientId: rawUser.clientId || `TV-${String(rawUser.id || '0001').toUpperCase()}`,
     memberSince: rawUser.memberSince || new Date().getFullYear().toString(),
-    businessInfo: rawUser.businessInfo || profile.businessInfo || {},
+    businessInfo: rawUser.businessInfo || {},
     householdProfile: rawUser.householdProfile || null,
     householdIncomeSources: rawUser.householdIncomeSources || [],
-
     ...(rawUser.businessName && { businessName: rawUser.businessName }),
     ...(rawUser.firmName && { firmName: rawUser.firmName }),
     ...(rawUser.caNumber && { caNumber: rawUser.caNumber }),

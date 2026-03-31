@@ -94,6 +94,7 @@ const PublicRoutes = () => (
     <Route path="/register/ca" element={<RegisterCA />} />
     <Route path="/forgot-password" element={<ForgotPassword />} />
     <Route path="*" element={<Navigate to="/" replace />} />
+    <Route path="/receipts/:id" element={<ReceiptDetail />} />
   </Routes>
 );
 

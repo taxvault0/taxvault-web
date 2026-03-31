@@ -137,7 +137,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     title: 'My Gig / Self-Employment',
     items: [
       { path: '/gig/documents/income-records', icon: DollarSign, label: 'Gig Income / T4A' },
-      { path: '/receipts', icon: Receipt, label: 'Gig Expense Receipts' },
+      // { path: '/receipts', icon: Receipt, label: 'Gig Expense Receipts' },
       { path: '/mileage', icon: MapPin, label: 'Mileage' },
       { path: '/gst-dashboard', icon: Percent, label: 'GST/HST' },
       { path: '/business-use-calculator', icon: Calculator, label: 'Business Use' },

@@ -12,6 +12,9 @@ import {
   FolderOpenIcon,
   ArrowRightIcon,
   BriefcaseIcon,
+  ArrowTopRightOnSquareIcon,
+  BellAlertIcon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 import StatsCard from 'components/shared/StatsCard';
 import ClientTable from 'components/shared/ClientTable';
@@ -19,14 +22,109 @@ import TotalClientsCard from 'features/ca/pages/TotalClientsCard';
 import { useAuth } from '../../auth/context/AuthContext';
 import Card from 'components/ui/Card';
 import Badge from 'components/ui/Badge';
+import { getCRAUpdates } from 'services/craUpdatesService';
+
+const formatDisplayDate = (value) => {
+  if (!value) return 'Recent';
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return 'Recent';
+
+  return new Intl.DateTimeFormat('en-CA', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+};
+
+const getPriorityClasses = (priority) => {
+  switch (priority) {
+    case 'high':
+      return 'bg-rose-100 text-rose-700 border border-rose-200';
+    case 'medium':
+      return 'bg-amber-100 text-amber-700 border border-amber-200';
+    default:
+      return 'bg-slate-100 text-slate-700 border border-slate-200';
+  }
+};
+
+const getCategoryClasses = (category) => {
+  switch (category) {
+    case 'deadline':
+      return 'bg-red-50 text-red-700';
+    case 'policy':
+      return 'bg-violet-50 text-violet-700';
+    case 'service change':
+      return 'bg-blue-50 text-blue-700';
+    case 'efile':
+      return 'bg-emerald-50 text-emerald-700';
+    case 'security':
+      return 'bg-amber-50 text-amber-700';
+    case 'benefit':
+      return 'bg-cyan-50 text-cyan-700';
+    case 'business tax':
+      return 'bg-indigo-50 text-indigo-700';
+    default:
+      return 'bg-slate-50 text-slate-700';
+  }
+};
+
+const getPriorityLabel = (priority) => {
+  switch (priority) {
+    case 'high':
+      return 'High priority';
+    case 'medium':
+      return 'Medium priority';
+    default:
+      return 'Low priority';
+  }
+};
 
 const CADashboard = () => {
   const { user } = useAuth();
   const [isLoggedIn, setIsLoggedIn] = useState(!!user);
+  const [craUpdates, setCraUpdates] = useState([]);
+  const [loadingCraUpdates, setLoadingCraUpdates] = useState(true);
+  const [craLastSyncedAt, setCraLastSyncedAt] = useState(null);
+  const [craFeedMode, setCraFeedMode] = useState('backend');
 
   useEffect(() => {
     setIsLoggedIn(!!user);
   }, [user]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCRAUpdates = async () => {
+      setLoadingCraUpdates(true);
+
+      try {
+        const result = await getCRAUpdates({ limit: 3 });
+
+        if (!isMounted) return;
+
+        setCraUpdates(result?.updates || []);
+        setCraLastSyncedAt(result?.lastSyncedAt || new Date().toISOString());
+        setCraFeedMode(result?.source || 'backend');
+      } catch (error) {
+        if (!isMounted) return;
+
+        setCraUpdates([]);
+        setCraLastSyncedAt(new Date().toISOString());
+        setCraFeedMode('fallback');
+      } finally {
+        if (isMounted) {
+          setLoadingCraUpdates(false);
+        }
+      }
+    };
+
+    loadCRAUpdates();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const mockClients = {
     total: 24,
@@ -462,18 +560,167 @@ const CADashboard = () => {
             </Card.Body>
           </Card>
 
-          <div>
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">Recent Clients</h3>
-              <Link
-                to="/ca/clients"
-                className="text-sm font-medium text-primary-600 hover:text-primary-700"
-              >
-                View all clients →
-              </Link>
-            </div>
-            <ClientTable clients={mockClients.data} />
+          <Card className="overflow-hidden">
+  <Card.Header>
+    <div className="flex items-center justify-between">
+      <h3 className="text-base font-semibold text-gray-900">
+        Recent Clients
+      </h3>
+      <Link
+        to="/ca/clients"
+        className="text-xs font-medium text-primary-600 hover:text-primary-700"
+      >
+        View all →
+      </Link>
+    </div>
+  </Card.Header>
+
+  <Card.Body className="p-0">
+    <div className="max-h-[260px] overflow-y-auto">
+      <ClientTable
+        clients={mockClients.data.slice(0, 5)} // only show 5
+        compact // 👈 we will support this
+      />
+    </div>
+  </Card.Body>
+</Card>
+          <Card className="overflow-hidden">
+  <Card.Header>
+    <div className="flex items-center justify-between gap-3">
+      <div>
+        <h3 className="flex items-center gap-2 text-base font-semibold text-gray-900">
+          <BellAlertIcon className="h-5 w-5 text-primary-500" />
+          Official CRA Updates
+        </h3>
+        <p className="mt-1 text-sm text-gray-500">
+          Official CRA filing, deadline, EFILE, service, and security updates for preparers.
+        </p>
+      </div>
+      <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+        Source: CRA
+      </span>
+    </div>
+  </Card.Header>
+
+  <Card.Body className="space-y-4 pt-0">
+    <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-white p-3">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <ShieldCheckIcon className="h-4 w-4 text-blue-600" />
+            <p className="text-sm font-semibold text-gray-900">What&apos;s Going On at CRA</p>
           </div>
+          <p className="mt-1 text-xs text-gray-500">
+            Keep accountants updated with official tax season guidance and filing changes.
+          </p>
+        </div>
+
+        <a
+          href="https://www.canada.ca/en/revenue-agency/news/newsroom.html"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700"
+        >
+          CRA Newsroom
+          <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+        </a>
+      </div>
+
+      {loadingCraUpdates ? (
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="animate-pulse rounded-xl border border-gray-200 bg-white p-3"
+            >
+              <div className="h-3 w-20 rounded bg-gray-200" />
+              <div className="mt-2 h-3 w-10/12 rounded bg-gray-200" />
+              <div className="mt-2 h-2.5 w-full rounded bg-gray-100" />
+              <div className="mt-1.5 h-2.5 w-4/5 rounded bg-gray-100" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+          {craUpdates.map((update) => (
+            <article
+              key={update.id}
+              className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            >
+              <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-medium text-gray-500">
+                  {formatDisplayDate(update.publishedAt)}
+                </span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${getCategoryClasses(update.category)}`}
+                >
+                  {update.category}
+                </span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${getPriorityClasses(update.priority)}`}
+                >
+                  {getPriorityLabel(update.priority)}
+                </span>
+              </div>
+
+              <h4 className="line-clamp-2 text-sm font-semibold leading-5 text-gray-900">
+                {update.title}
+              </h4>
+
+              <p className="mt-1.5 line-clamp-3 text-xs leading-5 text-gray-600">
+                {update.summary}
+              </p>
+
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <span className="text-[11px] font-medium text-gray-500">
+                  {update.source || 'CRA'}
+                </span>
+
+                <a
+                  href={update.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700"
+                >
+                  View
+                  <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
+                </a>
+              </div>
+            </article>
+          ))}
+
+          {craUpdates.length === 0 && (
+            <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-3 text-sm text-gray-600">
+              No CRA updates are available right now.
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="mt-3 flex items-center justify-between border-t border-blue-100 pt-3">
+        <div>
+          <p className="text-xs font-medium text-gray-600">
+            Last synced: {formatDisplayDate(craLastSyncedAt)}
+          </p>
+          <p className="mt-1 text-[11px] text-gray-500">
+            {craFeedMode === 'fallback'
+              ? 'Fallback official links are showing until backend sync is connected.'
+              : 'Live backend feed is connected to official CRA content.'}
+          </p>
+        </div>
+
+        <a
+          href="https://www.canada.ca/en/revenue-agency/services/e-services/feeds.html"
+          target="_blank"
+          rel="noreferrer"
+          className="text-xs font-medium text-primary-600 hover:text-primary-700"
+        >
+          RSS / feeds →
+        </a>
+      </div>
+    </div>
+  </Card.Body>
+</Card>
         </div>
 
         <div className="space-y-5 xl:col-span-4">

@@ -19,7 +19,6 @@ import {
   Shield,
   Globe,
   Users,
-  Baby,
   Heart,
   Coffee,
   ArrowLeft,
@@ -152,6 +151,16 @@ const Register = () => {
     homeOfficeExpenses: '',
     hasVehicleExpenses: false,
     vehicleExpenses: '',
+
+    hasVehiclePurchase: false,
+    vehicleOwnershipType: '',
+    vehiclePurchaseUse: '',
+    vehiclePurchaseDate: '',
+    vehiclePurchasePrice: '',
+    vehiclePurchaseGST: '',
+    vehicleVIN: '',
+    wantsToUploadBillOfSale: false,
+    vehicleBillOfSaleUploaded: false,
 
     spouseName: '',
     spouseSin: '',
@@ -316,6 +325,7 @@ const Register = () => {
     { key: 'rent_utilities', label: 'Rent / Utilities' },
     { key: 'home_office', label: 'Home Office' },
     { key: 'vehicle_expenses', label: 'Vehicle Expenses' },
+    { key: 'vehicle_purchase', label: 'Vehicle Bill of Sale' },
     { key: 'payroll_expenses', label: 'Payroll Expenses' },
     { key: 'inventory_purchases', label: 'Inventory Purchases' },
     { key: 'professional_fees', label: 'Professional Fees' },
@@ -356,6 +366,7 @@ const Register = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
@@ -539,6 +550,7 @@ const Register = () => {
 
     if (formData.hasHomeOffice) suggestions.add('home_office');
     if (formData.hasVehicleExpenses) suggestions.add('vehicle_expenses');
+    if (formData.wantsToUploadBillOfSale) suggestions.add('vehicle_purchase');
 
     return Array.from(suggestions);
   }, [
@@ -547,6 +559,7 @@ const Register = () => {
     hasBusiness,
     formData.hasHomeOffice,
     formData.hasVehicleExpenses,
+    formData.wantsToUploadBillOfSale,
   ]);
 
   const validateStep = () => {
@@ -561,7 +574,9 @@ const Register = () => {
       else if (formData.password.length < 8) {
         newErrors.password = 'Password must be at least 8 characters';
       }
-      if (formData.password !== formData.confirmPassword) {
+      if (!formData.confirmPassword) {
+        newErrors.confirmPassword = 'Please confirm your password';
+      } else if (formData.password !== formData.confirmPassword) {
         newErrors.confirmPassword = 'Passwords do not match';
       }
       if (!formData.phone) newErrors.phone = 'Phone number is required';
@@ -582,8 +597,12 @@ const Register = () => {
     if (currentStep === 3) {
       const selectedProfiles = Object.values(formData.taxProfile).some(Boolean);
       if (!selectedProfiles) newErrors.taxProfile = 'Select at least one tax profile';
-      if (!formData.employmentStatus) newErrors.employmentStatus = 'Employment status is required';
-      if (!formData.taxFilingStatus) newErrors.taxFilingStatus = 'Tax filing status is required';
+      if (!formData.employmentStatus) {
+        newErrors.employmentStatus = 'Employment status is required';
+      }
+      if (!formData.taxFilingStatus) {
+        newErrors.taxFilingStatus = 'Tax filing status is required';
+      }
       if (!formData.maritalStatus) newErrors.maritalStatus = 'Marital status is required';
 
       if (
@@ -599,6 +618,21 @@ const Register = () => {
     if (currentStep === 4) {
       if (hasGigWork && formData.platforms.length === 0) {
         newErrors.platforms = 'Select at least one gig platform.';
+      }
+
+      if (formData.hasVehiclePurchase) {
+        if (!formData.vehicleOwnershipType) {
+          newErrors.vehicleOwnershipType = 'Ownership type is required';
+        }
+        if (!formData.vehiclePurchaseUse) {
+          newErrors.vehiclePurchaseUse = 'Main use is required';
+        }
+        if (!formData.vehiclePurchaseDate) {
+          newErrors.vehiclePurchaseDate = 'Purchase date is required';
+        }
+        if (!formData.vehiclePurchasePrice) {
+          newErrors.vehiclePurchasePrice = 'Purchase price is required';
+        }
       }
     }
 
@@ -647,6 +681,17 @@ const Register = () => {
     return 'employee';
   };
 
+  const getFinalSelectedReceiptCategories = () => {
+    const current = formData.documentPreferences.selectedReceiptCategories || [];
+
+    return Array.from(
+      new Set([
+        ...current,
+        ...(formData.wantsToUploadBillOfSale ? ['vehicle_purchase'] : []),
+      ])
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -655,10 +700,25 @@ const Register = () => {
     setLoading(true);
     try {
       const cleanGigPlatforms = normalizedGigPlatforms;
+
       const finalDocumentPreferences = {
         ...formData.documentPreferences,
         gigPlatforms: cleanGigPlatforms,
+        selectedReceiptCategories: getFinalSelectedReceiptCategories(),
       };
+
+      const vehiclePurchase = formData.hasVehiclePurchase
+        ? {
+            ownershipType: formData.vehicleOwnershipType,
+            use: formData.vehiclePurchaseUse,
+            purchaseDate: formData.vehiclePurchaseDate,
+            purchasePrice: formData.vehiclePurchasePrice,
+            gst: formData.vehiclePurchaseGST,
+            vin: formData.vehicleVIN,
+            wantsBillOfSaleUpload: formData.wantsToUploadBillOfSale,
+            uploaded: formData.vehicleBillOfSaleUploaded || false,
+          }
+        : null;
 
       const result = await register({
         name: `${formData.firstName} ${formData.lastName}`,
@@ -683,11 +743,12 @@ const Register = () => {
             : null,
         dependents: formData.children,
         gigPlatforms: cleanGigPlatforms,
+        vehiclePurchase,
         documentPreferences: finalDocumentPreferences,
         onboarding: {
           needsSuggestions: formData.documentPreferences.needsSuggestions,
           selectedSlips: formData.documentPreferences.selectedSlips,
-          selectedReceiptCategories: formData.documentPreferences.selectedReceiptCategories,
+          selectedReceiptCategories: finalDocumentPreferences.selectedReceiptCategories,
           skippedAtRegistration: formData.documentPreferences.skippedAtRegistration,
           gigPlatforms: cleanGigPlatforms,
           suggestedSlips,
@@ -696,6 +757,7 @@ const Register = () => {
         profile: {
           ...formData,
           gigPlatforms: cleanGigPlatforms,
+          vehiclePurchase,
           documentPreferences: finalDocumentPreferences,
         },
         termsAccepted: true,
@@ -746,7 +808,9 @@ const Register = () => {
     .map((item) => item.label);
 
   const selectedReceiptLabels = receiptOptions
-    .filter((item) => formData.documentPreferences.selectedReceiptCategories.includes(item.key))
+    .filter((item) =>
+      getFinalSelectedReceiptCategories().includes(item.key)
+    )
     .map((item) => item.label);
 
   const selectedPlatformLabels = platforms.filter((platform) =>
@@ -756,6 +820,7 @@ const Register = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-gray-100 py-12">
       <button
+        type="button"
         onClick={() => navigate('/')}
         className="absolute left-4 top-4 flex items-center text-gray-600 transition-colors hover:text-primary-500"
       >
@@ -863,7 +928,7 @@ const Register = () => {
                       </label>
                       <div className="relative">
                         <Lock
-                          className="absolute left-3 top-1/2 -translate-y-1/2 transform text-gray-400"
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                           size={18}
                         />
                         <input
@@ -877,8 +942,8 @@ const Register = () => {
                         />
                         <button
                           type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 transform"
+                          onClick={() => setShowPassword((prev) => !prev)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2"
                         >
                           {showPassword ? (
                             <EyeOff size={18} className="text-gray-400" />
@@ -898,7 +963,7 @@ const Register = () => {
                       </label>
                       <div className="relative">
                         <Lock
-                          className="absolute left-3 top-1/2 -translate-y-1/2 transform text-gray-400"
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                           size={18}
                         />
                         <input
@@ -914,8 +979,8 @@ const Register = () => {
                         />
                         <button
                           type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 transform"
+                          onClick={() => setShowConfirmPassword((prev) => !prev)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2"
                         >
                           {showConfirmPassword ? (
                             <EyeOff size={18} className="text-gray-400" />
@@ -1031,21 +1096,29 @@ const Register = () => {
                       required
                     />
 
-                    <select
-                      name="province"
-                      value={formData.province}
-                      onChange={handleChange}
-                      className={`rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                        errors.province ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                    >
-                      <option value="">Province</option>
-                      {provinces.map((prov) => (
-                        <option key={prov} value={prov}>
-                          {prov}
-                        </option>
-                      ))}
-                    </select>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">
+                        Province <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        name="province"
+                        value={formData.province}
+                        onChange={handleChange}
+                        className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                          errors.province ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      >
+                        <option value="">Province</option>
+                        {provinces.map((prov) => (
+                          <option key={prov} value={prov}>
+                            {prov}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.province && (
+                        <p className="mt-1 text-xs text-red-500">{errors.province}</p>
+                      )}
+                    </div>
 
                     <Input
                       label="Postal Code"
@@ -1160,6 +1233,11 @@ const Register = () => {
                           </option>
                         ))}
                       </select>
+                      {errors.employmentStatus && (
+                        <p className="mt-1 text-xs text-red-500">
+                          {errors.employmentStatus}
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -1181,6 +1259,11 @@ const Register = () => {
                           </option>
                         ))}
                       </select>
+                      {errors.taxFilingStatus && (
+                        <p className="mt-1 text-xs text-red-500">
+                          {errors.taxFilingStatus}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -1398,19 +1481,24 @@ const Register = () => {
                       />
 
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <select
-                          name="businessType"
-                          value={formData.businessType}
-                          onChange={handleChange}
-                          className="rounded-lg border border-gray-300 px-3 py-2"
-                        >
-                          <option value="">Business Type</option>
-                          {businessTypes.map((type) => (
-                            <option key={type} value={type}>
-                              {type}
-                            </option>
-                          ))}
-                        </select>
+                        <div>
+                          <label className="mb-1 block text-sm font-medium text-gray-700">
+                            Business Type
+                          </label>
+                          <select
+                            name="businessType"
+                            value={formData.businessType}
+                            onChange={handleChange}
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                          >
+                            <option value="">Business Type</option>
+                            {businessTypes.map((type) => (
+                              <option key={type} value={type}>
+                                {type}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
 
                         <Input
                           label="Business Number (BN)"
@@ -1436,6 +1524,158 @@ const Register = () => {
                         />
                       </div>
                     </div>
+                  )}
+
+                  {(hasGigWork || hasSelfEmployment || hasBusiness) && (
+                    <Card className="border border-orange-200 bg-orange-50">
+                      <Card.Body className="p-5">
+                        <div className="mb-4 flex items-center gap-3">
+                          <div className="rounded-xl bg-orange-100 p-2">
+                            <Car className="h-5 w-5 text-orange-600" />
+                          </div>
+                          <div>
+                            <h4 className="text-lg font-semibold text-gray-900">
+                              Vehicle Purchase for Work
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              Tell us if you bought a vehicle this year for gig work,
+                              self-employment, or business use so your CA can review the
+                              bill of sale.
+                            </p>
+                          </div>
+                        </div>
+
+                        <label className="mb-4 flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
+                          <input
+                            type="checkbox"
+                            name="hasVehiclePurchase"
+                            checked={formData.hasVehiclePurchase}
+                            onChange={handleChange}
+                            className="h-4 w-4"
+                          />
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              I bought a vehicle this year for work use
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              Useful for gig workers, self-employed users, and business owners.
+                            </div>
+                          </div>
+                        </label>
+
+                        {formData.hasVehiclePurchase && (
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div>
+                              <label className="mb-2 block text-sm font-medium text-gray-700">
+                                Ownership Type
+                              </label>
+                              <select
+                                name="vehicleOwnershipType"
+                                value={formData.vehicleOwnershipType}
+                                onChange={handleChange}
+                                className={`w-full rounded-xl border px-4 py-3 ${
+                                  errors.vehicleOwnershipType
+                                    ? 'border-red-500'
+                                    : 'border-gray-300'
+                                }`}
+                              >
+                                <option value="">Select type</option>
+                                <option value="owned">Owned / Cash purchase</option>
+                                <option value="financed">Financed</option>
+                                <option value="leased">Leased</option>
+                              </select>
+                              {errors.vehicleOwnershipType && (
+                                <p className="mt-1 text-xs text-red-500">
+                                  {errors.vehicleOwnershipType}
+                                </p>
+                              )}
+                            </div>
+
+                            <div>
+                              <label className="mb-2 block text-sm font-medium text-gray-700">
+                                Main Use
+                              </label>
+                              <select
+                                name="vehiclePurchaseUse"
+                                value={formData.vehiclePurchaseUse}
+                                onChange={handleChange}
+                                className={`w-full rounded-xl border px-4 py-3 ${
+                                  errors.vehiclePurchaseUse
+                                    ? 'border-red-500'
+                                    : 'border-gray-300'
+                                }`}
+                              >
+                                <option value="">Select use</option>
+                                <option value="gig">Gig work</option>
+                                <option value="self_employed">Self-employment</option>
+                                <option value="business">Business</option>
+                                <option value="mixed">Mixed personal + work</option>
+                              </select>
+                              {errors.vehiclePurchaseUse && (
+                                <p className="mt-1 text-xs text-red-500">
+                                  {errors.vehiclePurchaseUse}
+                                </p>
+                              )}
+                            </div>
+
+                            <Input
+                              label="Purchase Date"
+                              type="date"
+                              name="vehiclePurchaseDate"
+                              value={formData.vehiclePurchaseDate}
+                              onChange={handleChange}
+                              error={errors.vehiclePurchaseDate}
+                            />
+
+                            <Input
+                              label="Purchase Price"
+                              type="number"
+                              name="vehiclePurchasePrice"
+                              value={formData.vehiclePurchasePrice}
+                              onChange={handleChange}
+                              error={errors.vehiclePurchasePrice}
+                              placeholder="35000"
+                            />
+
+                            <Input
+                              label="GST / HST Paid"
+                              type="number"
+                              name="vehiclePurchaseGST"
+                              value={formData.vehiclePurchaseGST}
+                              onChange={handleChange}
+                              placeholder="1750"
+                            />
+
+                            <Input
+                              label="VIN (optional)"
+                              name="vehicleVIN"
+                              value={formData.vehicleVIN}
+                              onChange={handleChange}
+                              placeholder="Vehicle identification number"
+                            />
+
+                            <label className="md:col-span-2 flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
+                              <input
+                                type="checkbox"
+                                name="wantsToUploadBillOfSale"
+                                checked={formData.wantsToUploadBillOfSale}
+                                onChange={handleChange}
+                                className="h-4 w-4"
+                              />
+                              <div>
+                                <div className="font-medium text-gray-900">
+                                  I want to upload my vehicle bill of sale
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  Your CA can use this to review eligible vehicle purchase
+                                  treatment.
+                                </div>
+                              </div>
+                            </label>
+                          </div>
+                        )}
+                      </Card.Body>
+                    </Card>
                   )}
 
                   <div className="border-t pt-6">
@@ -1636,9 +1876,9 @@ const Register = () => {
                         </h4>
                       </div>
                       <p className="mb-4 text-sm text-green-800">
-                        These selected platforms will be saved and used to show platform-specific
-                        cards like Uber Records, DoorDash Records, Skip Records, and Instacart
-                        Records.
+                        These selected platforms will be saved and used to show
+                        platform-specific cards like Uber Records, DoorDash Records, Skip
+                        Records, and Instacart Records.
                       </p>
 
                       <div className="flex flex-wrap gap-2">
@@ -1806,7 +2046,7 @@ const Register = () => {
                               })
                             ) : (
                               <span className="text-sm text-amber-800">
-                                Receipt suggestions will appear later.
+                                Suggestions will appear after onboarding.
                               </span>
                             )}
                           </div>
@@ -1820,268 +2060,226 @@ const Register = () => {
               {currentStep === 7 && (
                 <div className="space-y-6">
                   <h3 className="mb-6 text-xl font-semibold text-gray-800">
-                    Children & Dependents
+                    Family & Household
                   </h3>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const newChildren = [
-                        ...(formData.children || []),
-                        { name: '', dob: '', sin: '' },
-                      ];
-                      setFormData((prev) => ({ ...prev, children: newChildren }));
-                    }}
-                  >
-                    <Baby size={16} className="mr-2" />
-                    Add Dependent
-                  </Button>
+                  <div className="rounded-lg border border-gray-200 p-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <Input
+                        label="Number of Dependents"
+                        type="number"
+                        name="numberOfDependents"
+                        value={formData.numberOfDependents}
+                        onChange={handleChange}
+                      />
 
-                  {formData.children?.map((child, index) => (
-                    <div
-                      key={index}
-                      className="relative mt-4 rounded-lg bg-gray-50 p-4"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newChildren = formData.children.filter((_, i) => i !== index);
-                          setFormData((prev) => ({ ...prev, children: newChildren }));
-                        }}
-                        className="absolute right-2 top-2 text-gray-400 hover:text-red-500"
-                      >
-                        ×
-                      </button>
-
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                        <Input
-                          label="Full Name"
-                          value={child.name}
-                          onChange={(e) => {
-                            const newChildren = [...formData.children];
-                            newChildren[index].name = e.target.value;
-                            setFormData((prev) => ({ ...prev, children: newChildren }));
-                          }}
+                      <label className="flex items-center rounded-lg border p-3 hover:bg-gray-50">
+                        <input
+                          type="checkbox"
+                          name="shareWithSpouse"
+                          checked={formData.shareWithSpouse}
+                          onChange={handleChange}
+                          className="h-4 w-4 rounded text-primary-500"
                         />
-                        <Input
-                          label="Date of Birth"
-                          type="date"
-                          value={child.dob}
-                          onChange={(e) => {
-                            const newChildren = [...formData.children];
-                            newChildren[index].dob = e.target.value;
-                            setFormData((prev) => ({ ...prev, children: newChildren }));
-                          }}
-                        />
-                        <Input
-                          label="SIN (if applicable)"
-                          value={child.sin}
-                          onChange={(e) => {
-                            const newChildren = [...formData.children];
-                            newChildren[index].sin = e.target.value;
-                            setFormData((prev) => ({ ...prev, children: newChildren }));
-                          }}
-                        />
-                      </div>
+                        <span className="ml-3 text-sm text-gray-700">
+                          Share tax workspace access with spouse
+                        </span>
+                      </label>
                     </div>
-                  ))}
+                  </div>
                 </div>
               )}
 
               {currentStep === 8 && (
                 <div className="space-y-6">
                   <h3 className="mb-6 text-xl font-semibold text-gray-800">
-                    Review & Submit
+                    Review & Confirm
                   </h3>
 
-                  <div className="rounded-lg bg-green-50 p-4">
-                    <div className="flex items-center">
-                      <Check className="mr-3 text-green-500" size={24} />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card>
+                      <Card.Body className="p-5">
+                        <h4 className="font-semibold text-gray-900">Account</h4>
+                        <div className="mt-3 space-y-2 text-sm text-gray-600">
+                          <p>
+                            <span className="font-medium">Name:</span> {formData.firstName}{' '}
+                            {formData.lastName}
+                          </p>
+                          <p>
+                            <span className="font-medium">Email:</span> {formData.email}
+                          </p>
+                          <p>
+                            <span className="font-medium">Phone:</span> {formData.phone}
+                          </p>
+                        </div>
+                      </Card.Body>
+                    </Card>
+
+                    <Card>
+                      <Card.Body className="p-5">
+                        <h4 className="font-semibold text-gray-900">Tax Profile</h4>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {selectedProfiles.map((profile) => (
+                            <Badge key={profile.key} variant="info">
+                              {profile.label}
+                            </Badge>
+                          ))}
+                        </div>
+                      </Card.Body>
+                    </Card>
+
+                    <Card>
+                      <Card.Body className="p-5">
+                        <h4 className="font-semibold text-gray-900">Documents</h4>
+                        <div className="mt-3 space-y-3 text-sm text-gray-600">
+                          <div>
+                            <p className="font-medium text-gray-800">Selected slips</p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {selectedSlipLabels.length > 0 ? (
+                                selectedSlipLabels.map((label) => (
+                                  <Badge key={label} variant="info">
+                                    {label}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <span>No slip selections yet</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div>
+                            <p className="font-medium text-gray-800">Selected receipts</p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {selectedReceiptLabels.length > 0 ? (
+                                selectedReceiptLabels.map((label) => (
+                                  <Badge key={label} variant="success">
+                                    {label}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <span>No receipt selections yet</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </Card.Body>
+                    </Card>
+
+                    <Card>
+                      <Card.Body className="p-5">
+                        <h4 className="font-semibold text-gray-900">Vehicle Purchase</h4>
+                        <div className="mt-3 text-sm text-gray-600">
+                          {formData.hasVehiclePurchase ? (
+                            <div className="space-y-2">
+                              <p>
+                                <span className="font-medium">Ownership:</span>{' '}
+                                {formData.vehicleOwnershipType || '—'}
+                              </p>
+                              <p>
+                                <span className="font-medium">Use:</span>{' '}
+                                {formData.vehiclePurchaseUse || '—'}
+                              </p>
+                              <p>
+                                <span className="font-medium">Purchase date:</span>{' '}
+                                {formData.vehiclePurchaseDate || '—'}
+                              </p>
+                              <p>
+                                <span className="font-medium">Purchase price:</span>{' '}
+                                {formData.vehiclePurchasePrice || '—'}
+                              </p>
+                              <p>
+                                <span className="font-medium">Bill of sale upload:</span>{' '}
+                                {formData.wantsToUploadBillOfSale ? 'Yes' : 'No'}
+                              </p>
+                            </div>
+                          ) : (
+                            <p>No work vehicle purchase added</p>
+                          )}
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </div>
+
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+                    <div className="space-y-4">
                       <div>
-                        <p className="font-medium text-green-700">Almost done!</p>
-                        <p className="text-sm text-green-600">
-                          Review your information before creating your account.
-                        </p>
+                        <div className="flex items-center">
+                          <button
+                            type="button"
+                            onClick={() => setTermsAccepted((prev) => !prev)}
+                            className="flex items-center focus:outline-none"
+                          >
+                            {termsAccepted ? (
+                              <CheckSquare className="text-primary-600" size={20} />
+                            ) : (
+                              <Square className="text-gray-400" size={20} />
+                            )}
+                          </button>
+                          <span className="ml-2 text-sm text-gray-600">
+                            I agree to the{' '}
+                            <button
+                              type="button"
+                              onClick={() => setShowTermsModal(true)}
+                              className="font-medium text-primary-600 hover:underline"
+                            >
+                              Terms and Conditions
+                            </button>
+                          </span>
+                        </div>
+                        {errors.terms && (
+                          <p className="ml-7 text-xs text-red-500">{errors.terms}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <div className="flex items-center">
+                          <button
+                            type="button"
+                            onClick={() => setPrivacyAccepted((prev) => !prev)}
+                            className="flex items-center focus:outline-none"
+                          >
+                            {privacyAccepted ? (
+                              <CheckSquare className="text-primary-600" size={20} />
+                            ) : (
+                              <Square className="text-gray-400" size={20} />
+                            )}
+                          </button>
+                          <span className="ml-2 text-sm text-gray-600">
+                            I agree to the{' '}
+                            <button
+                              type="button"
+                              onClick={() => setShowPrivacyModal(true)}
+                              className="font-medium text-primary-600 hover:underline"
+                            >
+                              Privacy Policy
+                            </button>
+                          </span>
+                        </div>
+                        {errors.privacy && (
+                          <p className="ml-7 text-xs text-red-500">{errors.privacy}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            name="confirmAccuracy"
+                            checked={formData.confirmAccuracy}
+                            onChange={handleChange}
+                            className="h-4 w-4 rounded text-primary-500"
+                          />
+                          <span className="ml-2 text-sm text-gray-700">
+                            I confirm that all information provided is accurate.
+                          </span>
+                        </label>
+                        {errors.confirmAccuracy && (
+                          <p className="ml-7 text-xs text-red-500">
+                            {errors.confirmAccuracy}
+                          </p>
+                        )}
                       </div>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Card>
-                      <Card.Header>
-                        <h4 className="font-medium">Account Information</h4>
-                      </Card.Header>
-                      <Card.Body className="space-y-2 text-sm">
-                        <p>
-                          <span className="text-gray-500">Name:</span>{' '}
-                          {formData.firstName} {formData.lastName}
-                        </p>
-                        <p>
-                          <span className="text-gray-500">Email:</span> {formData.email}
-                        </p>
-                        <p>
-                          <span className="text-gray-500">Phone:</span> {formData.phone}
-                        </p>
-                      </Card.Body>
-                    </Card>
-
-                    <Card>
-                      <Card.Header>
-                        <h4 className="font-medium">Tax Profiles</h4>
-                      </Card.Header>
-                      <Card.Body className="space-y-2 text-sm">
-                        {selectedProfiles.map((profile) => (
-                          <Badge key={profile.key} variant="info">
-                            {profile.label}
-                          </Badge>
-                        ))}
-                      </Card.Body>
-                    </Card>
-
-                    <Card>
-                      <Card.Header>
-                        <h4 className="font-medium">Gig Platforms</h4>
-                      </Card.Header>
-                      <Card.Body className="space-y-2 text-sm">
-                        {normalizedGigPlatforms.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {normalizedGigPlatforms.map((platform) => (
-                              <Badge key={platform} variant="success">
-                                {platform}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-gray-500">No gig platforms selected</span>
-                        )}
-                      </Card.Body>
-                    </Card>
-
-                    <Card className="md:col-span-2">
-                      <Card.Header>
-                        <h4 className="font-medium">Document Setup</h4>
-                      </Card.Header>
-                      <Card.Body className="space-y-4 text-sm">
-                        <p>
-                          <span className="text-gray-500">Mode:</span>{' '}
-                          {formData.documentPreferences.skippedAtRegistration
-                            ? 'Skipped for now'
-                            : formData.documentPreferences.needsSuggestions
-                              ? 'Suggest for me later'
-                              : 'Selected manually'}
-                        </p>
-
-                        <div>
-                          <p className="mb-2 text-gray-500">Selected slips</p>
-                          <div className="flex flex-wrap gap-2">
-                            {selectedSlipLabels.length > 0 ? (
-                              selectedSlipLabels.map((label) => (
-                                <Badge key={label} variant="info">
-                                  {label}
-                                </Badge>
-                              ))
-                            ) : (
-                              <span className="text-gray-500">No slips selected yet</span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div>
-                          <p className="mb-2 text-gray-500">Selected receipts</p>
-                          <div className="flex flex-wrap gap-2">
-                            {selectedReceiptLabels.length > 0 ? (
-                              selectedReceiptLabels.map((label) => (
-                                <Badge key={label} variant="success">
-                                  {label}
-                                </Badge>
-                              ))
-                            ) : (
-                              <span className="text-gray-500">
-                                No receipt categories selected yet
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </div>
-
-                  <div className="space-y-4 border-t pt-6">
-                    <h4 className="font-medium text-gray-800">Terms & Agreements</h4>
-
-                    <div className="flex items-center">
-                      <button
-                        type="button"
-                        onClick={() => setTermsAccepted(!termsAccepted)}
-                        className="flex items-center focus:outline-none"
-                      >
-                        {termsAccepted ? (
-                          <CheckSquare className="text-primary-600" size={20} />
-                        ) : (
-                          <Square className="text-gray-400" size={20} />
-                        )}
-                      </button>
-                      <span className="ml-2 text-sm text-gray-600">
-                        I agree to the{' '}
-                        <button
-                          type="button"
-                          onClick={() => setShowTermsModal(true)}
-                          className="font-medium text-primary-600 hover:underline"
-                        >
-                          Terms and Conditions
-                        </button>
-                      </span>
-                    </div>
-                    {errors.terms && (
-                      <p className="ml-7 text-xs text-red-500">{errors.terms}</p>
-                    )}
-
-                    <div className="flex items-center">
-                      <button
-                        type="button"
-                        onClick={() => setPrivacyAccepted(!privacyAccepted)}
-                        className="flex items-center focus:outline-none"
-                      >
-                        {privacyAccepted ? (
-                          <CheckSquare className="text-primary-600" size={20} />
-                        ) : (
-                          <Square className="text-gray-400" size={20} />
-                        )}
-                      </button>
-                      <span className="ml-2 text-sm text-gray-600">
-                        I agree to the{' '}
-                        <button
-                          type="button"
-                          onClick={() => setShowPrivacyModal(true)}
-                          className="font-medium text-primary-600 hover:underline"
-                        >
-                          Privacy Policy
-                        </button>
-                      </span>
-                    </div>
-                    {errors.privacy && (
-                      <p className="ml-7 text-xs text-red-500">{errors.privacy}</p>
-                    )}
-
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        name="confirmAccuracy"
-                        checked={formData.confirmAccuracy}
-                        onChange={handleChange}
-                        className="h-4 w-4 rounded text-primary-500"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">
-                        I confirm that all information provided is accurate.
-                      </span>
-                    </label>
-                    {errors.confirmAccuracy && (
-                      <p className="ml-7 text-xs text-red-500">
-                        {errors.confirmAccuracy}
-                      </p>
-                    )}
                   </div>
 
                   <TermsModal
