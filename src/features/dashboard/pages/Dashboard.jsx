@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Bell,
@@ -12,6 +12,7 @@ import {
   Car,
   Receipt,
   ChevronRight,
+  ChevronDown,
   Building2,
   CheckCircle2,
   PiggyBank,
@@ -27,6 +28,9 @@ import {
   Target,
   ShieldCheck,
   Sparkles,
+  User,
+  Users,
+  Stethoscope,
 } from 'lucide-react';
 
 import { useAuth } from '../../auth/context/AuthContext';
@@ -85,33 +89,6 @@ const OPTIONAL_PROFILE_TO_SLIP = {
   Donations: 'DONATIONS',
 };
 
-const OPTIONAL_PROFILE_TO_ATTENTION = {
-  TFSA: {
-    text: 'Review your TFSA records and contribution history',
-    to: '/accounts',
-  },
-  RRSP: {
-    text: 'Upload your RRSP contribution receipts',
-    to: '/documents?category=rrsp',
-  },
-  FHSA: {
-    text: 'Upload your FHSA contribution records',
-    to: '/documents?category=fhsa',
-  },
-  CCB: {
-    text: 'Review your Canada Child Benefit records',
-    to: '/accounts',
-  },
-  Investments: {
-    text: 'Upload your investment statements and slips',
-    to: '/documents?category=investments',
-  },
-  Donations: {
-    text: 'Upload your charitable donation receipts',
-    to: '/documents?category=donations',
-  },
-};
-
 const GIG_PLATFORM_CONFIG = {
   uber: {
     name: 'Uber Records',
@@ -147,90 +124,6 @@ const money = (value) =>
   }).format(Math.max(0, Number(value || 0)));
 
 const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
-
-const getSlipAttentionText = (slip) => {
-  switch (slip) {
-    case 'T4':
-      return 'Upload your T4 employment slip';
-    case 'T4A':
-      return 'Upload your T4A / contract / gig income slip';
-    case 'T5':
-      return 'Upload your T5 investment income slip';
-    case 'T3':
-      return 'Upload your T3 trust income slip';
-    case 'T5008':
-      return 'Upload your T5008 securities transaction records';
-    case 'RRSP':
-      return 'Upload your RRSP contribution receipts';
-    case 'FHSA':
-      return 'Upload your FHSA contribution records';
-    case 'TFSA':
-      return 'Review and upload your TFSA records';
-    case 'TUITION':
-      return 'Upload your tuition / T2202 documents';
-    case 'MEDICAL':
-      return 'Upload your medical expense receipts';
-    case 'DONATIONS':
-      return 'Upload your donation receipts';
-    case 'CHILD_CARE':
-      return 'Upload your child care receipts';
-    case 'MOVING':
-      return 'Upload your moving expense records';
-    case 'RENTAL':
-      return 'Upload your rental income records';
-    case 'FOREIGN':
-      return 'Upload your foreign income documents';
-    case 'CRYPTO':
-      return 'Upload your crypto transaction records';
-    case 'BUSINESS_RECORDS':
-      return 'Upload your business records and statements';
-    case 'GST_HST':
-      return 'Upload your GST / HST records';
-    case 'PAYROLL':
-      return 'Upload your payroll records';
-    case 'INVENTORY':
-      return 'Upload your inventory records';
-    case 'HOME_OFFICE':
-      return 'Upload your home office records';
-    default:
-      return `Upload ${SLIP_LABELS[slip] || slip}`;
-  }
-};
-
-const getReceiptAttentionText = (receipt) => {
-  switch (receipt) {
-    case 'fuel':
-      return 'Upload your fuel receipts';
-    case 'maintenance':
-      return 'Upload your maintenance receipts';
-    case 'parking_tolls':
-      return 'Upload your parking and toll receipts';
-    case 'meals':
-      return 'Upload your meal receipts';
-    case 'mobile_internet':
-      return 'Upload your mobile and internet bills';
-    case 'supplies':
-      return 'Upload your supply receipts';
-    case 'equipment':
-      return 'Upload your equipment receipts';
-    case 'insurance':
-      return 'Upload your insurance receipts';
-    case 'rent_utilities':
-      return 'Upload your rent and utility records';
-    case 'home_office':
-      return 'Upload your home office expense records';
-    case 'vehicle_expenses':
-      return 'Upload your vehicle expense records';
-    case 'payroll_expenses':
-      return 'Upload your payroll expense records';
-    case 'inventory_purchases':
-      return 'Upload your inventory purchase records';
-    case 'professional_fees':
-      return 'Upload your professional fee receipts';
-    default:
-      return `Upload ${RECEIPT_LABELS[receipt] || receipt}`;
-  }
-};
 
 const getSlipRoute = (slip, isSpouse = false) => {
   const prefix = isSpouse ? 'spouse-' : '';
@@ -294,59 +187,15 @@ const getReceiptRoute = (receipt) => {
   }
 };
 
-const OptionalProfilesGuide = ({
-  title = 'Optional Tax Accounts & Deductions',
-  optionalProfiles,
-}) => {
-  if (!optionalProfiles.length) return null;
+const getPersonBusinessName = (person, fallback) =>
+  person?.businessInfo?.businessName ||
+  person?.businessName ||
+  person?.companyName ||
+  fallback;
 
-  const iconMap = {
-    TFSA: Landmark,
-    RRSP: PiggyBank,
-    FHSA: Home,
-    CCB: BadgeDollarSign,
-    Investments: TrendingUp,
-    Donations: Gift,
-  };
-
-  return (
-    <Card className="border-l-4 border-purple-500">
-      <Card.Header>
-        <h3 className="flex items-center text-lg font-bold">
-          <Wallet size={20} className="mr-2 text-purple-600" />
-          {title}
-        </h3>
-      </Card.Header>
-
-      <Card.Body>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {optionalProfiles.map((item) => {
-            const Icon = iconMap[item.label] || FileText;
-
-            return (
-              <Link
-                key={item.key}
-                to={item.to}
-                className="rounded-lg bg-gray-50 p-3 transition hover:bg-gray-100"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 text-purple-600">
-                      <Icon size={16} />
-                    </div>
-                    <p className="text-sm font-medium">{item.label}</p>
-                    <p className="text-xs text-gray-500">Manage related records</p>
-                  </div>
-                  <ChevronRight size={16} className="mt-1 shrink-0 text-gray-400" />
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </Card.Body>
-    </Card>
-  );
-};
+const getHouseholdMedicalRoute = () => '/documents?category=medical';
+const getHouseholdDonationsRoute = () => '/documents?category=donations';
+const getHouseholdCcbRoute = () => '/accounts';
 
 const HouseholdSummaryCard = ({ household }) => {
   const spouse = household.spouse;
@@ -362,59 +211,20 @@ const HouseholdSummaryCard = ({ household }) => {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          {/* <div className="flex flex-wrap gap-2">
             {household.user.employment && <Badge variant="info">You: T4</Badge>}
             {household.user.gigWork && <Badge variant="success">You: Gig</Badge>}
             {household.user.business && <Badge variant="warning">You: Business</Badge>}
-
             {spouse?.employment && <Badge variant="info">Spouse: T4</Badge>}
             {spouse?.gigWork && <Badge variant="success">Spouse: Gig</Badge>}
             {spouse?.business && <Badge variant="warning">Spouse: Business</Badge>}
             {spouse?.unemployed && <Badge variant="default">Spouse: Unemployed</Badge>}
-          </div>
+          </div> */}
         </div>
       </Card.Body>
     </Card>
   );
 };
-
-const IncomeGuideCard = ({ title, icon: Icon, colorClass, documents }) => (
-  <Card className={`border-l-4 ${colorClass}`}>
-    <Card.Header>
-      <h3 className="flex items-center text-lg font-bold">
-        <Icon size={20} className="mr-2" />
-        {title}
-      </h3>
-    </Card.Header>
-
-    <Card.Body>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {documents.map((doc) => {
-          const ItemIcon = doc.icon;
-
-          return (
-            <Link
-              key={doc.name}
-              to={doc.to}
-              className="rounded-lg bg-gray-50 p-3 transition hover:bg-gray-100"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-700">
-                    <ItemIcon size={16} />
-                  </div>
-                  <p className="text-sm font-medium">{doc.name}</p>
-                  <p className="text-xs text-gray-500">{doc.description}</p>
-                </div>
-                <ChevronRight size={16} className="mt-1 shrink-0 text-gray-400" />
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-    </Card.Body>
-  </Card>
-);
 
 const SavingOpportunityCard = ({ item }) => {
   const Icon = item.icon;
@@ -424,43 +234,473 @@ const SavingOpportunityCard = ({ item }) => {
   return (
     <Link
       to={item.to}
-      className="group rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-green-300 hover:shadow-md"
+      className="group rounded-xl border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-green-300 hover:shadow-md"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${item.iconBg}`}>
-          <Icon size={20} className={item.iconColor} />
+      <div className="flex items-start justify-between gap-2">
+        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${item.iconBg}`}>
+          <Icon size={18} className={item.iconColor} />
         </div>
         <Badge variant={item.variant || 'success'}>{item.tag}</Badge>
       </div>
 
-      <div className="mt-4">
-        <h3 className="text-sm font-semibold text-gray-900">{item.title}</h3>
-        <p className="mt-1 text-xs text-gray-500">{item.description}</p>
+      <div className="mt-3">
+        <h3 className="text-xs font-semibold text-gray-900">{item.title}</h3>
+        <p className="mt-0.5 text-[11px] leading-4 text-gray-500">{item.description}</p>
       </div>
 
-      <div className="mt-4 space-y-2">
-        <div className="flex items-center justify-between text-xs">
+      <div className="mt-3 space-y-1.5">
+        <div className="flex items-center justify-between text-[11px]">
           <span className="text-gray-500">Captured</span>
           <span className="font-medium text-gray-700">
             {money(item.currentSaving)} / {money(item.maxSaving)}
           </span>
         </div>
 
-        <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+        <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
           <div
             className="h-full rounded-full bg-green-500 transition-all"
             style={{ width: `${progress}%` }}
           />
         </div>
 
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-green-700 font-medium">
-            {money(remaining)} still possible
-          </span>
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="font-medium text-green-700">{money(remaining)} still possible</span>
           <span className="text-gray-400 group-hover:text-gray-600">Open</span>
         </div>
       </div>
     </Link>
+  );
+};
+
+const SectionCard = ({ title, icon: Icon, colorClass, children, description, action }) => (
+  <Card className={`border-l-4 ${colorClass}`}>
+    <Card.Header>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="flex items-center text-lg font-bold">
+            <Icon size={20} className="mr-2" />
+            {title}
+          </h3>
+          {description ? <p className="mt-1 text-sm text-gray-500">{description}</p> : null}
+        </div>
+        {action || null}
+      </div>
+    </Card.Header>
+    <Card.Body>{children}</Card.Body>
+  </Card>
+);
+
+const PersonSubCard = ({ title, icon: Icon, items, emptyText = 'Nothing required here right now.' }) => (
+  <div className="rounded-2xl border border-gray-200 bg-white p-4">
+    <div className="mb-4 flex items-center gap-2">
+      <div className="rounded-xl bg-gray-100 p-2 text-gray-700">
+        <Icon size={16} />
+      </div>
+      <h4 className="font-semibold text-gray-900">{title}</h4>
+    </div>
+
+    {items.length > 0 ? (
+      <div className="space-y-3">
+        {items.map((item) => {
+          const ItemIcon = item.icon || FileText;
+
+          return (
+            <Link
+              key={item.name}
+              to={item.to}
+              className="flex items-start justify-between gap-3 rounded-xl bg-gray-50 p-3 transition hover:bg-gray-100"
+            >
+              <div className="flex items-start gap-3">
+                <div className="rounded-lg bg-white p-2 text-gray-700 shadow-sm">
+                  <ItemIcon size={16} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{item.name}</p>
+                  <p className="text-xs text-gray-500">{item.description}</p>
+                </div>
+              </div>
+              <ChevronRight size={16} className="mt-1 shrink-0 text-gray-400" />
+            </Link>
+          );
+        })}
+      </div>
+    ) : (
+      <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
+        {emptyText}
+      </div>
+    )}
+  </div>
+);
+
+const AttentionAccordionItem = ({
+  id,
+  title,
+  items,
+  icon: Icon,
+  tone = 'blue',
+  isOpen,
+  onToggle,
+  previewCount = 1,
+}) => {
+  if (!items?.length) return null;
+
+  const styles = {
+    blue: {
+      card: 'border-blue-200 bg-blue-50/70 hover:bg-blue-50',
+      icon: 'bg-blue-100 text-blue-700',
+      badge: 'bg-blue-100 text-blue-700',
+      accent: 'text-blue-800',
+    },
+    green: {
+      card: 'border-emerald-200 bg-emerald-50/70 hover:bg-emerald-50',
+      icon: 'bg-emerald-100 text-emerald-700',
+      badge: 'bg-emerald-100 text-emerald-700',
+      accent: 'text-emerald-800',
+    },
+    indigo: {
+      card: 'border-indigo-200 bg-indigo-50/70 hover:bg-indigo-50',
+      icon: 'bg-indigo-100 text-indigo-700',
+      badge: 'bg-indigo-100 text-indigo-700',
+      accent: 'text-indigo-800',
+    },
+    purple: {
+      card: 'border-purple-200 bg-purple-50/70 hover:bg-purple-50',
+      icon: 'bg-purple-100 text-purple-700',
+      badge: 'bg-purple-100 text-purple-700',
+      accent: 'text-purple-800',
+    },
+  }[tone];
+
+  const previewItems = items.slice(0, previewCount);
+
+  return (
+    <div className={`overflow-hidden rounded-2xl border transition ${styles.card}`}>
+      <button
+        type="button"
+        onClick={() => onToggle(id)}
+        className="w-full px-4 py-3 text-left"
+        aria-expanded={isOpen}
+        aria-controls={`attention-panel-${id}`}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-3">
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${styles.icon}`}>
+                <Icon size={17} />
+              </div>
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className={`truncate text-sm font-semibold ${styles.accent}`}>{title}</h3>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${styles.badge}`}>
+                    {items.length}
+                  </span>
+                </div>
+
+                {!isOpen && previewItems.length > 0 && (
+                  <p className="mt-1 truncate text-xs text-gray-600">
+                    {previewItems[0].text}
+                    {items.length > 1 ? ` +${items.length - 1} more` : ''}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-1 text-gray-500">
+            {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          </div>
+        </div>
+      </button>
+
+      {isOpen && (
+        <div id={`attention-panel-${id}`} className="border-t border-white/70 px-3 pb-3 pt-2">
+          <div className="space-y-2">
+            {items.map((item) => (
+              <Link
+                key={item.key}
+                to={item.to}
+                className="flex items-start justify-between gap-3 rounded-xl bg-white px-3 py-2.5 text-sm text-gray-800 shadow-sm transition hover:bg-gray-50"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-2">{item.text}</p>
+                </div>
+                <ChevronRight size={16} className="mt-0.5 shrink-0 text-gray-400" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const WhatNeedsAttentionSection = ({
+  employmentAttention,
+  gigAttention,
+  businessAttention,
+  receiptAttention,
+  householdAttention,
+  registeredAccountsAttention,
+}) => {
+  const groups = useMemo(
+    () =>
+      [
+        {
+          id: 'employment',
+          title: 'Employment',
+          icon: Briefcase,
+          tone: 'blue',
+          items: employmentAttention,
+          priority: 1,
+        },
+        {
+          id: 'gig',
+          title: 'Gig / Self-Employment',
+          icon: Car,
+          tone: 'green',
+          items: gigAttention,
+          priority: 2,
+        },
+        {
+          id: 'business',
+          title: 'Business',
+          icon: Store,
+          tone: 'indigo',
+          items: businessAttention,
+          priority: 3,
+        },
+        {
+          id: 'receipts',
+          title: 'Receipt Categories',
+          icon: Receipt,
+          tone: 'green',
+          items: receiptAttention,
+          priority: 4,
+        },
+        {
+          id: 'household',
+          title: 'Household Tax Items',
+          icon: HeartHandshake,
+          tone: 'purple',
+          items: householdAttention,
+          priority: 5,
+        },
+        {
+          id: 'accounts',
+          title: 'Registered Accounts',
+          icon: Landmark,
+          tone: 'purple',
+          items: registeredAccountsAttention,
+          priority: 6,
+        },
+      ]
+        .filter((group) => group.items?.length > 0)
+        .sort((a, b) => {
+          if (b.items.length !== a.items.length) return b.items.length - a.items.length;
+          return a.priority - b.priority;
+        }),
+    [
+      employmentAttention,
+      gigAttention,
+      businessAttention,
+      receiptAttention,
+      householdAttention,
+      registeredAccountsAttention,
+    ]
+  );
+
+  const [openGroup, setOpenGroup] = useState(groups[0]?.id ?? null);
+
+  const totalItems = groups.reduce((sum, group) => sum + group.items.length, 0);
+  const urgentItems = groups.flatMap((group) => group.items).slice(0, 3);
+
+  if (!groups.length) return null;
+
+  return (
+    <Card>
+      <Card.Header>
+        <div className="flex flex-col gap-3">
+          <div>
+            <h2 className="flex items-center text-xl font-bold">
+              <AlertTriangle size={20} className="mr-2 text-primary-500" />
+              What Needs Attention
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Prioritized actions first, with compact expandable groups.
+            </p>
+          </div>
+
+          {urgentItems.length > 0 && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-amber-900">Top actions</p>
+                <Badge variant="warning">{totalItems} total</Badge>
+              </div>
+
+              <div className="space-y-2">
+                {urgentItems.map((item) => (
+                  <Link
+                    key={`urgent-${item.key}`}
+                    to={item.to}
+                    className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm text-gray-800 transition hover:bg-gray-50"
+                  >
+                    <span className="truncate">{item.text}</span>
+                    <ChevronRight size={16} className="shrink-0 text-gray-400" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </Card.Header>
+
+      <Card.Body>
+        <div className="space-y-3">
+          {groups.map((group) => (
+            <AttentionAccordionItem
+              key={group.id}
+              id={group.id}
+              title={group.title}
+              icon={group.icon}
+              tone={group.tone}
+              items={group.items}
+              isOpen={openGroup === group.id}
+              onToggle={(id) => setOpenGroup((prev) => (prev === id ? null : id))}
+            />
+          ))}
+        </div>
+      </Card.Body>
+    </Card>
+  );
+};
+
+const ReceiptCategoryGrid = ({ categories }) => {
+  if (!categories.length) return null;
+
+  return (
+    <SectionCard
+      title="Receipt Categories"
+      icon={Receipt}
+      colorClass="border-emerald-500"
+      description="Keep all recurring deduction-related receipts in one place."
+    >
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {categories.map((receipt) => (
+          <Link
+            key={receipt}
+            to={getReceiptRoute(receipt)}
+            className="rounded-xl bg-gray-50 p-4 transition hover:bg-gray-100"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                  <Receipt size={16} />
+                </div>
+                <p className="text-sm font-medium text-gray-900">
+                  {RECEIPT_LABELS[receipt] || receipt}
+                </p>
+                <p className="text-xs text-gray-500">Track this to reduce missed deductions</p>
+              </div>
+              <ChevronRight size={16} className="mt-1 shrink-0 text-gray-400" />
+            </div>
+          </Link>
+        ))}
+      </div>
+    </SectionCard>
+  );
+};
+
+const HouseholdTaxDocumentsSection = ({
+  householdItems,
+  myOptionalProfiles,
+  spouseOptionalProfiles,
+  hasSpouse,
+}) => {
+  const iconMap = {
+    TFSA: Landmark,
+    RRSP: PiggyBank,
+    FHSA: Home,
+    Investments: TrendingUp,
+  };
+
+  const personalItems = (profiles) =>
+    profiles
+      .filter((item) => ['TFSA', 'RRSP', 'FHSA', 'Investments'].includes(item.label))
+      .map((item) => ({
+        name: item.label,
+        description: 'Manage related records',
+        to: item.to,
+        icon: iconMap[item.label] || FileText,
+      }));
+
+  const householdDocCards = householdItems.map((item) => ({
+    name: item.label,
+    description: item.description,
+    to: item.to,
+    icon: item.icon,
+  }));
+
+  return (
+    <SectionCard
+      title="Household Tax Documents"
+      icon={Wallet}
+      colorClass="border-purple-500"
+      description="Household-managed items stay together, while registered accounts remain person-specific."
+    >
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4">
+          <div className="mb-4 flex items-center gap-2">
+            <div className="rounded-xl bg-gray-100 p-2 text-gray-700">
+              <HeartHandshake size={16} />
+            </div>
+            <h4 className="font-semibold text-gray-900">Household Items</h4>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {householdDocCards.map((item) => {
+              const Icon = item.icon || FileText;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.to}
+                  className="rounded-xl bg-gray-50 p-4 transition hover:bg-gray-100"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-purple-100 text-purple-700">
+                        <Icon size={16} />
+                      </div>
+                      <p className="text-sm font-medium text-gray-900">{item.name}</p>
+                      <p className="text-xs text-gray-500">{item.description}</p>
+                    </div>
+                    <ChevronRight size={16} className="mt-1 shrink-0 text-gray-400" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className={`grid grid-cols-1 gap-4 ${hasSpouse ? 'lg:grid-cols-2' : ''}`}>
+          <PersonSubCard
+            title="Your Registered Accounts"
+            icon={User}
+            items={personalItems(myOptionalProfiles)}
+            emptyText="No personal registered tax accounts selected for you."
+          />
+
+          {hasSpouse && (
+            <PersonSubCard
+              title="Spouse Registered Accounts"
+              icon={Users}
+              items={personalItems(spouseOptionalProfiles)}
+              emptyText="No personal registered tax accounts selected for spouse."
+            />
+          )}
+        </div>
+      </div>
+    </SectionCard>
   );
 };
 
@@ -536,6 +776,43 @@ const Dashboard = () => {
     return Array.from(merged);
   }, [selectedReceiptCategories, suggestedReceiptCategories, profile]);
 
+  const spouseReceiptCategories = useMemo(() => {
+    if (!hasSpouse) return [];
+
+    const merged = new Set(spouse?.selectedReceiptCategories || spouse?.receiptCategories || []);
+
+    if (spouse?.gigWork) {
+      merged.add('fuel');
+      merged.add('maintenance');
+      merged.add('parking_tolls');
+      merged.add('mobile_internet');
+      merged.add('vehicle_expenses');
+      merged.add('insurance');
+      merged.add('meals');
+    }
+
+    if (spouse?.selfEmployment) {
+      merged.add('mobile_internet');
+      merged.add('supplies');
+      merged.add('equipment');
+      merged.add('professional_fees');
+      merged.add('home_office');
+      merged.add('meals');
+    }
+
+    if (spouse?.business) {
+      merged.add('rent_utilities');
+      merged.add('payroll_expenses');
+      merged.add('inventory_purchases');
+      merged.add('insurance');
+      merged.add('supplies');
+      merged.add('equipment');
+      merged.add('professional_fees');
+    }
+
+    return Array.from(merged);
+  }, [hasSpouse, spouse]);
+
   const normalizedGigPlatforms = useMemo(() => {
     const rawPlatforms =
       user?.gigPlatforms ||
@@ -548,47 +825,259 @@ const Dashboard = () => {
       .filter(Boolean);
   }, [user]);
 
-  const gigDocuments = useMemo(() => {
-    const platformCards = normalizedGigPlatforms
-      .map((platform) => GIG_PLATFORM_CONFIG[platform])
-      .filter(Boolean);
+  const gigPlatformCards = useMemo(
+    () => normalizedGigPlatforms.map((platform) => GIG_PLATFORM_CONFIG[platform]).filter(Boolean),
+    [normalizedGigPlatforms]
+  );
 
-    return [
-      {
-        name: 'T4A / Other Gig Income',
-        icon: DollarSign,
-        description: 'Contract, commission, or platform income',
-        to: '/documents?category=t4a',
-      },
-      ...platformCards,
-      {
-        name: 'Mileage',
-        icon: MapPin,
-        description: 'Track work-related driving',
-        to: '/mileage',
-      },
-    ];
-  }, [normalizedGigPlatforms]);
-
-  const myActiveAreas = [
-    profile.employment ? 'My T4' : null,
-    profile.gigWork ? 'My Gig Work' : null,
-    profile.business ? 'My Business' : null,
-    profile.selfEmployment ? 'My Self-Employment' : null,
-    ...myOptionalProfiles.map((item) => `My ${item.label}`),
-  ].filter(Boolean);
-
-  const spouseActiveAreas = hasSpouse
+  const myEmploymentItems = profile.employment
     ? [
-        spouse?.employment ? 'Spouse T4' : null,
-        spouse?.gigWork ? 'Spouse Gig Work' : null,
-        spouse?.business ? 'Spouse Business' : null,
-        spouse?.unemployed ? 'Spouse Unemployed' : null,
-        ...spouseOptionalProfiles.map((item) => `Spouse ${item.label}`),
-      ].filter(Boolean)
+        {
+          name: 'T4 Slip',
+          icon: FileText,
+          description: 'Employment income slip',
+          to: '/documents?category=t4',
+        },
+      ]
     : [];
 
-  const activeProfiles = [...myActiveAreas, ...spouseActiveAreas];
+  const spouseEmploymentItems =
+    hasSpouse && spouse?.employment
+      ? [
+          {
+            name: 'Spouse T4 Slip',
+            icon: FileText,
+            description: 'Employment income slip',
+            to: '/documents?category=spouse-t4',
+          },
+        ]
+      : [];
+
+  const myGigItems =
+    profile.gigWork || profile.selfEmployment
+      ? [
+          {
+            name: 'T4A / Other Gig Income',
+            icon: DollarSign,
+            description: 'Contract, commission, or platform income',
+            to: '/documents?category=t4a',
+          },
+          ...gigPlatformCards,
+          {
+            name: 'Mileage',
+            icon: MapPin,
+            description: 'Track work-related driving',
+            to: '/mileage',
+          },
+        ]
+      : [];
+
+  const spouseGigItems =
+    hasSpouse && spouse?.gigWork
+      ? [
+          {
+            name: 'Spouse T4A / Income',
+            icon: DollarSign,
+            description: 'Spouse gig income records',
+            to: '/documents?category=spouse-gig',
+          },
+          {
+            name: 'Spouse Expense Receipts',
+            icon: Receipt,
+            description: 'Spouse gig-related receipts',
+            to: '/documents?category=spouse-gig-expenses',
+          },
+        ]
+      : [];
+
+  const sameBusiness =
+    Boolean(user?.householdBusiness?.shared) ||
+    Boolean(user?.sameBusinessAsSpouse) ||
+    Boolean(spouse?.sameBusinessAsUser) ||
+    Boolean(household?.sharedBusiness);
+
+  const sharedBusinessName =
+    user?.householdBusiness?.businessName ||
+    getPersonBusinessName(profile) ||
+    getPersonBusinessName(spouse) ||
+    'Shared Business';
+
+  const sharedBusinessItems =
+    sameBusiness && (profile.business || spouse?.business)
+      ? [
+          {
+            name: 'Business Dashboard',
+            icon: Store,
+            description: `${sharedBusinessName} overview`,
+            to: '/business/dashboard',
+          },
+          {
+            name: 'Sales & Income',
+            icon: DollarSign,
+            description: 'Combined business income records',
+            to: '/business/sales-income',
+          },
+          {
+            name: 'GST / HST Records',
+            icon: Percent,
+            description: 'Shared GST tracking and records',
+            to: '/business/gst-records',
+          },
+          {
+            name: 'Payroll Records',
+            icon: Briefcase,
+            description: 'Payroll setup and records',
+            to: '/business/payroll',
+          },
+          {
+            name: 'Inventory',
+            icon: Package,
+            description: 'Stock and product records',
+            to: '/business/inventory',
+          },
+        ]
+      : [];
+
+  const myBusinessItems =
+    !sameBusiness && profile.business
+      ? [
+          {
+            name: 'Business Dashboard',
+            icon: Store,
+            description: `${getPersonBusinessName(profile, 'Your Business')} overview`,
+            to: '/business/dashboard',
+          },
+          {
+            name: 'Sales & Income',
+            icon: DollarSign,
+            description: 'Business income records',
+            to: '/business/sales-income',
+          },
+          {
+            name: 'GST / HST Records',
+            icon: Percent,
+            description: 'GST tracking and records',
+            to: '/business/gst-records',
+          },
+          {
+            name: 'Payroll Records',
+            icon: Briefcase,
+            description: 'Payroll setup and records',
+            to: '/business/payroll',
+          },
+          {
+            name: 'Inventory',
+            icon: Package,
+            description: 'Stock and product records',
+            to: '/business/inventory',
+          },
+        ]
+      : [];
+
+  const spouseBusinessItems =
+    !sameBusiness && hasSpouse && spouse?.business
+      ? [
+          {
+            name: 'Business Dashboard',
+            icon: Store,
+            description: `${getPersonBusinessName(spouse, 'Spouse Business')} overview`,
+            to: '/business/dashboard',
+          },
+          {
+            name: 'Sales & Income',
+            icon: DollarSign,
+            description: 'Business income records',
+            to: '/documents?category=spouse-business',
+          },
+          {
+            name: 'GST / HST Records',
+            icon: Percent,
+            description: 'Business tax records',
+            to: '/documents?category=spouse-business',
+          },
+          {
+            name: 'Payroll Records',
+            icon: Briefcase,
+            description: 'Payroll-related records',
+            to: '/documents?category=spouse-business',
+          },
+          {
+            name: 'Inventory',
+            icon: Package,
+            description: 'Inventory and stock records',
+            to: '/documents?category=spouse-business',
+          },
+        ]
+      : [];
+
+  const householdTaxItems = useMemo(() => {
+    const items = [];
+
+    const hasDonations =
+      myOptionalProfiles.some((item) => item.label === 'Donations') ||
+      spouseOptionalProfiles.some((item) => item.label === 'Donations') ||
+      baseSlipKeys.includes('DONATIONS');
+
+    const hasCcb =
+      myOptionalProfiles.some((item) => item.label === 'CCB') ||
+      spouseOptionalProfiles.some((item) => item.label === 'CCB');
+
+    const hasMedical = baseSlipKeys.includes('MEDICAL');
+
+    if (hasMedical) {
+      items.push({
+        label: 'Medical Expenses',
+        description: 'Household medical receipts and related records',
+        to: getHouseholdMedicalRoute(),
+        icon: Stethoscope,
+      });
+    }
+
+    if (hasDonations) {
+      items.push({
+        label: 'Donations',
+        description: 'Household donation receipts and related records',
+        to: getHouseholdDonationsRoute(),
+        icon: Gift,
+      });
+    }
+
+    if (hasCcb) {
+      items.push({
+        label: 'Canada Child Benefit',
+        description: 'Household child benefit records',
+        to: getHouseholdCcbRoute(),
+        icon: BadgeDollarSign,
+      });
+    }
+
+    return items;
+  }, [myOptionalProfiles, spouseOptionalProfiles, baseSlipKeys]);
+
+  const myAdditionalDocItems = baseSlipKeys
+    .filter((slip) =>
+      [
+        'RRSP',
+        'FHSA',
+        'TFSA',
+        'TUITION',
+        'CHILD_CARE',
+        'MOVING',
+        'T5',
+        'T3',
+        'T5008',
+        'RENTAL',
+        'FOREIGN',
+        'CRYPTO',
+        'HOME_OFFICE',
+      ].includes(slip)
+    )
+    .map((slip) => ({
+      name: SLIP_LABELS[slip] || slip,
+      description: 'Upload and manage records',
+      to: getSlipRoute(slip),
+      icon: FileText,
+    }));
 
   const quickActions = [
     {
@@ -621,7 +1110,7 @@ const Dashboard = () => {
       description: 'Track work trips',
       icon: MapPin,
       classes: 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600',
-      show: profile.gigWork || profile.selfEmployment,
+      show: profile.gigWork || profile.selfEmployment || spouse?.gigWork || spouse?.selfEmployment,
     },
     {
       to: '/business/dashboard',
@@ -629,7 +1118,7 @@ const Dashboard = () => {
       description: 'Open business tools',
       icon: Building2,
       classes: 'bg-indigo-50 hover:bg-indigo-100 text-indigo-600',
-      show: profile.business,
+      show: profile.business || spouse?.business,
     },
     {
       to: '/tax-checklist',
@@ -641,98 +1130,193 @@ const Dashboard = () => {
     },
   ].filter((item) => item.show);
 
-  const slipAttentionItems = baseSlipKeys.map((slip) => ({
-    key: `slip-${slip}`,
-    text: getSlipAttentionText(slip),
-    to: getSlipRoute(slip),
-  }));
+  const employmentAttention = [
+    ...(profile.employment
+      ? [{ key: 'me-t4', text: 'Upload your T4 employment slip', to: '/documents?category=t4' }]
+      : []),
+    ...(hasSpouse && spouse?.employment
+      ? [{ key: 'spouse-t4', text: 'Upload spouse T4 slip', to: '/documents?category=spouse-t4' }]
+      : []),
+  ];
 
-  const receiptAttentionItems = finalReceiptCategories.map((receipt) => ({
+  const gigAttention = [
+    ...(profile.gigWork || profile.selfEmployment
+      ? [
+          {
+            key: 'me-gig',
+            text: 'Upload your T4A / contract / gig income slip',
+            to: '/documents?category=t4a',
+          },
+        ]
+      : []),
+    ...(hasSpouse && spouse?.gigWork
+      ? [
+          {
+            key: 'spouse-gig',
+            text: 'Upload spouse T4A and spouse gig expenses',
+            to: '/documents?category=spouse-gig',
+          },
+        ]
+      : []),
+  ];
+
+  const businessAttention = sameBusiness
+    ? profile.business || spouse?.business
+      ? [
+          {
+            key: 'shared-business-records',
+            text: 'Review shared business records',
+            to: '/business/sales-income',
+          },
+          {
+            key: 'shared-gst',
+            text: 'Review shared GST / HST records',
+            to: '/business/gst-records',
+          },
+          {
+            key: 'shared-payroll',
+            text: 'Review shared payroll records',
+            to: '/business/payroll',
+          },
+          {
+            key: 'shared-inventory',
+            text: 'Review shared inventory records',
+            to: '/business/inventory',
+          },
+        ]
+      : []
+    : [
+        ...(profile.business
+          ? [
+              {
+                key: 'me-business-records',
+                text: 'Upload your business records and statements',
+                to: '/business/sales-income',
+              },
+              {
+                key: 'me-gst',
+                text: 'Upload your GST / HST records',
+                to: '/business/gst-records',
+              },
+              {
+                key: 'me-payroll',
+                text: 'Upload your payroll records',
+                to: '/business/payroll',
+              },
+              {
+                key: 'me-inventory',
+                text: 'Upload your inventory records',
+                to: '/business/inventory',
+              },
+            ]
+          : []),
+        ...(hasSpouse && spouse?.business
+          ? [
+              {
+                key: 'spouse-business',
+                text: 'Review spouse business records',
+                to: '/documents?category=spouse-business',
+              },
+            ]
+          : []),
+      ];
+
+  const receiptAttention = finalReceiptCategories.map((receipt) => ({
     key: `receipt-${receipt}`,
-    text: getReceiptAttentionText(receipt),
+    text: `Upload ${
+      receipt === 'parking_tolls'
+        ? 'your parking and toll receipts'
+        : receipt === 'mobile_internet'
+        ? 'your mobile and internet bills'
+        : receipt === 'rent_utilities'
+        ? 'your rent and utility records'
+        : receipt === 'inventory_purchases'
+        ? 'your inventory purchase records'
+        : receipt === 'professional_fees'
+        ? 'your professional fee receipts'
+        : receipt === 'vehicle_expenses'
+        ? 'your vehicle expense records'
+        : receipt === 'payroll_expenses'
+        ? 'your payroll expense records'
+        : receipt === 'fuel'
+        ? 'your fuel receipts'
+        : receipt === 'maintenance'
+        ? 'your maintenance receipts'
+        : receipt === 'insurance'
+        ? 'your insurance receipts'
+        : receipt === 'meals'
+        ? 'your meal receipts'
+        : receipt === 'supplies'
+        ? 'your supply receipts'
+        : receipt === 'equipment'
+        ? 'your equipment receipts'
+        : `your ${RECEIPT_LABELS[receipt] || receipt}`
+    }`,
     to: getReceiptRoute(receipt),
   }));
 
-  const myOptionalAttentionItems = myOptionalProfiles
-    .map((item) => {
-      const mapped = OPTIONAL_PROFILE_TO_ATTENTION[item.label];
-      if (!mapped) return null;
+  const householdAttention = householdTaxItems.map((item) => ({
+    key: `household-${item.label}`,
+    text:
+      item.label === 'Canada Child Benefit'
+        ? 'Review household Canada Child Benefit records'
+        : item.label === 'Donations'
+        ? 'Review household donation receipts'
+        : item.label === 'Medical Expenses'
+        ? 'Review household medical receipts'
+        : `Review household ${item.label.toLowerCase()}`,
+    to: item.to,
+  }));
 
-      return {
-        key: `optional-${item.key}`,
-        text: mapped.text,
-        to: mapped.to || item.to,
-      };
-    })
-    .filter(Boolean);
-
-  const spouseAttentionItems = hasSpouse
-    ? [
-        spouse?.employment
-          ? {
-              key: 'spouse-t4',
-              text: 'Upload spouse T4 slip',
-              to: '/documents?category=spouse-t4',
-            }
-          : null,
-        spouse?.gigWork
-          ? {
-              key: 'spouse-gig',
-              text: 'Upload spouse T4A and spouse gig expenses',
-              to: '/documents?category=spouse-gig',
-            }
-          : null,
-        spouse?.business
-          ? {
-              key: 'spouse-business',
-              text: 'Review spouse business records',
-              to: '/documents?category=spouse-business',
-            }
-          : null,
-        ...spouseOptionalProfiles
-          .map((item) => {
-            const mapped = OPTIONAL_PROFILE_TO_ATTENTION[item.label];
-            if (!mapped) return null;
-
-            return {
-              key: `spouse-optional-${item.key}`,
-              text: `Review spouse ${mapped.text
-                .replace(/^Upload your |^Review your /, '')
-                .toLowerCase()}`,
-              to: item.to || mapped.to,
-            };
-          })
-          .filter(Boolean),
-      ].filter(Boolean)
-    : [];
-
-  const attentionMap = new Map();
-  [
-    ...slipAttentionItems,
-    ...receiptAttentionItems,
-    ...myOptionalAttentionItems,
-    ...spouseAttentionItems,
-  ].forEach((item) => {
-    if (!attentionMap.has(item.text)) {
-      attentionMap.set(item.text, item);
-    }
-  });
-
-  const attentionItems = Array.from(attentionMap.values());
+  const registeredAccountsAttention = [
+    ...myOptionalProfiles
+      .filter((item) => ['TFSA', 'RRSP', 'FHSA', 'Investments'].includes(item.label))
+      .map((item) => ({
+        key: `my-${item.key}`,
+        text:
+          item.label === 'TFSA'
+            ? 'Review your TFSA records and contribution history'
+            : item.label === 'RRSP'
+            ? 'Upload your RRSP contribution receipts'
+            : item.label === 'FHSA'
+            ? 'Upload your FHSA contribution records'
+            : 'Upload your investment statements and slips',
+        to: item.to,
+      })),
+    ...spouseOptionalProfiles
+      .filter((item) => ['TFSA', 'RRSP', 'FHSA', 'Investments'].includes(item.label))
+      .map((item) => ({
+        key: `spouse-${item.key}`,
+        text:
+          item.label === 'TFSA'
+            ? 'Review spouse TFSA records and contribution history'
+            : item.label === 'RRSP'
+            ? 'Review spouse RRSP contribution receipts'
+            : item.label === 'FHSA'
+            ? 'Review spouse FHSA contribution records'
+            : 'Review spouse investment statements and slips',
+        to: item.to,
+      })),
+  ];
 
   const documentStats = useMemo(() => {
-    const baseTotal =
-      baseSlipKeys.length +
-      finalReceiptCategories.length +
-      myOptionalProfiles.length +
-      spouseOptionalProfiles.length +
-      (hasSpouse ? 4 : 0);
-
-    const total = Math.max(baseTotal, 1);
+    const total =
+      Math.max(
+        baseSlipKeys.length +
+          finalReceiptCategories.length +
+          spouseReceiptCategories.length +
+          myOptionalProfiles.length +
+          spouseOptionalProfiles.length +
+          householdTaxItems.length +
+          (hasSpouse ? 2 : 0),
+        1
+      );
 
     const uploadedSeed =
       Math.floor(baseSlipKeys.length * 0.45) +
       Math.floor(finalReceiptCategories.length * 0.35) +
+      Math.floor(spouseReceiptCategories.length * 0.35) +
+      Math.floor(householdTaxItems.length * 0.4) +
       myOptionalProfiles.length +
       Math.min(spouseOptionalProfiles.length, 2);
 
@@ -748,25 +1332,27 @@ const Dashboard = () => {
   }, [
     baseSlipKeys.length,
     finalReceiptCategories.length,
+    spouseReceiptCategories.length,
     myOptionalProfiles.length,
     spouseOptionalProfiles.length,
+    householdTaxItems.length,
     hasSpouse,
   ]);
 
-  const savingsOpportunities = useMemo(() => {
+  const buildPersonSavings = (person, receiptCategories = [], optionalProfiles = [], personLabel = 'You') => {
     const items = [];
 
     const pushItem = (item) => items.push(item);
 
-    if (profile.gigWork || profile.selfEmployment) {
+    if (person.gigWork || person.selfEmployment) {
       pushItem({
-        key: 'vehicle',
-        title: 'Vehicle Expenses',
+        key: `${personLabel}-vehicle`,
+        title: `${personLabel} Vehicle Expenses`,
         description: 'Fuel, maintenance, insurance, parking, mileage and work driving',
         to: '/receipts',
         icon: Car,
         maxSaving: 1400,
-        currentSaving: finalReceiptCategories.includes('fuel') ? 350 : 0,
+        currentSaving: receiptCategories.includes('fuel') ? 350 : 0,
         tag: 'High impact',
         variant: 'success',
         iconBg: 'bg-emerald-100',
@@ -774,15 +1360,15 @@ const Dashboard = () => {
       });
     }
 
-    if (profile.selfEmployment || profile.business) {
+    if (person.selfEmployment || person.business) {
       pushItem({
-        key: 'home-office',
-        title: 'Home Office',
+        key: `${personLabel}-home-office`,
+        title: `${personLabel} Home Office`,
         description: 'Workspace, utilities, internet and eligible home-use expenses',
         to: '/receipts',
         icon: Home,
         maxSaving: 850,
-        currentSaving: finalReceiptCategories.includes('home_office') ? 150 : 0,
+        currentSaving: receiptCategories.includes('home_office') ? 150 : 0,
         tag: 'Often missed',
         variant: 'warning',
         iconBg: 'bg-amber-100',
@@ -790,15 +1376,15 @@ const Dashboard = () => {
       });
     }
 
-    if (profile.selfEmployment || profile.business) {
+    if (person.selfEmployment || person.business) {
       pushItem({
-        key: 'phone-internet',
-        title: 'Phone & Internet',
+        key: `${personLabel}-phone-internet`,
+        title: `${personLabel} Phone & Internet`,
         description: 'Business-use portion of mobile and internet costs',
         to: '/receipts',
         icon: MapPin,
         maxSaving: 450,
-        currentSaving: finalReceiptCategories.includes('mobile_internet') ? 120 : 0,
+        currentSaving: receiptCategories.includes('mobile_internet') ? 120 : 0,
         tag: 'Easy win',
         variant: 'info',
         iconBg: 'bg-blue-100',
@@ -806,17 +1392,16 @@ const Dashboard = () => {
       });
     }
 
-    if (profile.selfEmployment || profile.business) {
+    if (person.selfEmployment || person.business) {
       pushItem({
-        key: 'supplies-fees',
-        title: 'Supplies & Professional Fees',
+        key: `${personLabel}-supplies-fees`,
+        title: `${personLabel} Supplies & Professional Fees`,
         description: 'Tools, supplies, subscriptions, accounting and service fees',
         to: '/receipts',
         icon: Receipt,
         maxSaving: 950,
         currentSaving:
-          finalReceiptCategories.includes('supplies') ||
-          finalReceiptCategories.includes('professional_fees')
+          receiptCategories.includes('supplies') || receiptCategories.includes('professional_fees')
             ? 250
             : 0,
         tag: 'Business write-off',
@@ -826,15 +1411,15 @@ const Dashboard = () => {
       });
     }
 
-    if (profile.business) {
+    if (person.business) {
       pushItem({
-        key: 'business-overhead',
-        title: 'Rent, Utilities & Operations',
+        key: `${personLabel}-business-overhead`,
+        title: `${personLabel} Rent, Utilities & Operations`,
         description: 'Business overhead that can directly lower taxable profit',
         to: '/business/rent-utilities',
         icon: Building2,
         maxSaving: 1200,
-        currentSaving: finalReceiptCategories.includes('rent_utilities') ? 350 : 0,
+        currentSaving: receiptCategories.includes('rent_utilities') ? 350 : 0,
         tag: 'Core business',
         variant: 'warning',
         iconBg: 'bg-indigo-100',
@@ -842,17 +1427,17 @@ const Dashboard = () => {
       });
     }
 
-    if (profile.business) {
+    if (person.business) {
       pushItem({
-        key: 'inventory-payroll',
-        title: 'Inventory & Payroll',
+        key: `${personLabel}-inventory-payroll`,
+        title: `${personLabel} Inventory & Payroll`,
         description: 'Track stock purchases and payroll costs correctly',
         to: '/business/dashboard',
         icon: Package,
         maxSaving: 900,
         currentSaving:
-          finalReceiptCategories.includes('inventory_purchases') ||
-          finalReceiptCategories.includes('payroll_expenses')
+          receiptCategories.includes('inventory_purchases') ||
+          receiptCategories.includes('payroll_expenses')
             ? 220
             : 0,
         tag: 'Track properly',
@@ -862,15 +1447,15 @@ const Dashboard = () => {
       });
     }
 
-    if (profile.employment || baseSlipKeys.includes('RRSP')) {
+    if (person.employment || optionalProfiles.some((item) => item.label === 'RRSP')) {
       pushItem({
-        key: 'rrsp',
-        title: 'RRSP Contributions',
+        key: `${personLabel}-rrsp`,
+        title: `${personLabel} RRSP Contributions`,
         description: 'Contributions can reduce taxable income and improve refund outcome',
         to: '/documents?category=rrsp',
         icon: PiggyBank,
         maxSaving: 2000,
-        currentSaving: baseSlipKeys.includes('RRSP') ? 600 : 0,
+        currentSaving: optionalProfiles.some((item) => item.label === 'RRSP') ? 600 : 0,
         tag: 'Powerful lever',
         variant: 'success',
         iconBg: 'bg-purple-100',
@@ -878,11 +1463,11 @@ const Dashboard = () => {
       });
     }
 
-    if (baseSlipKeys.includes('FHSA')) {
+    if (optionalProfiles.some((item) => item.label === 'FHSA')) {
       pushItem({
-        key: 'fhsa',
-        title: 'FHSA Contributions',
-        description: 'A strong tax-saving account if the user is contributing',
+        key: `${personLabel}-fhsa`,
+        title: `${personLabel} FHSA Contributions`,
+        description: 'A strong tax-saving account if contributions are being made',
         to: '/documents?category=fhsa',
         icon: Landmark,
         maxSaving: 1600,
@@ -894,19 +1479,19 @@ const Dashboard = () => {
       });
     }
 
-    if (baseSlipKeys.includes('DONATIONS')) {
+    if (optionalProfiles.some((item) => item.label === 'Investments')) {
       pushItem({
-        key: 'donations',
-        title: 'Donation Credits',
-        description: 'Eligible charitable receipts can increase credits at filing time',
-        to: '/documents?category=donations',
-        icon: Gift,
-        maxSaving: 300,
-        currentSaving: 90,
-        tag: 'Extra credit',
-        variant: 'warning',
-        iconBg: 'bg-rose-100',
-        iconColor: 'text-rose-700',
+        key: `${personLabel}-investments`,
+        title: `${personLabel} Investment Records`,
+        description: 'Track taxable investment slips and related deductions',
+        to: '/documents?category=investments',
+        icon: TrendingUp,
+        maxSaving: 350,
+        currentSaving: 100,
+        tag: 'Worth reviewing',
+        variant: 'info',
+        iconBg: 'bg-sky-100',
+        iconColor: 'text-sky-700',
       });
     }
 
@@ -914,18 +1499,100 @@ const Dashboard = () => {
       ...item,
       progress: clamp((item.currentSaving / item.maxSaving) * 100),
     }));
-  }, [profile, finalReceiptCategories, baseSlipKeys]);
+  };
 
-  const totalPossibleSavings = savingsOpportunities.reduce(
-    (sum, item) => sum + item.maxSaving,
-    0
-  );
+  const householdSavingsItems = useMemo(() => {
+    const items = [];
 
-  const capturedSavings = savingsOpportunities.reduce(
-    (sum, item) => sum + item.currentSaving,
-    0
-  );
+    if (householdTaxItems.some((item) => item.label === 'Donations')) {
+      items.push({
+        key: 'household-donations',
+        title: 'Household Donations',
+        description: 'Donation receipts can be coordinated across the household',
+        to: getHouseholdDonationsRoute(),
+        icon: Gift,
+        maxSaving: 500,
+        currentSaving: 120,
+        tag: 'Household credit',
+        variant: 'warning',
+        iconBg: 'bg-rose-100',
+        iconColor: 'text-rose-700',
+        progress: clamp((120 / 500) * 100),
+      });
+    }
 
+    if (householdTaxItems.some((item) => item.label === 'Medical Expenses')) {
+      items.push({
+        key: 'household-medical',
+        title: 'Household Medical Expenses',
+        description: 'Medical receipts are often best reviewed at the household level',
+        to: getHouseholdMedicalRoute(),
+        icon: Stethoscope,
+        maxSaving: 900,
+        currentSaving: 200,
+        tag: 'Family optimization',
+        variant: 'info',
+        iconBg: 'bg-teal-100',
+        iconColor: 'text-teal-700',
+        progress: clamp((200 / 900) * 100),
+      });
+    }
+
+    return items;
+  }, [householdTaxItems]);
+
+    const [savingsSort, setSavingsSort] = useState('remaining');
+
+  const savingsOpportunities = useMemo(() => {
+    const mine = buildPersonSavings(profile, finalReceiptCategories, myOptionalProfiles, 'You');
+    const spouseItems =
+      hasSpouse
+        ? buildPersonSavings(spouse || {}, spouseReceiptCategories, spouseOptionalProfiles, 'Spouse')
+        : [];
+
+    return [...mine, ...spouseItems, ...householdSavingsItems];
+  }, [
+    profile,
+    spouse,
+    hasSpouse,
+    finalReceiptCategories,
+    spouseReceiptCategories,
+    myOptionalProfiles,
+    spouseOptionalProfiles,
+    householdSavingsItems,
+  ]);
+
+  const sortedSavingsOpportunities = useMemo(() => {
+    const items = [...savingsOpportunities];
+
+    switch (savingsSort) {
+      case 'highest':
+        return items.sort((a, b) => b.maxSaving - a.maxSaving);
+
+      case 'lowest':
+        return items.sort((a, b) => a.maxSaving - b.maxSaving);
+
+      case 'remaining':
+        return items.sort(
+          (a, b) => (b.maxSaving - b.currentSaving) - (a.maxSaving - a.currentSaving)
+        );
+
+      case 'captured':
+        return items.sort((a, b) => b.currentSaving - a.currentSaving);
+
+      case 'progress':
+        return items.sort((a, b) => b.progress - a.progress);
+
+      case 'title':
+        return items.sort((a, b) => a.title.localeCompare(b.title));
+
+      default:
+        return items;
+    }
+  }, [savingsOpportunities, savingsSort]);
+
+  const totalPossibleSavings = savingsOpportunities.reduce((sum, item) => sum + item.maxSaving, 0);
+  const capturedSavings = savingsOpportunities.reduce((sum, item) => sum + item.currentSaving, 0);
   const remainingSavings = Math.max(0, totalPossibleSavings - capturedSavings);
   const savingsCompletion = totalPossibleSavings
     ? Math.round((capturedSavings / totalPossibleSavings) * 100)
@@ -937,10 +1604,10 @@ const Dashboard = () => {
     .slice(0, 4);
 
   const savingsHeadline = useMemo(() => {
+    if (hasSpouse) return 'Household savings view detected';
     if (profile.business && (profile.gigWork || profile.selfEmployment) && profile.employment) {
       return 'Business + Employment + Self-Employment detected';
     }
-
     if (profile.business && profile.employment) return 'Business + Employment detected';
     if (profile.business && (profile.gigWork || profile.selfEmployment))
       return 'Business + Self-Employment detected';
@@ -949,9 +1616,8 @@ const Dashboard = () => {
     if (profile.business) return 'Business profile detected';
     if (profile.gigWork || profile.selfEmployment) return 'Self-employment profile detected';
     if (profile.employment) return 'Employment profile detected';
-
     return 'Profile detected';
-  }, [profile]);
+  }, [profile, hasSpouse]);
 
   const taxHealth = useMemo(() => {
     if (remainingSavings >= 3000) return 'Large tax-saving opportunity still open';
@@ -968,9 +1634,9 @@ const Dashboard = () => {
       daysLeft: 40,
       priority: 'high',
     },
-    profile.business && {
+    (profile.business || spouse?.business) && {
       id: 2,
-      task: 'Review Business Records',
+      task: sameBusiness ? 'Review Shared Business Records' : 'Review Business Records',
       date: 'Apr 20, 2026',
       daysLeft: 30,
       priority: 'info',
@@ -996,6 +1662,21 @@ const Dashboard = () => {
     { id: 2, title: 'Separate business and personal receipts for cleaner filing', date: 'Mar 2026' },
     { id: 3, title: 'RRSP and FHSA contributions can improve final tax outcome', date: 'Mar 2026' },
   ];
+
+  const activeProfiles = [
+    profile.employment ? 'My T4' : null,
+    profile.gigWork ? 'My Gig Work' : null,
+    profile.business ? 'My Business' : null,
+    ...myOptionalProfiles.map((item) => `My ${item.label}`),
+    ...(hasSpouse
+      ? [
+          spouse?.employment ? 'Spouse T4' : null,
+          spouse?.gigWork ? 'Spouse Gig Work' : null,
+          spouse?.business ? 'Spouse Business' : null,
+          ...spouseOptionalProfiles.map((item) => `Spouse ${item.label}`),
+        ]
+      : []),
+  ].filter(Boolean);
 
   return (
     <div className="space-y-6">
@@ -1032,10 +1713,8 @@ const Dashboard = () => {
                   </h2>
 
                   <p className="mt-2 max-w-3xl text-sm text-gray-600">
-                    This is the main value of your platform: show users where money is still
-                    being missed before they file. Right now, the biggest savings appear to be
-                    in expenses, business overhead, registered accounts, and properly tracked
-                    write-offs.
+                    Estimated savings are now based on all visible user and spouse documents in a
+                    household account, or just the primary user in a single account.
                   </p>
 
                   <div className="mt-4 flex flex-wrap gap-2">
@@ -1071,9 +1750,7 @@ const Dashboard = () => {
                   <Target size={18} className="text-green-600" />
                 </div>
 
-                <p className="mt-3 text-3xl font-bold text-green-700">
-                  {money(capturedSavings)}
-                </p>
+                <p className="mt-3 text-3xl font-bold text-green-700">{money(capturedSavings)}</p>
                 <p className="mt-1 text-xs text-gray-500">
                   Captured so far out of {money(totalPossibleSavings)} visible opportunity
                 </p>
@@ -1087,9 +1764,7 @@ const Dashboard = () => {
 
                 <div className="mt-3 flex items-center justify-between text-xs">
                   <span className="text-gray-500">{savingsCompletion}% captured</span>
-                  <span className="font-medium text-green-700">
-                    {money(remainingSavings)} left
-                  </span>
+                  <span className="font-medium text-green-700">{money(remainingSavings)} left</span>
                 </div>
 
                 <div className="mt-4 rounded-xl bg-green-50 p-3">
@@ -1098,8 +1773,7 @@ const Dashboard = () => {
                     <div>
                       <p className="text-sm font-medium text-green-900">{taxHealth}</p>
                       <p className="mt-1 text-xs text-green-700">
-                        Make this visible at first glance so users instantly understand why
-                        they should keep uploading receipts here.
+                        Household and individual tax opportunities are combined intelligently.
                       </p>
                     </div>
                   </div>
@@ -1110,22 +1784,47 @@ const Dashboard = () => {
         </Card.Body>
       </Card>
 
-      <Card>
+            <Card>
         <Card.Header>
-          <h2 className="flex items-center text-xl font-bold">
-            <TrendingUp size={20} className="mr-2 text-green-600" />
-            Where You Can Reduce Tax
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            Show deduction opportunities first, not just uploads. This is what makes the
-            platform valuable.
-          </p>
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h2 className="flex items-center text-xl font-bold">
+                <TrendingUp size={20} className="mr-2 text-green-600" />
+                Where You Can Reduce Tax
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Show deduction opportunities first, not just uploads.
+              </p>
+            </div>
+
+            <div className="w-full md:w-auto">
+              <label
+                htmlFor="savings-sort"
+                className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500"
+              >
+                Sort by
+              </label>
+              <select
+                id="savings-sort"
+                value={savingsSort}
+                onChange={(e) => setSavingsSort(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 md:w-56"
+              >
+                <option value="remaining">Most still possible</option>
+                <option value="highest">Highest savings</option>
+                <option value="lowest">Lowest savings</option>
+                <option value="captured">Most already captured</option>
+                <option value="progress">Best progress</option>
+                <option value="title">Alphabetical</option>
+              </select>
+            </div>
+          </div>
         </Card.Header>
 
         <Card.Body>
-          {savingsOpportunities.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {savingsOpportunities.map((item) => (
+          {sortedSavingsOpportunities.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+              {sortedSavingsOpportunities.map((item) => (
                 <SavingOpportunityCard key={item.key} item={item} />
               ))}
             </div>
@@ -1136,14 +1835,10 @@ const Dashboard = () => {
             </div>
           )}
         </Card.Body>
-      </Card>
-
-      <Card>
+      </Card><Card>
         <Card.Header>
           <h2 className="text-xl font-bold">Quick Actions</h2>
-          <p className="mt-1 text-sm text-gray-500">
-            Start with the most common actions first.
-          </p>
+          <p className="mt-1 text-sm text-gray-500">Start with the most common actions first.</p>
         </Card.Header>
 
         <Card.Body>
@@ -1205,278 +1900,152 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
         <div className="space-y-6 xl:col-span-8">
-          <Card>
-            <Card.Header>
-              <h2 className="flex items-center text-xl font-bold">
-                <AlertTriangle size={20} className="mr-2 text-primary-500" />
-                What Needs Attention
-              </h2>
-            </Card.Header>
+          <WhatNeedsAttentionSection
+  employmentAttention={employmentAttention}
+  gigAttention={gigAttention}
+  businessAttention={businessAttention}
+  receiptAttention={receiptAttention}
+  householdAttention={householdAttention}
+  registeredAccountsAttention={registeredAccountsAttention}
+/>
 
-            <Card.Body>
-              {attentionItems.length > 0 ? (
-                <div className="relative overflow-hidden">
-                  <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-12 bg-gradient-to-r from-white to-transparent" />
-                  <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-12 bg-gradient-to-l from-white to-transparent" />
-
-                  <div className="flex gap-3 whitespace-nowrap animate-scroll-x">
-                    {[...attentionItems, ...attentionItems].map((item, index) => (
-                      <Link
-                        key={`${item.key}-${index}`}
-                        to={item.to}
-                        className="inline-flex shrink-0 items-center rounded-full border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-2 text-sm font-medium text-blue-800 shadow-sm transition hover:from-blue-100 hover:to-indigo-100"
-                      >
-                        <span className="mr-2 h-2 w-2 rounded-full bg-blue-500" />
-                        {item.text}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-                  No immediate items found. Review your checklist or update your tax profile.
-                </div>
-              )}
-            </Card.Body>
-          </Card>
-
-          {baseSlipKeys.includes('T4') && (
-            <IncomeGuideCard
+          {(myEmploymentItems.length > 0 || spouseEmploymentItems.length > 0) && (
+            <SectionCard
               title="Employment"
               icon={Briefcase}
               colorClass="border-blue-500"
-              documents={[
-                {
-                  name: 'T4 Slip',
-                  icon: FileText,
-                  description: 'Employment income slip',
-                  to: '/documents?category=t4',
-                },
-              ]}
-            />
+              description="Employment documents grouped together for you and your spouse."
+            >
+              <div className={`grid grid-cols-1 gap-4 ${hasSpouse ? 'lg:grid-cols-2' : ''}`}>
+                <PersonSubCard
+                  title="Your Employment"
+                  icon={User}
+                  items={myEmploymentItems}
+                  emptyText="No employment documents required for you."
+                />
+                {hasSpouse && (
+                  <PersonSubCard
+                    title="Spouse Employment"
+                    icon={Users}
+                    items={spouseEmploymentItems}
+                    emptyText="No employment documents required for spouse."
+                  />
+                )}
+              </div>
+            </SectionCard>
           )}
 
-          {baseSlipKeys.includes('T4A') && (
-            <IncomeGuideCard
-              title="Gig Platforms & Self-Employment"
+          {(myGigItems.length > 0 || spouseGigItems.length > 0) && (
+            <SectionCard
+              title="Gig / Self-Employment"
               icon={Car}
               colorClass="border-green-500"
-              documents={gigDocuments}
-            />
+              description="Keep contract income, platform records, and mileage together."
+            >
+              <div className={`grid grid-cols-1 gap-4 ${hasSpouse ? 'lg:grid-cols-2' : ''}`}>
+                <PersonSubCard
+                  title="Your Gig / Self-Employment"
+                  icon={User}
+                  items={myGigItems}
+                  emptyText="No gig or self-employment records required for you."
+                />
+                {hasSpouse && (
+                  <PersonSubCard
+                    title="Spouse Gig / Self-Employment"
+                    icon={Users}
+                    items={spouseGigItems}
+                    emptyText="No gig or self-employment records required for spouse."
+                  />
+                )}
+              </div>
+            </SectionCard>
           )}
 
-          {(baseSlipKeys.includes('BUSINESS_RECORDS') ||
-            baseSlipKeys.includes('GST_HST') ||
-            baseSlipKeys.includes('PAYROLL') ||
-            baseSlipKeys.includes('INVENTORY')) && (
-            <IncomeGuideCard
+          {(sharedBusinessItems.length > 0 ||
+            myBusinessItems.length > 0 ||
+            spouseBusinessItems.length > 0) && (
+            <SectionCard
               title="Business"
               icon={Building2}
               colorClass="border-indigo-500"
-              documents={[
-                {
-                  name: 'Business Dashboard',
-                  icon: Store,
-                  description: 'Open business overview',
-                  to: '/business/dashboard',
-                },
-                {
-                  name: 'Sales & Income',
-                  icon: DollarSign,
-                  description: 'Business income records',
-                  to: '/business/sales-income',
-                },
-                {
-                  name: 'GST / HST Records',
-                  icon: Percent,
-                  description: 'GST tracking and records',
-                  to: '/business/gst-records',
-                },
-                {
-                  name: 'Inventory',
-                  icon: Package,
-                  description: 'Stock and product records',
-                  to: '/business/inventory',
-                },
-              ]}
-            />
-          )}
-
-          {hasSpouse && spouse?.employment && (
-            <IncomeGuideCard
-              title="Spouse Employment"
-              icon={HeartHandshake}
-              colorClass="border-sky-500"
-              documents={[
-                {
-                  name: 'Spouse T4 Slip',
-                  icon: FileText,
-                  description: 'Employment income slip',
-                  to: '/documents?category=spouse-t4',
-                },
-              ]}
-            />
-          )}
-
-          {hasSpouse && spouse?.gigWork && (
-            <IncomeGuideCard
-              title="Spouse Gig / Self-Employment"
-              icon={HeartHandshake}
-              colorClass="border-teal-500"
-              documents={[
-                {
-                  name: 'Spouse T4A / Income',
-                  icon: DollarSign,
-                  description: 'Spouse gig income records',
-                  to: '/documents?category=spouse-gig',
-                },
-                {
-                  name: 'Spouse Expense Receipts',
-                  icon: Receipt,
-                  description: 'Spouse gig-related receipts',
-                  to: '/documents?category=spouse-gig-expenses',
-                },
-              ]}
-            />
-          )}
-
-          {hasSpouse && spouse?.business && (
-            <IncomeGuideCard
-              title="Spouse Business"
-              icon={HeartHandshake}
-              colorClass="border-fuchsia-500"
-              documents={[
-                {
-                  name: 'Spouse Business Records',
-                  icon: Building2,
-                  description: 'Business income and expense records',
-                  to: '/documents?category=spouse-business',
-                },
-              ]}
-            />
-          )}
-
-          {baseSlipKeys.some((slip) =>
-            [
-              'RRSP',
-              'FHSA',
-              'TFSA',
-              'TUITION',
-              'MEDICAL',
-              'DONATIONS',
-              'CHILD_CARE',
-              'MOVING',
-              'T5',
-              'T3',
-              'T5008',
-              'RENTAL',
-              'FOREIGN',
-              'CRYPTO',
-              'HOME_OFFICE',
-            ].includes(slip)
-          ) && (
-            <Card className="border-l-4 border-amber-500">
-              <Card.Header>
-                <h3 className="flex items-center text-lg font-bold">
-                  <FileText size={20} className="mr-2 text-amber-600" />
-                  Additional Tax Documents
-                </h3>
-              </Card.Header>
-
-              <Card.Body>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {baseSlipKeys
-                    .filter((slip) =>
-                      [
-                        'RRSP',
-                        'FHSA',
-                        'TFSA',
-                        'TUITION',
-                        'MEDICAL',
-                        'DONATIONS',
-                        'CHILD_CARE',
-                        'MOVING',
-                        'T5',
-                        'T3',
-                        'T5008',
-                        'RENTAL',
-                        'FOREIGN',
-                        'CRYPTO',
-                        'HOME_OFFICE',
-                      ].includes(slip)
-                    )
-                    .map((slip) => (
-                      <Link
-                        key={slip}
-                        to={getSlipRoute(slip)}
-                        className="rounded-lg bg-gray-50 p-3 transition hover:bg-gray-100"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-                              <FileText size={16} />
-                            </div>
-                            <p className="text-sm font-medium">{SLIP_LABELS[slip] || slip}</p>
-                            <p className="text-xs text-gray-500">Upload and manage records</p>
-                          </div>
-                          <ChevronRight size={16} className="mt-1 shrink-0 text-gray-400" />
-                        </div>
-                      </Link>
-                    ))}
+              description={
+                sameBusiness
+                  ? 'A shared business is shown once for the household.'
+                  : 'Business records are grouped by person when they operate separately.'
+              }
+            >
+              {sameBusiness ? (
+                <div className="grid grid-cols-1 gap-4">
+                  <PersonSubCard
+                    title={`Shared Business${sharedBusinessName ? ` Â· ${sharedBusinessName}` : ''}`}
+                    icon={HeartHandshake}
+                    items={sharedBusinessItems}
+                    emptyText="No shared business records required."
+                  />
                 </div>
-              </Card.Body>
-            </Card>
+              ) : (
+                <div className={`grid grid-cols-1 gap-4 ${hasSpouse ? 'lg:grid-cols-2' : ''}`}>
+                  <PersonSubCard
+                    title="Your Business"
+                    icon={User}
+                    items={myBusinessItems}
+                    emptyText="No business records required for you."
+                  />
+                  {hasSpouse && (
+                    <PersonSubCard
+                      title="Spouse Business"
+                      icon={Users}
+                      items={spouseBusinessItems}
+                      emptyText="No business records required for spouse."
+                    />
+                  )}
+                </div>
+              )}
+            </SectionCard>
           )}
 
-          {finalReceiptCategories.length > 0 && (
-            <Card className="border-l-4 border-emerald-500">
-              <Card.Header>
-                <h3 className="flex items-center text-lg font-bold">
-                  <Receipt size={20} className="mr-2 text-emerald-600" />
-                  Expected Receipt Categories
-                </h3>
-              </Card.Header>
+          {myAdditionalDocItems.length > 0 && (
+            <SectionCard
+              title="Additional Tax Documents"
+              icon={FileText}
+              colorClass="border-amber-500"
+              description="Other tax-related documents that do not fit the main grouped sections."
+            >
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {myAdditionalDocItems.map((item) => {
+                  const ItemIcon = item.icon || FileText;
 
-              <Card.Body>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {finalReceiptCategories.map((receipt) => (
+                  return (
                     <Link
-                      key={receipt}
-                      to={getReceiptRoute(receipt)}
+                      key={item.name}
+                      to={item.to}
                       className="rounded-lg bg-gray-50 p-3 transition hover:bg-gray-100"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                            <Receipt size={16} />
+                          <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                            <ItemIcon size={16} />
                           </div>
-                          <p className="text-sm font-medium">
-                            {RECEIPT_LABELS[receipt] || receipt}
-                          </p>
-                          <p className="text-xs text-gray-500">Track this to reduce missed deductions</p>
+                          <p className="text-sm font-medium">{item.name}</p>
+                          <p className="text-xs text-gray-500">{item.description}</p>
                         </div>
                         <ChevronRight size={16} className="mt-1 shrink-0 text-gray-400" />
                       </div>
                     </Link>
-                  ))}
-                </div>
-              </Card.Body>
-            </Card>
+                  );
+                })}
+              </div>
+            </SectionCard>
           )}
 
-          {myOptionalProfiles.length > 0 && (
-            <OptionalProfilesGuide
-              title="Optional Tax Accounts & Deductions"
-              optionalProfiles={myOptionalProfiles}
-            />
-          )}
+          <ReceiptCategoryGrid categories={[...new Set([...finalReceiptCategories, ...spouseReceiptCategories])]} />
 
-          {hasSpouse && spouseOptionalProfiles.length > 0 && (
-            <OptionalProfilesGuide
-              title="Spouse Optional Tax Accounts"
-              optionalProfiles={spouseOptionalProfiles}
-            />
-          )}
+          <HouseholdTaxDocumentsSection
+            householdItems={householdTaxItems}
+            myOptionalProfiles={myOptionalProfiles}
+            spouseOptionalProfiles={spouseOptionalProfiles}
+            hasSpouse={hasSpouse}
+          />
 
           <Card>
             <Card.Header>
@@ -1538,16 +2107,17 @@ const Dashboard = () => {
                   <TrendingUp size={20} className="mr-2 text-green-600" />
                   Estimated Tax Savings
                 </h3>
-                <Badge variant="success">Live guidance</Badge>
+                <Badge variant="success">{hasSpouse ? 'Household total' : 'Single account'}</Badge>
               </div>
 
               <p className="mb-2 text-3xl font-bold text-green-700">{money(capturedSavings)}</p>
               <p className="mb-4 text-xs text-gray-600">
-                Estimated savings already being captured from visible deductions and tracked records
+                Estimated savings already being captured from all visible user and spouse records
+                when applicable
               </p>
 
               <div className="space-y-2 text-sm">
-                {savingsOpportunities.slice(0, 5).map((item) => (
+                {savingsOpportunities.slice(0, 6).map((item) => (
                   <div key={item.key} className="flex justify-between rounded bg-white p-2">
                     <span className="text-gray-600">{item.title}</span>
                     <span className="font-medium">{money(item.currentSaving)}</span>
@@ -1600,17 +2170,42 @@ const Dashboard = () => {
                   <DollarSign size={18} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-blue-900">
-                    Why this dashboard works
-                  </p>
+                  <p className="text-sm font-semibold text-blue-900">Why this dashboard works</p>
                   <p className="mt-1 text-sm text-blue-800">
-                    Users do not come here only to upload documents. They come here to
-                    understand where they are overpaying and what will reduce their tax bill.
+                    It reduces clutter, groups related tasks together, and shows household tax
+                    opportunities more realistically.
                   </p>
                 </div>
               </div>
             </Card.Body>
           </Card>
+
+          {user?.vehiclePurchase?.wantsBillOfSaleUpload && !user?.vehiclePurchase?.uploaded && (
+            <Card className="border border-orange-200 bg-gradient-to-br from-orange-50 to-white">
+              <Card.Body>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-2xl bg-orange-100 p-3">
+                      <Car className="h-5 w-5 text-orange-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Upload your vehicle bill of sale
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-600">
+                        You told us you bought a vehicle for work use this year. Upload the bill of
+                        sale so your CA can review it.
+                      </p>
+                    </div>
+                  </div>
+
+                  <Link to="/receipts?category=vehicle_purchase">
+                    <Button>Upload now</Button>
+                  </Link>
+                </div>
+              </Card.Body>
+            </Card>
+          )}
         </div>
       </div>
     </div>
