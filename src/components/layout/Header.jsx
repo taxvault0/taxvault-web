@@ -9,8 +9,8 @@ import {
   User,
   Settings,
 } from 'lucide-react';
-import { useAuth } from 'features/auth/context/AuthContext';
-import { useChat } from 'features/chat/context/ChatContext';
+import { useAuth } from '../../features/auth/context/AuthContext';
+import { useChat } from '../../features/chat/context/ChatContext';
 
 const getAssignedCAId = (user) => {
   if (!user) return null;
