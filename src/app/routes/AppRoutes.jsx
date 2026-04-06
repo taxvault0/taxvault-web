@@ -1,88 +1,88 @@
 import React, { useState } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from 'features/auth/context/AuthContext';
+import { useAuth } from '../../features/auth/context/AuthContext';
 import PrivateRoute from './PrivateRoute';
 
 // Layout
-import AppShell from 'components/layout/AppShell';
+import AppShell from '../../components/layout/AppShell';
 
 // Chat
-import ChatButton from 'features/chat/components/ChatButton';
-import ChatDrawer from 'features/chat/components/ChatDrawer';
-import CAMessages from 'features/chat/pages/CAMessages';
-import CAConversation from 'features/chat/pages/CAConversation';
-import UserMessages from 'features/chat/pages/UserMessages';
-import UserConversation from 'features/chat/pages/UserConversation';
+import ChatButton from '../../features/chat/components/ChatButton';
+import ChatDrawer from '../../features/chat/components/ChatDrawer';
+import CAMessages from '../../features/chat/pages/CAMessages';
+import CAConversation from '../../features/chat/pages/CAConversation';
+import UserMessages from '../../features/chat/pages/UserMessages';
+import UserConversation from '../../features/chat/pages/UserConversation';
 
 // Life Events
-import LifeEventsHub from 'features/life-events/pages/LifeEventsHub';
-import MaritalStatusUpdate from 'features/life-events/pages/MaritalStatusUpdate';
-import SeparationDivorce from 'features/life-events/pages/SeparationDivorce';
-import AddDependent from 'features/life-events/pages/AddDependent';
-import ChangeAddress from 'features/life-events/pages/ChangeAddress';
-import LegacyContact from 'features/life-events/pages/LegacyContact';
+import LifeEventsHub from '../../features/life-events/pages/LifeEventsHub';
+import MaritalStatusUpdate from '../../features/life-events/pages/MaritalStatusUpdate';
+import SeparationDivorce from '../../features/life-events/pages/SeparationDivorce';
+import AddDependent from '../../features/life-events/pages/AddDependent';
+import ChangeAddress from '../../features/life-events/pages/ChangeAddress';
+import LegacyContact from '../../features/life-events/pages/LegacyContact';
 
 // Auth
-import Login from 'features/auth/pages/Login';
-import LoginUser from 'features/auth/pages/LoginUser';
-import LoginCA from 'features/auth/pages/LoginCA';
-import Register from 'features/auth/pages/Register';
-import RegisterCA from 'features/auth/pages/RegisterCA';
-import RoleSelect from 'features/auth/pages/RoleSelect';
-import ForgotPassword from 'features/auth/pages/ForgotPassword';
+import Login from '../../features/auth/pages/Login';
+import LoginUser from '../../features/auth/pages/LoginUser';
+import LoginCA from '../../features/auth/pages/LoginCA';
+import Register from '../../features/auth/pages/register/Register';
+import RegisterCA from '../../features/auth/pages/RegisterCA';
+import RoleSelect from '../../features/auth/pages/RoleSelect';
+import ForgotPassword from '../../features/auth/pages/ForgotPassword';
 
 // User
-import Dashboard from 'features/dashboard/pages/Dashboard';
-import Receipts from 'features/documents/pages/Receipts';
-import ReceiptDetail from 'features/documents/pages/ReceiptDetail';
-import Mileage from 'features/mileage/pages/Mileage';
-import MileageTracker from 'features/mileage/pages/MileageTracker';
-import TripDetail from 'features/mileage/pages/TripDetail';
-import Documents from 'features/documents/pages/Documents';
-import Profile from 'features/profile/pages/Profile';
-import Settings from 'features/profile/pages/Settings';
-import AccountDocuments from 'features/documents/pages/AccountDocuments';
-import TaxChecklist from 'features/tax/pages/TaxChecklist';
-import FindCA from 'features/directory/pages/FindCA';
+import Dashboard from '../../features/dashboard/pages/Dashboard';
+import Receipts from '../../features/documents/pages/Receipts';
+import ReceiptDetail from '../../features/documents/pages/ReceiptDetail';
+import Mileage from '../../features/mileage/pages/Mileage';
+import MileageTracker from '../../features/mileage/pages/MileageTracker';
+import TripDetail from '../../features/mileage/pages/TripDetail';
+import Documents from '../../features/documents/pages/Documents';
+import Profile from '../../features/profile/pages/Profile';
+import Settings from '../../features/profile/pages/Settings';
+import AccountDocuments from '../../features/documents/pages/AccountDocuments';
+import TaxChecklist from '../../features/tax/pages/TaxChecklist';
+import FindCA from '../../features/directory/pages/FindCA';
 
 // Consultations
-import Consultations from 'features/consultations/pages/Consultations';
-import ConsultationRequest from 'features/consultations/pages/ConsultationRequest';
-import ConsultationDetail from 'features/consultations/pages/ConsultationDetail';
-import CAAvailability from 'features/consultations/pages/CAAvailability';
-import CAPricing from 'features/ca/pages/CAPricing';
+import Consultations from '../../features/consultations/pages/Consultations';
+import ConsultationRequest from '../../features/consultations/pages/ConsultationRequest';
+import ConsultationDetail from '../../features/consultations/pages/ConsultationDetail';
+import CAAvailability from '../../features/consultations/pages/CAAvailability';
+import CAPricing from '../../features/ca/pages/CAPricing';
 
 // Gig / Tax
-import GSTDashboard from 'features/dashboard/pages/GSTDashboard';
-import BusinessUseCalculator from 'features/tax/pages/BusinessUseCalculator';
-import T2125Form from 'features/tax/pages/T2125Form';
-import GigDocumentsHub from 'features/gig/pages/GigDocumentsHub';
-import GigDocumentCategory from 'features/gig/pages/GigDocumentCategory';
+import GSTDashboard from '../../features/dashboard/pages/GSTDashboard';
+import BusinessUseCalculator from '../../features/tax/pages/BusinessUseCalculator';
+import T2125Form from '../../features/tax/pages/T2125Form';
+import GigDocumentsHub from '../../features/gig/pages/GigDocumentsHub';
+import GigDocumentCategory from '../../features/gig/pages/GigDocumentCategory';
 
 // Business
-import BusinessOwnerDashboard from 'features/dashboard/pages/BusinessOwnerDashboard';
-import BusinessInfo from 'features/business/pages/BusinessInfo';
-import BusinessIncome from 'features/business/pages/BusinessIncome';
-import BusinessExpenses from 'features/business/pages/BusinessExpenses';
-import BusinessPayroll from 'features/business/pages/BusinessPayroll';
-import BusinessStructure from 'features/business/pages/BusinessStructure';
-import BusinessInventory from 'features/business/pages/BusinessInventory';
-import BusinessGSTRecords from 'features/business/pages/BusinessGSTRecords';
+import BusinessOwnerDashboard from '../../features/dashboard/pages/BusinessOwnerDashboard';
+import BusinessInfo from '../../features/business/pages/BusinessInfo';
+import BusinessIncome from '../../features/business/pages/BusinessIncome';
+import BusinessExpenses from '../../features/business/pages/BusinessExpenses';
+import BusinessPayroll from '../../features/business/pages/BusinessPayroll';
+import BusinessStructure from '../../features/business/pages/BusinessStructure';
+import BusinessInventory from '../../features/business/pages/BusinessInventory';
+import BusinessGSTRecords from '../../features/business/pages/BusinessGSTRecords';
 
 // CA
-import CADashboard from 'features/dashboard/pages/CADashboard';
-import Clients from 'features/clients/pages/Clients';
-import ClientDetail from 'features/clients/pages/ClientDetail';
-import ClientDocuments from 'features/clients/pages/ClientDocuments';
-import ClientTaxSummary from 'features/clients/pages/ClientTaxSummary';
-import ClientSearch from 'features/clients/pages/ClientSearch';
-import CAAnalyticsDashboard from 'features/dashboard/pages/CAAnalyticsDashboard';
-import CARequestDashboard from 'features/dashboard/pages/CARequestDashboard';
-import CARequestDetail from 'features/ca/pages/CARequestDetail';
-import CACalendar from 'features/ca/pages/CACalendar';
-import CAEarnings from 'features/ca/pages/CAEarnings';
-import CAReviews from 'features/ca/pages/CAReviews';
-import ClientFilingSummary from 'features/ca/pages/ClientFilingSummary';
+import CADashboard from '../../features/dashboard/pages/CADashboard';
+import Clients from '../../features/clients/pages/Clients';
+import ClientDetail from '../../features/clients/pages/ClientDetail';
+import ClientDocuments from '../../features/clients/pages/ClientDocuments';
+import ClientTaxSummary from '../../features/clients/pages/ClientTaxSummary';
+import ClientSearch from '../../features/clients/pages/ClientSearch';
+import CAAnalyticsDashboard from '../../features/dashboard/pages/CAAnalyticsDashboard';
+import CARequestDashboard from '../../features/dashboard/pages/CARequestDashboard';
+import CARequestDetail from '../../features/ca/pages/CARequestDetail';
+import CACalendar from '../../features/ca/pages/CACalendar';
+import CAEarnings from '../../features/ca/pages/CAEarnings';
+import CAReviews from '../../features/ca/pages/CAReviews';
+import ClientFilingSummary from '../../features/ca/pages/ClientFilingSummary';
 
 const PublicRoutes = () => (
   <Routes>
@@ -596,3 +596,5 @@ const AppRoutes = () => {
 };
 
 export default AppRoutes;
+
+

@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Bell,
@@ -1977,7 +1977,7 @@ const Dashboard = () => {
               {sameBusiness ? (
                 <div className="grid grid-cols-1 gap-4">
                   <PersonSubCard
-                    title={`Shared Business${sharedBusinessName ? ` Â· ${sharedBusinessName}` : ''}`}
+                    title={`Shared Business${sharedBusinessName ? ` · ${sharedBusinessName}` : ''}`}
                     icon={HeartHandshake}
                     items={sharedBusinessItems}
                     emptyText="No shared business records required."
