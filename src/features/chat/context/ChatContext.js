@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from 'react';
 import { useAuth } from '../../auth/context/AuthContext';
 import { messageService } from 'services/messageService';
 import { io } from 'socket.io-client';
@@ -15,14 +22,16 @@ export const useChat = () => {
 
 export const ChatProvider = ({ children }) => {
   const { user } = useAuth();
+
   const [isOpen, setIsOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [activeConversation, setActiveConversation] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [onlineUsers, setOnlineUsers] = useState([]);
-  const [socket, setSocket] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const socketRef = useRef(null);
 
   const handleNewMessage = useCallback(
     (message) => {
@@ -31,11 +40,12 @@ export const ChatProvider = ({ children }) => {
         const index = updated.findIndex((c) => c.id === message.conversationId);
 
         if (index !== -1) {
+          const increment = message.senderId !== user?.id ? 1 : 0;
+
           updated[index] = {
             ...updated[index],
             lastMessage: message,
-            unreadCount:
-              (updated[index].unreadCount || 0) + (message.senderId !== user?.id ? 1 : 0),
+            unreadCount: (updated[index].unreadCount || 0) + increment,
           };
 
           const [conversation] = updated.splice(index, 1);
@@ -53,19 +63,19 @@ export const ChatProvider = ({ children }) => {
   );
 
   const handleMessageRead = useCallback(({ conversationId }) => {
-    setConversations((prev) =>
-      prev.map((conv) =>
-        conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv
-      )
-    );
+    setConversations((prev) => {
+      const targetConversation = prev.find((conv) => conv.id === conversationId);
+      const removedUnread = targetConversation?.unreadCount || 0;
 
-    setUnreadCount((prev) => {
-      const next = conversations
-        .filter((conv) => conv.id !== conversationId)
-        .reduce((acc, conv) => acc + (conv.unreadCount || 0), 0);
-      return next >= 0 ? next : prev;
+      if (removedUnread > 0) {
+        setUnreadCount((current) => Math.max(0, current - removedUnread));
+      }
+
+      return prev.map((conv) =>
+        conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv
+      );
     });
-  }, [conversations]);
+  }, []);
 
   const handleTyping = useCallback(({ conversationId, userId, isTyping }) => {
     setConversations((prev) =>
@@ -98,13 +108,15 @@ export const ChatProvider = ({ children }) => {
 
   useEffect(() => {
     if (!user) {
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
       }
+
       setConversations([]);
       setUnreadCount(0);
       setOnlineUsers([]);
+      setActiveConversation(null);
       return;
     }
 
@@ -115,11 +127,18 @@ export const ChatProvider = ({ children }) => {
       return;
     }
 
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+
     const newSocket = io(SOCKET_URL, {
       auth: { token: localStorage.getItem('token') },
       transports: ['websocket'],
       reconnection: false,
     });
+
+    socketRef.current = newSocket;
 
     newSocket.on('connect', () => {
       console.log('Chat socket connected');
@@ -137,8 +156,6 @@ export const ChatProvider = ({ children }) => {
     newSocket.on('message_read', handleMessageRead);
     newSocket.on('typing', handleTyping);
 
-    setSocket(newSocket);
-
     return () => {
       newSocket.off('connect');
       newSocket.off('connect_error');
@@ -147,7 +164,10 @@ export const ChatProvider = ({ children }) => {
       newSocket.off('message_read', handleMessageRead);
       newSocket.off('typing', handleTyping);
       newSocket.disconnect();
-      setSocket(null);
+
+      if (socketRef.current === newSocket) {
+        socketRef.current = null;
+      }
     };
   }, [user, handleNewMessage, handleMessageRead, handleTyping]);
 
@@ -167,7 +187,11 @@ export const ChatProvider = ({ children }) => {
     }
 
     if (conversation?.unreadCount > 0) {
-      messageService.markConversationAsRead(conversation.id);
+      try {
+        await messageService.markConversationAsRead(conversation.id);
+      } catch (error) {
+        console.error('Error marking conversation as read:', error);
+      }
     }
   };
 
@@ -186,10 +210,13 @@ export const ChatProvider = ({ children }) => {
 
   const sendMessage = async (conversationId, text, attachments = []) => {
     try {
-      const response = await messageService.sendMessage(conversationId, { text, attachments });
+      const response = await messageService.sendMessage(conversationId, {
+        text,
+        attachments,
+      });
 
-      if (socket) {
-        socket.emit('send_message', {
+      if (socketRef.current) {
+        socketRef.current.emit('send_message', {
           conversationId,
           message: response.data,
         });
@@ -203,14 +230,14 @@ export const ChatProvider = ({ children }) => {
   };
 
   const markAsRead = (conversationId, messageId) => {
-    if (socket) {
-      socket.emit('mark_read', { conversationId, messageId });
+    if (socketRef.current) {
+      socketRef.current.emit('mark_read', { conversationId, messageId });
     }
   };
 
   const sendTyping = (conversationId, isTyping) => {
-    if (socket) {
-      socket.emit('typing', { conversationId, isTyping });
+    if (socketRef.current) {
+      socketRef.current.emit('typing', { conversationId, isTyping });
     }
   };
 

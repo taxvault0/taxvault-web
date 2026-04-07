@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { authAPI } from '../../../../services/api';
 
 import {
   initialValues,
@@ -6,7 +7,7 @@ import {
   stepConfig,
   formatPhoneNumber,
   formatPostalCode,
-  clearVehicleFields,
+  PROVINCE_CODES,
 } from './modules';
 
 import {
@@ -30,27 +31,27 @@ const Register = () => {
   );
 
   const handleChange = (e) => {
-  const { name, value, type, checked } = e.target;
-  let nextValue = type === 'checkbox' ? checked : value;
+    const { name, value, type, checked } = e.target;
+    let nextValue = type === 'checkbox' ? checked : value;
 
-  if (name === 'phone' || name === 'spousePhone') {
-    nextValue = formatPhoneNumber(value);
-  }
+    if (name === 'phone' || name === 'spousePhone') {
+      nextValue = formatPhoneNumber(value);
+    }
 
-  if (name === 'postalCode') {
-    nextValue = formatPostalCode(value);
-  }
+    if (name === 'postalCode') {
+      nextValue = formatPostalCode(value);
+    }
 
-  setFormData((prev) => ({
-    ...prev,
-    [name]: nextValue,
-  }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: nextValue,
+    }));
 
-  setErrors((prev) => ({
-    ...prev,
-    [name]: '',
-  }));
-};
+    setErrors((prev) => ({
+      ...prev,
+      [name]: '',
+    }));
+  };
 
   const handleProfileToggle = (groupName, key) => {
     setFormData((prev) => {
@@ -108,16 +109,54 @@ const Register = () => {
       setIsSubmitting(true);
 
       const payload = {
-        ...formData,
-        phone: formData.phone.replace(/\D/g, ''),
-        postalCode: formData.postalCode.replace(/\s/g, '').toUpperCase(),
+        name: `${formData.firstName || ''} ${formData.lastName || ''}`.trim(),
+        email: formData.email || '',
+        password: formData.password || '',
+        userType: formData.userType || 'gig-worker',
+        phoneNumber: formData.phone ? formData.phone.replace(/\D/g, '') : '',
+        province:
+          formData.province && PROVINCE_CODES[formData.province]
+            ? PROVINCE_CODES[formData.province]
+            : 'ON',
+        businessNumber: formData.businessNumber || '',
+        provincialTaxRegistered: !!formData.provincialTaxRegistered,
+        provincialTaxNumber: formData.provincialTaxNumber || '',
+        filingFrequency: formData.filingFrequency || '',
+        taxRegistrationDate: formData.taxRegistrationDate || '',
+        exceededProvincialThreshold: !!formData.exceededProvincialThreshold,
       };
 
-      console.log('REGISTER PAYLOAD =>', payload);
+      console.log('FINAL PAYLOAD =>');
+      console.log(JSON.stringify(payload, null, 2));
+
+      const response = await authAPI.register(payload);
+
+      console.log('REGISTER SUCCESS =>');
+      console.log(JSON.stringify(response.data, null, 2));
+
       alert('Registration submitted successfully.');
     } catch (error) {
       console.error('Registration failed:', error);
-      alert('Something went wrong.');
+
+      const backendData = error.response?.data;
+
+      console.log('Backend response =>');
+      console.log(JSON.stringify(backendData, null, 2));
+
+      if (Array.isArray(backendData?.errors)) {
+        backendData.errors.forEach((err, index) => {
+          console.log(`Error ${index + 1} =>`);
+          console.log(JSON.stringify(err, null, 2));
+        });
+      }
+
+      const errorMessage =
+        backendData?.errors?.[0]?.message ||
+        backendData?.message ||
+        error.message ||
+        'Something went wrong.';
+
+      alert(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -238,9 +277,7 @@ const Register = () => {
               </p>
             </div>
 
-            <div>
-              {renderStep()}
-            </div>
+            <div>{renderStep()}</div>
 
             <div className="mt-8 flex flex-col-reverse gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
               <div>
