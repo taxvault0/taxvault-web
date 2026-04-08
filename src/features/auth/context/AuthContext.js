@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { authAPI } from '../../../services/api';
 
 const AuthContext = createContext();
 
@@ -95,7 +96,11 @@ const deriveIncomeSources = (rawUser, taxProfile) => {
   return sources;
 };
 
-const buildChecklistSuggestions = (taxProfile, profile = {}, documentPreferences = {}) => {
+const buildChecklistSuggestions = (
+  taxProfile,
+  profile = {},
+  documentPreferences = {}
+) => {
   const suggestedSlips = new Set(documentPreferences.selectedSlips || []);
   const suggestedReceipts = new Set(
     documentPreferences.selectedReceiptCategories || []
@@ -149,13 +154,17 @@ const buildChecklistSuggestions = (taxProfile, profile = {}, documentPreferences
   if (profile.hasTFSA || taxProfile.tfsa) suggestedSlips.add('TFSA');
   if (profile.hasTuition) suggestedSlips.add('TUITION');
   if (profile.hasMedicalExpenses) suggestedSlips.add('MEDICAL');
-  if (profile.hasCharitableDonations || taxProfile.donations) suggestedSlips.add('DONATIONS');
+  if (profile.hasCharitableDonations || taxProfile.donations) {
+    suggestedSlips.add('DONATIONS');
+  }
   if (profile.hasChildCareExpenses) suggestedSlips.add('CHILD_CARE');
   if (profile.hasMovingExpenses) suggestedSlips.add('MOVING');
   if (profile.hasRentalIncome) suggestedSlips.add('RENTAL');
   if (profile.hasForeignIncome) suggestedSlips.add('FOREIGN');
   if (profile.hasCrypto) suggestedSlips.add('CRYPTO');
-  if (profile.hasHomeOffice || taxProfile.workFromHome) suggestedReceipts.add('home_office');
+  if (profile.hasHomeOffice || taxProfile.workFromHome) {
+    suggestedReceipts.add('home_office');
+  }
   if (profile.hasVehicleExpenses) suggestedReceipts.add('vehicle_expenses');
 
   return {
@@ -166,10 +175,14 @@ const buildChecklistSuggestions = (taxProfile, profile = {}, documentPreferences
 
 const buildUserData = (rawUser) => {
   const taxProfile = normalizeTaxProfile(rawUser);
-  const spouseRaw = rawUser?.spouse || rawUser?.spouseProfile || rawUser?.spouseInfo || null;
+  const spouseRaw =
+    rawUser?.spouse || rawUser?.spouseProfile || rawUser?.spouseInfo || null;
   const normalizedSpouse = normalizeSpouseData(spouseRaw);
 
   const profile = rawUser.profile || {};
+  const documentPreferences = normalizeDocumentPreferences(rawUser);
+  const incomeSources = deriveIncomeSources(rawUser, taxProfile);
+
   const vehiclePurchase =
     profile.vehiclePurchase ||
     rawUser.vehiclePurchase || {
@@ -183,32 +196,18 @@ const buildUserData = (rawUser) => {
       uploaded: false,
     };
 
-  const documentPreferences = {
-    selectedReceiptCategories:
-      profile.documentPreferences?.selectedReceiptCategories ||
-      rawUser.documentPreferences?.selectedReceiptCategories ||
-      [],
-    selectedSlips:
-      profile.documentPreferences?.selectedSlips ||
-      rawUser.documentPreferences?.selectedSlips ||
-      [],
-    skippedAtRegistration:
-      profile.documentPreferences?.skippedAtRegistration ||
-      rawUser.documentPreferences?.skippedAtRegistration ||
-      false,
-    needsSuggestions:
-      profile.documentPreferences?.needsSuggestions ||
-      rawUser.documentPreferences?.needsSuggestions ||
-      false,
+  const onboarding = {
+    ...documentPreferences,
+    ...buildChecklistSuggestions(taxProfile, profile, documentPreferences),
   };
 
   return {
-    id: rawUser.id,
+    id: rawUser.id || rawUser._id,
     name: rawUser.name,
     email: rawUser.email,
     role: rawUser.role || 'user',
     userType: rawUser.userType || getPrimaryUserType(taxProfile),
-    incomeSources: rawUser.incomeSources || [],
+    incomeSources,
     taxProfile,
     phone: rawUser.phone || rawUser.phoneNumber || '',
     address: rawUser.address || '',
@@ -228,7 +227,10 @@ const buildUserData = (rawUser) => {
     profile,
     vehiclePurchase,
     documentPreferences,
-    clientId: rawUser.clientId || `TV-${String(rawUser.id || '0001').toUpperCase()}`,
+    onboarding,
+    clientId:
+      rawUser.clientId ||
+      `TV-${String(rawUser.id || rawUser._id || '0001').toUpperCase()}`,
     memberSince: rawUser.memberSince || new Date().getFullYear().toString(),
     businessInfo: rawUser.businessInfo || {},
     householdProfile: rawUser.householdProfile || null,
@@ -237,6 +239,13 @@ const buildUserData = (rawUser) => {
     ...(rawUser.firmName && { firmName: rawUser.firmName }),
     ...(rawUser.caNumber && { caNumber: rawUser.caNumber }),
   };
+};
+
+const persistUser = (rawUser, setUser) => {
+  const userData = buildUserData(rawUser);
+  setUser(userData);
+  localStorage.setItem('user', JSON.stringify(userData));
+  return userData;
 };
 
 // Demo users
@@ -432,16 +441,34 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const savedUser = localStorage.getItem('user');
-      if (savedUser) {
-        try {
+      try {
+        const savedUser = localStorage.getItem('user');
+        const token = localStorage.getItem('token');
+
+        if (savedUser) {
           const parsedUser = JSON.parse(savedUser);
           setUser(buildUserData(parsedUser));
-        } catch (error) {
-          localStorage.removeItem('user');
+          return;
         }
+
+        if (token) {
+          const response = await authAPI.getMe();
+          const backendUser = response?.data?.user;
+
+          if (backendUser) {
+            persistUser(backendUser, setUser);
+            return;
+          }
+        }
+
+        setUser(null);
+      } catch (error) {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     initializeAuth();
@@ -461,16 +488,40 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: 'Invalid account type' };
       }
 
-      const userData = buildUserData(demoUser);
-
-      setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
+      const userData = persistUser(demoUser, setUser);
       toast.success(`Welcome back, ${userData.name}!`);
       return { success: true, user: userData };
     }
 
-    toast.error('Invalid email or password');
-    return { success: false, error: 'Invalid credentials' };
+    try {
+      const response = await authAPI.login({ email, password });
+      const token = response?.data?.token;
+      const rawUser = response?.data?.user;
+
+      if (!token || !rawUser) {
+        toast.error('Invalid login response');
+        return { success: false, error: 'Invalid login response' };
+      }
+
+      if (role === 'ca' && rawUser.role !== 'ca') {
+        toast.error('This account is not a CA account');
+        return { success: false, error: 'Invalid account type' };
+      }
+
+      if (role === 'user' && !['user', 'business_owner'].includes(rawUser.role)) {
+        toast.error('This account is not a user account');
+        return { success: false, error: 'Invalid account type' };
+      }
+
+      localStorage.setItem('token', token);
+      const userData = persistUser(rawUser, setUser);
+
+      toast.success(`Welcome back, ${userData.name}!`);
+      return { success: true, user: userData };
+    } catch (error) {
+      toast.error('Invalid email or password');
+      return { success: false, error: 'Invalid credentials' };
+    }
   };
 
   const demoLogin = async (userType) => {
@@ -495,10 +546,8 @@ export const AuthProvider = ({ children }) => {
       }
 
       const demoUser = DEMO_USERS[email];
-      const userData = buildUserData(demoUser);
+      const userData = persistUser(demoUser, setUser);
 
-      setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
       toast.success(`Logged in as ${userData.name}`);
       return { success: true, user: userData };
     } catch (error) {
@@ -508,9 +557,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginDemoUser = (demoUser) => {
-    const userData = buildUserData(demoUser);
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
+    const userData = persistUser(demoUser, setUser);
     toast.success(`Logged in as ${userData.name}`);
     return { success: true, user: userData };
   };
@@ -520,7 +567,14 @@ export const AuthProvider = ({ children }) => {
     return { success: false };
   };
 
-  const register = async (userData) => {
+  const register = async (userData, token = null) => {
+    if (token) {
+      localStorage.setItem('token', token);
+      const builtUser = persistUser(userData, setUser);
+      toast.success('Registration successful!');
+      return { success: true, user: builtUser };
+    }
+
     const builtUser = buildUserData({
       id: `user-${Date.now()}`,
       role: 'user',
@@ -541,6 +595,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
     setUser(null);
     toast.success('Logged out successfully');
     navigate('/');
@@ -581,13 +636,14 @@ export const AuthProvider = ({ children }) => {
         workFromHome: !!nextTaxProfile.workFromHome,
       };
 
-      const nextDocumentPreferences = prev.documentPreferences || {
-        knowsSlipTypes: true,
-        needsSuggestions: false,
-        skippedAtRegistration: false,
-        selectedSlips: [],
-        selectedReceiptCategories: [],
-      };
+      const nextDocumentPreferences =
+        prev.documentPreferences || {
+          knowsSlipTypes: true,
+          needsSuggestions: false,
+          skippedAtRegistration: false,
+          selectedSlips: [],
+          selectedReceiptCategories: [],
+        };
 
       const onboarding = buildChecklistSuggestions(
         updatedTaxProfile,

@@ -38,6 +38,12 @@ api.interceptors.response.use(
   }
 );
 
+// Onboarding API
+export const onboardingAPI = {
+  save: (data) => api.put('/onboarding', data),
+  get: () => api.get('/onboarding'),
+};
+
 // Auth API
 export const authAPI = {
   login: (data) => api.post('/auth/login', data),
@@ -47,7 +53,8 @@ export const authAPI = {
   enableMfa: (data) => api.post('/auth/enable-mfa', data),
   disableMfa: () => api.post('/auth/disable-mfa'),
   forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
-  resetPassword: (token, password) => api.put(`/auth/reset-password/${token}`, { password }),
+  resetPassword: (token, password) =>
+    api.put(`/auth/reset-password/${token}`, { password }),
   getMe: () => api.get('/auth/me'),
   logout: () => api.post('/auth/logout'),
 };
@@ -67,7 +74,7 @@ export const receiptAPI = {
   getReceipt: (id) => api.get(`/receipts/${id}`),
   createReceipt: (data) => {
     const formData = new FormData();
-    Object.keys(data).forEach(key => {
+    Object.keys(data).forEach((key) => {
       if (key === 'image') {
         formData.append('receipt', data[key]);
       } else {
@@ -100,7 +107,7 @@ export const documentAPI = {
   getDocument: (id) => api.get(`/documents/${id}`),
   uploadDocument: (data) => {
     const formData = new FormData();
-    Object.keys(data).forEach(key => {
+    Object.keys(data).forEach((key) => {
       if (key === 'file') {
         formData.append('document', data[key]);
       } else {
@@ -119,10 +126,14 @@ export const documentAPI = {
 export const caAPI = {
   getClients: (params) => api.get('/ca/clients', { params }),
   getClient: (id) => api.get(`/ca/clients/${id}`),
-  getClientDashboard: (id, taxYear) => api.get(`/ca/clients/${id}/dashboard`, { params: { taxYear } }),
-  getClientReceipts: (id, params) => api.get(`/ca/clients/${id}/receipts`, { params }),
-  getClientMileage: (id, taxYear) => api.get(`/ca/clients/${id}/mileage`, { params: { taxYear } }),
-  getClientDocuments: (id, params) => api.get(`/ca/clients/${id}/documents`, { params }),
+  getClientDashboard: (id, taxYear) =>
+    api.get(`/ca/clients/${id}/dashboard`, { params: { taxYear } }),
+  getClientReceipts: (id, params) =>
+    api.get(`/ca/clients/${id}/receipts`, { params }),
+  getClientMileage: (id, taxYear) =>
+    api.get(`/ca/clients/${id}/mileage`, { params: { taxYear } }),
+  getClientDocuments: (id, params) =>
+    api.get(`/ca/clients/${id}/documents`, { params }),
   requestDocument: (id, data) => api.post(`/ca/clients/${id}/request-document`, data),
   verifyDocument: (id, data) => api.post(`/ca/clients/${id}/verify-document`, data),
   getPendingReviews: () => api.get('/ca/pending-reviews'),
@@ -136,15 +147,11 @@ export const reportAPI = {
   generateReport: (data) => api.post('/reports/generate', data),
   getReports: () => api.get('/reports'),
   getReport: (id) => api.get(`/reports/${id}`),
-  downloadReport: (id, format) => api.get(`/reports/${id}/download`, { 
-    params: { format },
-    responseType: 'blob' 
-  }),
+  downloadReport: (id, format) =>
+    api.get(`/reports/${id}/download`, {
+      params: { format },
+      responseType: 'blob',
+    }),
 };
 
 export default api;
-
-
-
-
-

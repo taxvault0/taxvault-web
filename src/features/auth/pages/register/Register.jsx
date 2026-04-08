@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { authAPI } from '../../../../services/api';
+import { authAPI, onboardingAPI } from '../../../../services/api';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 import {
   initialValues,
@@ -20,6 +22,9 @@ import {
 } from './registration';
 
 const Register = () => {
+  const navigate = useNavigate();
+  const { register } = useAuth();
+
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState(initialValues);
   const [errors, setErrors] = useState({});
@@ -108,7 +113,7 @@ const Register = () => {
     try {
       setIsSubmitting(true);
 
-      const payload = {
+      const registerPayload = {
         name: `${formData.firstName || ''} ${formData.lastName || ''}`.trim(),
         email: formData.email || '',
         password: formData.password || '',
@@ -126,29 +131,59 @@ const Register = () => {
         exceededProvincialThreshold: !!formData.exceededProvincialThreshold,
       };
 
-      console.log('FINAL PAYLOAD =>');
-      console.log(JSON.stringify(payload, null, 2));
+      const registerResponse = await authAPI.register(registerPayload);
 
-      const response = await authAPI.register(payload);
+      const token = registerResponse?.data?.token;
+      const backendUser = registerResponse?.data?.user;
 
-      console.log('REGISTER SUCCESS =>');
-      console.log(JSON.stringify(response.data, null, 2));
+      if (!token || !backendUser) {
+        throw new Error('Registration succeeded but user/token missing.');
+      }
 
-      alert('Registration submitted successfully.');
+      await register(backendUser, token);
+
+      const onboardingPayload = {
+        employmentProfiles: Object.keys(formData.primaryProfile || {}).filter(
+          (key) => formData.primaryProfile[key]
+        ),
+        familyStatus: formData.familyStatus || '',
+        numberOfDependents: Number(formData.numberOfDependents || 0),
+        spouse: {
+          name: formData.spouseName || '',
+          dob: formData.spouseDob || '',
+          sin: formData.spouseSin || '',
+          phone: formData.spousePhone
+            ? formData.spousePhone.replace(/\D/g, '')
+            : '',
+          gigPlatforms: formData.spouseGigPlatforms || [],
+          additionalIncomeSources: formData.spouseAdditionalIncomeSources || [],
+        },
+        incomeDetails: {
+          employerName: formData.employerName || '',
+          t4Income: formData.t4Income || '',
+          gigPlatforms: formData.gigPlatforms || [],
+          gigPlatformOther: formData.gigPlatformOther || '',
+          gigIncome: formData.gigIncome || '',
+          selfEmploymentIncome: formData.selfEmploymentIncome || '',
+          businessIncome: formData.businessIncome || '',
+          additionalIncomeSources: formData.additionalIncomeSources || [],
+        },
+        deductions: formData.deductions || {},
+        receiptTypes: formData.receiptTypes || {},
+        vehiclePurchasedForWork: !!formData.vehiclePurchasedForWork,
+        vehicles: Array.isArray(formData.vehicles) ? formData.vehicles : [],
+        agreeToTerms: !!formData.agreeToTerms,
+        agreeToPrivacy: !!formData.agreeToPrivacy,
+        confirmAccuracy: !!formData.confirmAccuracy,
+      };
+
+      await onboardingAPI.save(onboardingPayload);
+
+      navigate('/dashboard');
     } catch (error) {
       console.error('Registration failed:', error);
 
       const backendData = error.response?.data;
-
-      console.log('Backend response =>');
-      console.log(JSON.stringify(backendData, null, 2));
-
-      if (Array.isArray(backendData?.errors)) {
-        backendData.errors.forEach((err, index) => {
-          console.log(`Error ${index + 1} =>`);
-          console.log(JSON.stringify(err, null, 2));
-        });
-      }
 
       const errorMessage =
         backendData?.errors?.[0]?.message ||
@@ -226,7 +261,9 @@ const Register = () => {
       <div className="mx-auto max-w-5xl">
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 bg-slate-900 px-6 py-8 text-white md:px-8">
-            <h1 className="text-2xl font-semibold md:text-3xl">Create Your Account</h1>
+            <h1 className="text-2xl font-semibold md:text-3xl">
+              Create Your Account
+            </h1>
             <p className="mt-2 text-sm text-slate-300">
               Step {currentStep} of {stepConfig.length}
             </p>
@@ -239,7 +276,10 @@ const Register = () => {
                 const isCompleted = currentStep > step.step;
 
                 return (
-                  <div key={step.step} className="flex flex-col items-center text-center">
+                  <div
+                    key={step.step}
+                    className="flex flex-col items-center text-center"
+                  >
                     <div
                       className={[
                         'flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold transition-colors duration-200',
