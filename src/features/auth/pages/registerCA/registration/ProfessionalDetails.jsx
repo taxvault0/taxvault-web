@@ -53,7 +53,7 @@ const ProfessionalDetails = ({
                   ? 'border-red-500 focus:ring-red-200 bg-red-50'
                   : 'border-gray-300 focus:ring-primary-200 focus:border-primary-500'
               }`}
-              placeholder="123456"
+              placeholder="CPA-123456"
             />
           </div>
           <ErrorField error={errors.caNumber} />
@@ -92,7 +92,7 @@ const ProfessionalDetails = ({
           <div className="relative">
             <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
             <input
-              type="number"
+              type="text"
               name="yearAdmitted"
               value={formData.yearAdmitted}
               onChange={handleChange}
@@ -102,8 +102,8 @@ const ProfessionalDetails = ({
                   : 'border-gray-300 focus:ring-primary-200 focus:border-primary-500'
               }`}
               placeholder="2010"
-              min="1950"
-              max={new Date().getFullYear()}
+              inputMode="numeric"
+              maxLength={4}
             />
           </div>
           <ErrorField error={errors.yearAdmitted} />
@@ -127,7 +127,6 @@ const ProfessionalDetails = ({
               }`}
               placeholder="12"
               min="0"
-              max="70"
             />
           </div>
           <ErrorField error={errors.yearsOfExperience} />
@@ -211,6 +210,24 @@ const ProfessionalDetails = ({
             </label>
           ))}
         </div>
+
+        {formData.languages.includes('Other') && (
+          <div className="mt-4">
+            <input
+              type="text"
+              name="otherLanguage"
+              value={formData.otherLanguage || ''}
+              onChange={handleChange}
+              placeholder="Enter other language"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                errors.otherLanguage
+                  ? 'border-red-500 focus:ring-red-200 bg-red-50'
+                  : 'border-gray-300 focus:ring-primary-200 focus:border-primary-500'
+              }`}
+            />
+            <ErrorField error={errors.otherLanguage} />
+          </div>
+        )}
       </div>
     </div>
   );

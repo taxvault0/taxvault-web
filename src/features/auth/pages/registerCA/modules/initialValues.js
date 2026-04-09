@@ -18,6 +18,7 @@ export const initialValues = {
   yearsOfExperience: '',
   areasOfExpertise: [],
   languages: [],
+  otherLanguage: '',
   professionalDesignations: [],
 
   // Firm Information
@@ -62,7 +63,15 @@ export const initialValues = {
   offersVirtualServices: false,
   offersInPersonServices: true,
   serviceRadius: '',
-  hoursOfOperation: '',
+  hoursOfOperation: {
+    Monday: { closed: false, start: '', end: '' },
+    Tuesday: { closed: false, start: '', end: '' },
+    Wednesday: { closed: false, start: '', end: '' },
+    Thursday: { closed: false, start: '', end: '' },
+    Friday: { closed: false, start: '', end: '' },
+    Saturday: { closed: true, start: '', end: '' },
+    Sunday: { closed: true, start: '', end: '' },
+  },
   weekendAvailability: false,
   emergencyContact: false,
 

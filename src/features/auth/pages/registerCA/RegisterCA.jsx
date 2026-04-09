@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Card from 'components/ui/Card';
 import { useAuth } from '../context/AuthContext';
+import { caRegistrationAPI } from 'services/api';
+import { formatPhoneNumber, formatYear } from 'utils/validators';
 
 import { initialValues, validateStep } from './modules';
 import {
@@ -24,6 +26,7 @@ const RegisterCA = () => {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [uploadedFiles, setUploadedFiles] = useState({});
   const [formError, setFormError] = useState('');
@@ -34,18 +37,31 @@ const RegisterCA = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState(initialValues);
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+const handleChange = (e) => {
+  const { name, value, type, checked } = e.target;
 
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
-    }
-  };
+  let newValue = value;
+
+  // 📞 Phone formatting
+  if (['phone', 'alternatePhone', 'firmPhone'].includes(name)) {
+    newValue = formatPhoneNumber(value);
+  }
+
+  // 📅 Limit year fields
+  if (name === 'yearAdmitted' || name === 'yearEstablished') {
+    newValue = formatYear(value);
+  }
+
+  setFormData((prev) => ({
+    ...prev,
+    [name]: type === 'checkbox' ? checked : newValue,
+  }));
+
+  if (errors[name]) {
+    setErrors((prev) => ({ ...prev, [name]: '' }));
+  }
+};
 
   const handleArrayChange = (field, value) => {
     setFormData((prev) => ({
@@ -61,7 +77,175 @@ const RegisterCA = () => {
     setFormData((prev) => ({ ...prev, [field]: file?.name || '' }));
   };
 
-  const handleNext = () => {
+  const saveDraft = async (section, data) => {
+    await caRegistrationAPI.saveDraft({
+      [section]: data,
+    });
+  };
+
+  const getStepPayload = (step) => {
+    switch (step) {
+      case 1:
+        return {
+          section: 'accountInformation',
+          data: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            phone: formData.phone,
+            alternatePhone: formData.alternatePhone,
+          },
+        };
+
+      case 2:
+        return {
+          section: 'professionalInformation',
+          data: {
+            caDesignation: formData.caDesignation,
+            caNumber: formData.caNumber,
+            provinceOfRegistration: formData.provinceOfRegistration,
+            yearAdmitted: formData.yearAdmitted,
+            firmName: formData.firmName,
+            firmWebsite: formData.firmWebsite,
+            yearsOfExperience: formData.yearsOfExperience,
+            areasOfExpertise: formData.areasOfExpertise,
+            languages: formData.languages,
+            professionalDesignations: formData.professionalDesignations,
+          },
+        };
+
+      case 3:
+        return {
+          section: 'businessInformation',
+          data: {
+            firmAddress: formData.firmAddress,
+            firmCity: formData.firmCity,
+            firmProvince: formData.firmProvince,
+            firmPostalCode: formData.firmPostalCode,
+            firmCountry: formData.firmCountry,
+            firmPhone: formData.firmPhone,
+            firmEmail: formData.firmEmail,
+            firmSize: formData.firmSize,
+            numberOfPartners: formData.numberOfPartners,
+            numberOfStaff: formData.numberOfStaff,
+            yearEstablished: formData.yearEstablished,
+          },
+        };
+
+      case 4:
+        return {
+          section: 'documents',
+          data: {
+            professionalLiabilityInsurance: formData.professionalLiabilityInsurance,
+            insuranceProvider: formData.insuranceProvider,
+            policyNumber: formData.policyNumber,
+            coverageAmount: formData.coverageAmount,
+            expiryDate: formData.expiryDate,
+            peerReviewCompleted: formData.peerReviewCompleted,
+            peerReviewDate: formData.peerReviewDate,
+            peerReviewOutcome: formData.peerReviewOutcome,
+            peerReviewBody: formData.peerReviewBody,
+            cpaMemberInGoodStanding: formData.cpaMemberInGoodStanding,
+            licenseVerification: formData.licenseVerification,
+            disciplinaryHistory: formData.disciplinaryHistory,
+            disciplinaryDetails: formData.disciplinaryDetails,
+            criminalRecordCheck: formData.criminalRecordCheck,
+            backgroundCheckConsent: formData.backgroundCheckConsent,
+            insuranceCertificate: formData.insuranceCertificate,
+            peerReviewReport: formData.peerReviewReport,
+          },
+        };
+
+      case 5:
+        return {
+          section: 'practiceInformation',
+          data: {
+            practiceType: formData.practiceType,
+            clientIndustries: formData.clientIndustries,
+            averageClientsPerYear: formData.averageClientsPerYear,
+            minimumFee: formData.minimumFee,
+            maximumFee: formData.maximumFee,
+            acceptsCRA: formData.acceptsCRA,
+            offersVirtualServices: formData.offersVirtualServices,
+            offersInPersonServices: formData.offersInPersonServices,
+            serviceRadius: formData.serviceRadius,
+            hoursOfOperation: formData.hoursOfOperation,
+            weekendAvailability: formData.weekendAvailability,
+            emergencyContact: formData.emergencyContact,
+            primaryClientType: formData.primaryClientType,
+            averageClientSize: formData.averageClientSize,
+            smallestClientRevenue: formData.smallestClientRevenue,
+            largestClientRevenue: formData.largestClientRevenue,
+            nonprofitClients: formData.nonprofitClients,
+            indigenousClients: formData.indigenousClients,
+            newcomerClients: formData.newcomerClients,
+          },
+        };
+
+      case 6:
+        return {
+          section: 'specialties',
+          data: {
+            taxSpecialties: formData.taxSpecialties,
+            provincialSpecialties: formData.provincialSpecialties,
+            internationalTax: formData.internationalTax,
+            usTax: formData.usTax,
+            crossBorder: formData.crossBorder,
+            estatePlanning: formData.estatePlanning,
+            corporateRestructuring: formData.corporateRestructuring,
+            mergersAcquisitions: formData.mergersAcquisitions,
+            accountingSoftware: formData.accountingSoftware,
+            taxSoftware: formData.taxSoftware,
+            practiceManagementSoftware: formData.practiceManagementSoftware,
+            offersPortalAccess: formData.offersPortalAccess,
+            acceptsDigitalDocuments: formData.acceptsDigitalDocuments,
+            usesEncryption: formData.usesEncryption,
+            twoFactorAuth: formData.twoFactorAuth,
+            billingMethod: formData.billingMethod,
+            acceptsCreditCard: formData.acceptsCreditCard,
+            acceptsInterac: formData.acceptsInterac,
+            acceptsCheque: formData.acceptsCheque,
+            paymentPlans: formData.paymentPlans,
+            flatFees: formData.flatFees,
+            hourlyRates: formData.hourlyRates,
+            contingencyFees: formData.contingencyFees,
+            professionalMemberships: formData.professionalMemberships,
+            localChapter: formData.localChapter,
+            committeeMemberships: formData.committeeMemberships,
+            conferenceAttendance: formData.conferenceAttendance,
+            continuingEducation: formData.continuingEducation,
+            cpdHours: formData.cpdHours,
+          },
+        };
+
+      case 7:
+        return {
+          section: 'verification',
+          data: {
+            professionalReferences: formData.professionalReferences,
+            clientReferences: formData.clientReferences,
+            authorizeVerification: formData.authorizeVerification,
+            backgroundCheckConsent: formData.backgroundCheckConsent,
+            profilePublic: formData.profilePublic,
+            acceptNewClients: formData.acceptNewClients,
+            featuredProfessional: formData.featuredProfessional,
+            receiveReferrals: formData.receiveReferrals,
+            newsletterSubscribed: formData.newsletterSubscribed,
+            caCertificate: formData.caCertificate,
+            insuranceCertificate: formData.insuranceCertificate,
+            peerReviewReport: formData.peerReviewReport,
+            criminalRecordCheckDocument: formData.criminalRecordCheckDocument,
+            professionalHeadshot: formData.professionalHeadshot,
+            firmLogo: formData.firmLogo,
+          },
+        };
+
+      default:
+        return null;
+    }
+  };
+
+  const handleNext = async () => {
     const stepErrors = validateStep(currentStep, formData);
 
     if (Object.keys(stepErrors).length > 0) {
@@ -72,8 +256,25 @@ const RegisterCA = () => {
 
     setErrors({});
     setFormError('');
-    setCurrentStep((prev) => prev + 1);
-    window.scrollTo(0, 0);
+
+    try {
+      setSaving(true);
+
+      const payload = getStepPayload(currentStep);
+
+      if (payload) {
+        console.log('Saving draft:', payload);
+        await saveDraft(payload.section, payload.data);
+      }
+
+      setCurrentStep((prev) => prev + 1);
+      window.scrollTo(0, 0);
+    } catch (error) {
+      console.error('Failed to save draft:', error);
+      setFormError('Failed to save draft. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handlePrevious = () => {
@@ -114,6 +315,7 @@ const RegisterCA = () => {
         navigate('/ca/verification-pending');
       }
     } catch (error) {
+      console.error('Registration failed:', error);
       setFormError('Registration failed. Please try again.');
     } finally {
       setLoading(false);
@@ -252,9 +454,10 @@ const RegisterCA = () => {
                   <button
                     type='button'
                     onClick={handleNext}
-                    className='ml-auto px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600'
+                    disabled={saving}
+                    className='ml-auto px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50'
                   >
-                    Next
+                    {saving ? 'Saving...' : 'Next'}
                   </button>
                 ) : (
                   <button

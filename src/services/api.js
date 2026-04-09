@@ -122,6 +122,12 @@ export const documentAPI = {
   getTypes: () => api.get('/documents/types'),
 };
 
+// CA Registration API
+export const caRegistrationAPI = {
+  saveDraft: (data) => api.post('/ca-registration/save-draft', data),
+  getDraft: () => api.get('/ca-registration/draft'),
+};
+
 // CA API
 export const caAPI = {
   getClients: (params) => api.get('/ca/clients', { params }),

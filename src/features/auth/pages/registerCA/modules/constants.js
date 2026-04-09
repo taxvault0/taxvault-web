@@ -54,7 +54,7 @@ export const primaryClientTypes = [
 
 export const accountingSoftware = [
   'QuickBooks Online', 'QuickBooks Desktop', 'Xero', 'Sage 50',
-  'Sage Intacct', 'FreshBooks', 'Wave', 'Zero', 'Oracle NetSuite',
+  'Sage Intacct', 'FreshBooks', 'Wave', 'Oracle NetSuite',
   'Microsoft Dynamics', 'SAP', 'Other'
 ];
 
@@ -76,7 +76,21 @@ export const professionalMemberships = [
 ];
 
 export const languages = [
-  'English', 'French', 'Spanish', 'Mandarin', 'Cantonese',
-  'Punjabi', 'Tagalog', 'Arabic', 'German', 'Italian',
-  'Portuguese', 'Russian', 'Urdu', 'Hindi', 'Vietnamese'
+  'English',
+  'French',
+  'Punjabi',
+  'Hindi',
+  'Spanish',
+  'Mandarin',
+  'Cantonese',
+  'Arabic',
+  'Russian',
+  'Persian (Farsi)',
+  'Tagalog (Filipino)', 
+  'German',
+  'Italian',
+  'Portuguese',
+  'Vietnamese',
+  'Urdu',
+  'Other'
 ];
