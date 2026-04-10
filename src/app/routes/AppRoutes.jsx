@@ -27,7 +27,7 @@ import Login from '../../features/auth/pages/Login';
 import LoginUser from '../../features/auth/pages/LoginUser';
 import LoginCA from '../../features/auth/pages/LoginCA';
 import Register from '../../features/auth/pages/register/Register';
-import RegisterCA from '../../features/auth/pages/RegisterCA';
+import RegisterCA from '../../features/auth/pages/registerCA/RegisterCA';
 import RoleSelect from '../../features/auth/pages/RoleSelect';
 import ForgotPassword from '../../features/auth/pages/ForgotPassword';
 

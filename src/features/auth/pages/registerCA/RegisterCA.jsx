@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Card from 'components/ui/Card';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { caRegistrationAPI } from 'services/api';
 import { formatPhoneNumber, formatYear } from 'utils/validators';
 

@@ -1,10 +1,50 @@
 import * as Yup from 'yup';
 
+const currentYear = new Date().getFullYear();
+
 const phoneRegex = /^\(\d{3}\)\s\d{3}-\d{4}$/;
 const caLicenseRegex = /^[A-Z0-9][A-Z0-9-]{4,14}$/;
 const policyNumberRegex = /^[A-Z0-9][A-Z0-9/-]{5,19}$/;
 
-const currentYear = new Date().getFullYear();
+// =========================
+// SHARED HELPERS
+// =========================
+
+export const formatPhoneNumber = (value = '') => {
+  const digits = String(value).replace(/\D/g, '').slice(0, 10);
+
+  if (!digits) return '';
+
+  if (digits.length > 6) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+
+  if (digits.length > 3) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  }
+
+  return `(${digits}`;
+};
+
+export const formatYear = (value = '') =>
+  String(value).replace(/\D/g, '').slice(0, 4);
+
+export const isStrongPassword = (value = '') =>
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(String(value));
+
+export const isValidPhone = (value = '') =>
+  phoneRegex.test(String(value)) &&
+  String(value).replace(/\D/g, '').length === 10;
+
+export const isValidCALicense = (value = '') =>
+  caLicenseRegex.test(String(value).trim().toUpperCase());
+
+export const isValidPolicyNumber = (value = '') =>
+  policyNumberRegex.test(String(value).trim().toUpperCase());
+
+// =========================
+// YUP BUILDING BLOCKS
+// =========================
 
 const strongPassword = Yup.string()
   .required('Password is required')
@@ -16,7 +56,12 @@ const strongPassword = Yup.string()
 
 const phoneField = Yup.string()
   .required('Phone number is required')
-  .matches(phoneRegex, 'Phone must be in format (###) ###-####');
+  .matches(phoneRegex, 'Phone must be in format (###) ###-####')
+  .test(
+    'phone-10-digits',
+    'Phone number must be exactly 10 digits',
+    (value) => !value || value.replace(/\D/g, '').length === 10
+  );
 
 const optionalPhoneField = Yup.string()
   .nullable()
@@ -24,6 +69,11 @@ const optionalPhoneField = Yup.string()
     'valid-phone',
     'Phone must be in format (###) ###-####',
     (value) => !value || phoneRegex.test(value)
+  )
+  .test(
+    'optional-phone-10-digits',
+    'Phone number must be exactly 10 digits',
+    (value) => !value || value.replace(/\D/g, '').length === 10
   );
 
 // Login validation
@@ -99,7 +149,7 @@ export const caRegisterStep2Schema = Yup.object({
   caNumber: Yup.string()
     .trim()
     .uppercase()
-    .matches(caLicenseRegex, 'Invalid CA / license number format')
+    .matches(caLicenseRegex, 'Must be 5–15 characters, uppercase, numbers or hyphen')
     .required('Required'),
   provinceOfRegistration: Yup.string().required('Required'),
   yearAdmitted: Yup.string()
@@ -128,6 +178,9 @@ export const caRegisterStep2Schema = Yup.object({
       }
     ),
   firmName: Yup.string().trim().required('Required'),
+  languages: Yup.array()
+    .min(1, 'Select at least one language')
+    .required('Languages required'),
   otherLanguage: Yup.string().when('languages', {
     is: (languages) => Array.isArray(languages) && languages.includes('Other'),
     then: (schema) => schema.trim().required('Please enter the other language'),
