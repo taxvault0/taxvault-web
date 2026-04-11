@@ -5,6 +5,7 @@ const currentYear = new Date().getFullYear();
 const phoneRegex = /^\(\d{3}\)\s\d{3}-\d{4}$/;
 const caLicenseRegex = /^[A-Z0-9][A-Z0-9-]{4,14}$/;
 const policyNumberRegex = /^[A-Z0-9][A-Z0-9/-]{5,19}$/;
+const canadianPostalCodeRegex = /^[A-Z]\d[A-Z] \d[A-Z]\d$/;
 
 // =========================
 // SHARED HELPERS
@@ -29,6 +30,19 @@ export const formatPhoneNumber = (value = '') => {
 export const formatYear = (value = '') =>
   String(value).replace(/\D/g, '').slice(0, 4);
 
+export const formatCanadianPostalCode = (value = '') => {
+  const cleaned = String(value)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 6);
+
+  if (!cleaned) return '';
+
+  if (cleaned.length <= 3) return cleaned;
+
+  return `${cleaned.slice(0, 3)} ${cleaned.slice(3)}`;
+};
+
 export const isStrongPassword = (value = '') =>
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(String(value));
 
@@ -41,6 +55,9 @@ export const isValidCALicense = (value = '') =>
 
 export const isValidPolicyNumber = (value = '') =>
   policyNumberRegex.test(String(value).trim().toUpperCase());
+
+export const isValidCanadianPostalCode = (value = '') =>
+  canadianPostalCodeRegex.test(String(value).trim().toUpperCase());
 
 // =========================
 // YUP BUILDING BLOCKS
@@ -81,8 +98,7 @@ export const loginSchema = Yup.object({
   email: Yup.string()
     .email('Invalid email address')
     .required('Email is required'),
-  password: Yup.string()
-    .required('Password is required')
+  password: Yup.string().required('Password is required'),
 });
 
 // User registration validation
@@ -97,7 +113,7 @@ export const userRegisterSchema = Yup.object({
     .oneOf([Yup.ref('password'), null], 'Passwords must match')
     .required('Please confirm your password'),
   phone: phoneField,
-  userType: Yup.string().required('User type is required')
+  userType: Yup.string().required('User type is required'),
 });
 
 // Receipt validation
@@ -108,7 +124,7 @@ export const receiptSchema = Yup.object({
     .required('Amount is required'),
   date: Yup.date().required('Date is required'),
   category: Yup.string().required('Category is required'),
-  gst: Yup.number().min(0, 'GST cannot be negative')
+  gst: Yup.number().min(0, 'GST cannot be negative'),
 });
 
 // Mileage trip validation
@@ -121,7 +137,7 @@ export const tripSchema = Yup.object({
     .oneOf(['business', 'commute', 'personal'])
     .required('Purpose is required'),
   startLocation: Yup.string().required('Start location is required'),
-  endLocation: Yup.string().required('End location is required')
+  endLocation: Yup.string().required('End location is required'),
 });
 
 // =========================
@@ -140,7 +156,7 @@ export const caRegisterStep1Schema = Yup.object({
     .oneOf([Yup.ref('password'), null], 'Passwords do not match')
     .required('Confirm your password'),
   phone: phoneField,
-  alternatePhone: optionalPhoneField
+  alternatePhone: optionalPhoneField,
 });
 
 // Step 2 - Professional
@@ -149,7 +165,10 @@ export const caRegisterStep2Schema = Yup.object({
   caNumber: Yup.string()
     .trim()
     .uppercase()
-    .matches(caLicenseRegex, 'Must be 5–15 characters, uppercase, numbers or hyphen')
+    .matches(
+      caLicenseRegex,
+      'Must be 5–15 characters, uppercase, numbers or hyphen'
+    )
     .required('Required'),
   provinceOfRegistration: Yup.string().required('Required'),
   yearAdmitted: Yup.string()
@@ -184,8 +203,8 @@ export const caRegisterStep2Schema = Yup.object({
   otherLanguage: Yup.string().when('languages', {
     is: (languages) => Array.isArray(languages) && languages.includes('Other'),
     then: (schema) => schema.trim().required('Please enter the other language'),
-    otherwise: (schema) => schema.notRequired()
-  })
+    otherwise: (schema) => schema.notRequired(),
+  }),
 });
 
 // Step 3 - Firm
@@ -193,11 +212,14 @@ export const caRegisterStep3Schema = Yup.object({
   firmAddress: Yup.string().trim().required('Required'),
   firmCity: Yup.string().trim().required('Required'),
   firmProvince: Yup.string().trim().required('Required'),
-  firmPostalCode: Yup.string().trim().required('Required'),
+  firmPostalCode: Yup.string()
+    .trim()
+    .uppercase()
+    .max(7, 'Postal code cannot exceed 6 characters')
+    .matches(canadianPostalCodeRegex, 'Postal code must be in A1A 1A1 format')
+    .required('Required'),
   firmPhone: phoneField,
-  firmEmail: Yup.string()
-    .email('Invalid email')
-    .required('Required')
+  firmEmail: Yup.string().email('Invalid email').required('Required'),
 });
 
 // Step 4 - Credentials
@@ -205,7 +227,7 @@ export const caRegisterStep4Schema = Yup.object({
   insuranceProvider: Yup.string().when('professionalLiabilityInsurance', {
     is: true,
     then: (schema) => schema.trim().required('Required'),
-    otherwise: (schema) => schema.notRequired()
+    otherwise: (schema) => schema.notRequired(),
   }),
   policyNumber: Yup.string().when('professionalLiabilityInsurance', {
     is: true,
@@ -215,18 +237,18 @@ export const caRegisterStep4Schema = Yup.object({
         .uppercase()
         .matches(policyNumberRegex, 'Invalid policy number format')
         .required('Required'),
-    otherwise: (schema) => schema.notRequired()
+    otherwise: (schema) => schema.notRequired(),
   }),
   expiryDate: Yup.string().when('professionalLiabilityInsurance', {
     is: true,
     then: (schema) => schema.required('Required'),
-    otherwise: (schema) => schema.notRequired()
+    otherwise: (schema) => schema.notRequired(),
   }),
   peerReviewDate: Yup.string().when('peerReviewCompleted', {
     is: true,
     then: (schema) => schema.required('Peer review date is required'),
-    otherwise: (schema) => schema.notRequired()
-  })
+    otherwise: (schema) => schema.notRequired(),
+  }),
 });
 
 // Step 5 - Practice
@@ -245,7 +267,7 @@ export const caRegisterStep5Schema = Yup.object({
         return true;
       });
     }
-  )
+  ),
 });
 
 // Step 6 - optional / specialties
@@ -256,11 +278,10 @@ export const caRegisterStep7Schema = Yup.object({
   authorizeVerification: Yup.boolean().oneOf(
     [true],
     'You must authorize verification of your credentials'
-  )
+  ),
 });
 
-// Step 8 terms usually live outside formData state,
-// so keep that validation in component logic unless you move them into form values.
+// Step 8
 export const caRegisterStep8Schema = Yup.object({});
 
 export const caRegisterSchemas = {

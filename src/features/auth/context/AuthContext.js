@@ -568,6 +568,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (userData, token = null) => {
+  try {
+    // If a token is explicitly provided, trust it and persist immediately
     if (token) {
       localStorage.setItem('token', token);
       const builtUser = persistUser(userData, setUser);
@@ -575,23 +577,36 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user: builtUser };
     }
 
-    const builtUser = buildUserData({
-      id: `user-${Date.now()}`,
-      role: 'user',
-      ...userData,
-      profile: userData.profile || {},
-      documentPreferences: userData.documentPreferences || {},
-      onboarding: userData.onboarding || {},
-      memberSince: new Date().getFullYear().toString(),
-      clientId: `TV-${Date.now().toString().slice(-8)}`,
-    });
+    const response = await authAPI.register(userData);
 
-    setUser(builtUser);
-    localStorage.setItem('user', JSON.stringify(builtUser));
+    const responseToken = response?.data?.token;
+    const rawUser = response?.data?.user || response?.data?.data?.user || response?.data?.data;
+
+    // Only require a user object. Some backends do not return a token on register.
+    if (!rawUser) {
+      throw new Error(
+        response?.data?.message || 'Invalid registration response'
+      );
+    }
+
+    if (responseToken) {
+      localStorage.setItem('token', responseToken);
+    }
+
+    const builtUser = persistUser(rawUser, setUser);
+
     toast.success('Registration successful!');
-
     return { success: true, user: builtUser };
-  };
+  } catch (error) {
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      'Registration failed';
+
+    toast.error(message);
+    return { success: false, error: message };
+  }
+};
 
   const logout = () => {
     localStorage.removeItem('user');

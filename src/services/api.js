@@ -125,7 +125,9 @@ export const documentAPI = {
 // CA Registration API
 export const caRegistrationAPI = {
   saveDraft: (data) => api.post('/ca-registration/save-draft', data),
-  getDraft: () => api.get('/ca-registration/draft'),
+  submit: (data) => api.post('/ca-registration/submit', data),
+  getDraft: () => api.get('/ca-registration/me'),
+  getDashboard: () => api.get('/ca-registration/dashboard'),
 };
 
 // CA API

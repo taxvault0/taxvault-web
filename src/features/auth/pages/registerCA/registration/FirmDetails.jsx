@@ -86,13 +86,14 @@ const FirmDetails = ({
             name="firmPostalCode"
             value={formData.firmPostalCode}
             onChange={handleChange}
+            maxLength={7}
+            autoCapitalize="characters"
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
               errors.firmPostalCode
                 ? 'border-red-500 focus:ring-red-200 bg-red-50'
                 : 'border-gray-300 focus:ring-primary-200 focus:border-primary-500'
             }`}
-            placeholder="A1A 1A1"
-          />
+            placeholder="A1A 1A1" />
           <ErrorField error={errors.firmPostalCode} />
         </div>
       </div>

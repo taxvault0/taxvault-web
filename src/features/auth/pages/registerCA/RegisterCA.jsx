@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Card from 'components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
 import { caRegistrationAPI } from 'services/api';
-import { formatPhoneNumber, formatYear } from 'utils/validators';
+import {
+  formatPhoneNumber,
+  formatYear,
+  formatCanadianPostalCode,
+} from 'utils/validators';
 
 import { initialValues, validateStep } from './modules';
 import {
@@ -20,6 +24,8 @@ import {
   ReviewDetails,
 } from './registration';
 
+const LOCAL_DRAFT_KEY = 'caRegistrationDraft';
+
 const RegisterCA = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
@@ -30,218 +36,250 @@ const RegisterCA = () => {
   const [errors, setErrors] = useState({});
   const [uploadedFiles, setUploadedFiles] = useState({});
   const [formError, setFormError] = useState('');
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [privacyAccepted, setPrivacyAccepted] = useState(false);
-  const [professionalTermsAccepted, setProfessionalTermsAccepted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [formData, setFormData] = useState(initialValues);
 
+  const [formData, setFormData] = useState({
+    ...initialValues,
+    termsAccepted: initialValues?.termsAccepted || false,
+    privacyAccepted: initialValues?.privacyAccepted || false,
+    professionalTermsAccepted:
+      initialValues?.professionalTermsAccepted || false,
+  });
 
-const handleChange = (e) => {
-  const { name, value, type, checked } = e.target;
+  useEffect(() => {
+    try {
+      const savedDraft = localStorage.getItem(LOCAL_DRAFT_KEY);
+      if (savedDraft) {
+        const parsedDraft = JSON.parse(savedDraft);
+        setFormData((prev) => ({
+          ...prev,
+          ...parsedDraft,
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to load local CA draft:', error);
+    }
+  }, []);
 
-  let newValue = value;
+  const saveLocalDraft = (data) => {
+    try {
+      localStorage.setItem(LOCAL_DRAFT_KEY, JSON.stringify(data));
+    } catch (error) {
+      console.error('Failed to save local CA draft:', error);
+    }
+  };
 
-  // 📞 Phone formatting
-  if (['phone', 'alternatePhone', 'firmPhone'].includes(name)) {
-    newValue = formatPhoneNumber(value);
-  }
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
 
-  // 📅 Limit year fields
-  if (name === 'yearAdmitted' || name === 'yearEstablished') {
-    newValue = formatYear(value);
-  }
+    let newValue = value;
 
-  setFormData((prev) => ({
-    ...prev,
-    [name]: type === 'checkbox' ? checked : newValue,
-  }));
+    if (['phone', 'alternatePhone', 'firmPhone'].includes(name)) {
+      newValue = formatPhoneNumber(value);
+    }
 
-  if (errors[name]) {
-    setErrors((prev) => ({ ...prev, [name]: '' }));
-  }
-};
+    if (name === 'yearAdmitted' || name === 'yearEstablished') {
+      newValue = formatYear(value);
+    }
+
+    if (name === 'firmPostalCode') {
+      newValue = formatCanadianPostalCode(value);
+    }
+
+    setFormData((prev) => {
+      const nextData = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : newValue,
+      };
+      saveLocalDraft(nextData);
+      return nextData;
+    });
+
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+  };
 
   const handleArrayChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: prev[field].includes(value)
-        ? prev[field].filter((item) => item !== value)
-        : [...prev[field], value],
-    }));
+    setFormData((prev) => {
+      const nextData = {
+        ...prev,
+        [field]:
+          Array.isArray(prev[field]) && prev[field].includes(value)
+            ? prev[field].filter((item) => item !== value)
+            : [...(Array.isArray(prev[field]) ? prev[field] : []), value],
+      };
+      saveLocalDraft(nextData);
+      return nextData;
+    });
+
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: '' }));
+    }
   };
 
   const handleFileUpload = (field, file) => {
     setUploadedFiles((prev) => ({ ...prev, [field]: file }));
-    setFormData((prev) => ({ ...prev, [field]: file?.name || '' }));
-  };
 
-  const saveDraft = async (section, data) => {
-    await caRegistrationAPI.saveDraft({
-      [section]: data,
+    setFormData((prev) => {
+      const nextData = {
+        ...prev,
+        [field]: file?.name || '',
+      };
+      saveLocalDraft(nextData);
+      return nextData;
     });
+
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: '' }));
+    }
   };
 
-  const getStepPayload = (step) => {
+  const buildStepPayload = (step, data) => {
     switch (step) {
       case 1:
         return {
-          section: 'accountInformation',
-          data: {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            email: formData.email,
-            phone: formData.phone,
-            alternatePhone: formData.alternatePhone,
+          accountInformation: {
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            primaryPhone: data.phone,
+            alternatePhone: data.alternatePhone,
           },
         };
 
       case 2:
         return {
-          section: 'professionalInformation',
-          data: {
-            caDesignation: formData.caDesignation,
-            caNumber: formData.caNumber,
-            provinceOfRegistration: formData.provinceOfRegistration,
-            yearAdmitted: formData.yearAdmitted,
-            firmName: formData.firmName,
-            firmWebsite: formData.firmWebsite,
-            yearsOfExperience: formData.yearsOfExperience,
-            areasOfExpertise: formData.areasOfExpertise,
-            languages: formData.languages,
-            professionalDesignations: formData.professionalDesignations,
+          professionalInformation: {
+            caDesignation: data.caDesignation,
+            caNumber: data.caNumber,
+            provinceOfRegistration: data.provinceOfRegistration,
+            yearAdmitted: data.yearAdmitted,
+            yearsOfExperience: data.yearsOfExperience,
+            firmName: data.firmName,
+            firmWebsite: data.firmWebsite,
+            areasOfExpertise: data.areasOfExpertise || [],
+            languagesSpoken: data.languages || [],
+            otherLanguage: data.otherLanguage || '',
           },
         };
 
       case 3:
         return {
-          section: 'businessInformation',
-          data: {
-            firmAddress: formData.firmAddress,
-            firmCity: formData.firmCity,
-            firmProvince: formData.firmProvince,
-            firmPostalCode: formData.firmPostalCode,
-            firmCountry: formData.firmCountry,
-            firmPhone: formData.firmPhone,
-            firmEmail: formData.firmEmail,
-            firmSize: formData.firmSize,
-            numberOfPartners: formData.numberOfPartners,
-            numberOfStaff: formData.numberOfStaff,
-            yearEstablished: formData.yearEstablished,
+          firmDetails: {
+            firmAddress: data.firmAddress,
+            city: data.firmCity,
+            province: data.firmProvince,
+            postalCode: data.firmPostalCode,
+            country: data.firmCountry,
+            firmPhone: data.firmPhone,
+            firmEmail: data.firmEmail,
+            firmSize: data.firmSize,
+            numberOfPartners: data.numberOfPartners,
+            numberOfStaff: data.numberOfStaff,
+            yearEstablished: data.yearEstablished,
           },
         };
 
       case 4:
         return {
-          section: 'documents',
-          data: {
-            professionalLiabilityInsurance: formData.professionalLiabilityInsurance,
-            insuranceProvider: formData.insuranceProvider,
-            policyNumber: formData.policyNumber,
-            coverageAmount: formData.coverageAmount,
-            expiryDate: formData.expiryDate,
-            peerReviewCompleted: formData.peerReviewCompleted,
-            peerReviewDate: formData.peerReviewDate,
-            peerReviewOutcome: formData.peerReviewOutcome,
-            peerReviewBody: formData.peerReviewBody,
-            cpaMemberInGoodStanding: formData.cpaMemberInGoodStanding,
-            licenseVerification: formData.licenseVerification,
-            disciplinaryHistory: formData.disciplinaryHistory,
-            disciplinaryDetails: formData.disciplinaryDetails,
-            criminalRecordCheck: formData.criminalRecordCheck,
-            backgroundCheckConsent: formData.backgroundCheckConsent,
-            insuranceCertificate: formData.insuranceCertificate,
-            peerReviewReport: formData.peerReviewReport,
+          professionalCredentials: {
+            professionalLiabilityInsurance: {
+              hasInsurance: data.professionalLiabilityInsurance,
+              provider: data.insuranceProvider,
+              policyNumber: data.policyNumber,
+              coverageAmount: data.coverageAmount,
+              expiryDate: data.expiryDate,
+            },
+            cpaMembership: {
+              isMemberInGoodStanding: data.cpaMemberInGoodStanding,
+              licenseVerificationNumber: data.licenseVerification || '',
+            },
+            peerReview: {
+              completedWithinLast3Years: data.peerReviewCompleted,
+              reviewDate: data.peerReviewDate,
+              outcome: data.peerReviewOutcome,
+            },
+            disciplinaryHistory: {
+              hasHistory: data.disciplinaryHistory,
+              details: data.disciplinaryDetails,
+            },
+            criminalRecordCheck: {
+              consentGiven: data.backgroundCheckConsent,
+            },
           },
         };
 
       case 5:
         return {
-          section: 'practiceInformation',
-          data: {
-            practiceType: formData.practiceType,
-            clientIndustries: formData.clientIndustries,
-            averageClientsPerYear: formData.averageClientsPerYear,
-            minimumFee: formData.minimumFee,
-            maximumFee: formData.maximumFee,
-            acceptsCRA: formData.acceptsCRA,
-            offersVirtualServices: formData.offersVirtualServices,
-            offersInPersonServices: formData.offersInPersonServices,
-            serviceRadius: formData.serviceRadius,
-            hoursOfOperation: formData.hoursOfOperation,
-            weekendAvailability: formData.weekendAvailability,
-            emergencyContact: formData.emergencyContact,
-            primaryClientType: formData.primaryClientType,
-            averageClientSize: formData.averageClientSize,
-            smallestClientRevenue: formData.smallestClientRevenue,
-            largestClientRevenue: formData.largestClientRevenue,
-            nonprofitClients: formData.nonprofitClients,
-            indigenousClients: formData.indigenousClients,
-            newcomerClients: formData.newcomerClients,
+          practiceInformation: {
+            practiceType: data.practiceType,
+            acceptingNewClients: data.acceptNewClients ?? true,
+            primaryClientTypes: data.primaryClientType
+              ? [data.primaryClientType]
+              : [],
+            averageClientsPerYear: data.averageClientsPerYear,
+            minimumFee: data.minimumFee,
+            maximumFee: data.maximumFee,
+            serviceOfferings: [
+              ...(data.offersVirtualServices ? ['virtual'] : []),
+              ...(data.offersInPersonServices ? ['in_person'] : []),
+            ],
+            serviceRadiusKm: data.serviceRadius,
+            hoursOfOperation: data.hoursOfOperation || {},
           },
         };
 
       case 6:
         return {
-          section: 'specialties',
-          data: {
-            taxSpecialties: formData.taxSpecialties,
-            provincialSpecialties: formData.provincialSpecialties,
-            internationalTax: formData.internationalTax,
-            usTax: formData.usTax,
-            crossBorder: formData.crossBorder,
-            estatePlanning: formData.estatePlanning,
-            corporateRestructuring: formData.corporateRestructuring,
-            mergersAcquisitions: formData.mergersAcquisitions,
-            accountingSoftware: formData.accountingSoftware,
-            taxSoftware: formData.taxSoftware,
-            practiceManagementSoftware: formData.practiceManagementSoftware,
-            offersPortalAccess: formData.offersPortalAccess,
-            acceptsDigitalDocuments: formData.acceptsDigitalDocuments,
-            usesEncryption: formData.usesEncryption,
-            twoFactorAuth: formData.twoFactorAuth,
-            billingMethod: formData.billingMethod,
-            acceptsCreditCard: formData.acceptsCreditCard,
-            acceptsInterac: formData.acceptsInterac,
-            acceptsCheque: formData.acceptsCheque,
-            paymentPlans: formData.paymentPlans,
-            flatFees: formData.flatFees,
-            hourlyRates: formData.hourlyRates,
-            contingencyFees: formData.contingencyFees,
-            professionalMemberships: formData.professionalMemberships,
-            localChapter: formData.localChapter,
-            committeeMemberships: formData.committeeMemberships,
-            conferenceAttendance: formData.conferenceAttendance,
-            continuingEducation: formData.continuingEducation,
-            cpdHours: formData.cpdHours,
+          specialtiesAndTechnology: {
+            taxSpecialties: data.taxSpecialties || [],
+            provincialSpecialties: data.provincialSpecialties || [],
+            internationalSpecialties: [
+              ...(data.internationalTax ? ['international_tax'] : []),
+              ...(data.usTax ? ['us_tax'] : []),
+              ...(data.crossBorder ? ['cross_border'] : []),
+              ...(data.estatePlanning ? ['estate_planning'] : []),
+              ...(data.corporateRestructuring
+                ? ['corporate_restructuring']
+                : []),
+              ...(data.mergersAcquisitions ? ['mergers_acquisitions'] : []),
+            ],
+            accountingSoftware: data.accountingSoftware || [],
+            taxSoftware: data.taxSoftware || [],
+            practiceManagementSoftware:
+              data.practiceManagementSoftware || '',
+            clientPortalAccess: data.offersPortalAccess || false,
+            digitalDocumentSigning: data.acceptsDigitalDocuments || false,
+            endToEndEncryption: data.usesEncryption || false,
+            twoFactorAuthentication: data.twoFactorAuth || false,
           },
         };
 
       case 7:
         return {
-          section: 'verification',
-          data: {
-            professionalReferences: formData.professionalReferences,
-            clientReferences: formData.clientReferences,
-            authorizeVerification: formData.authorizeVerification,
-            backgroundCheckConsent: formData.backgroundCheckConsent,
-            profilePublic: formData.profilePublic,
-            acceptNewClients: formData.acceptNewClients,
-            featuredProfessional: formData.featuredProfessional,
-            receiveReferrals: formData.receiveReferrals,
-            newsletterSubscribed: formData.newsletterSubscribed,
-            caCertificate: formData.caCertificate,
-            insuranceCertificate: formData.insuranceCertificate,
-            peerReviewReport: formData.peerReviewReport,
-            criminalRecordCheckDocument: formData.criminalRecordCheckDocument,
-            professionalHeadshot: formData.professionalHeadshot,
-            firmLogo: formData.firmLogo,
+          verificationAndDocuments: {
+            professionalReferences: data.professionalReferences || [],
+            authorizeTaxVaultVerification:
+              data.authorizeVerification || false,
+            consentBackgroundCheck: data.backgroundCheckConsent || false,
+          },
+        };
+
+      case 8:
+        return {
+          reviewAndSubmit: {
+            agreedTermsAndConditions: data.termsAccepted || false,
+            agreedPrivacyPolicy: data.privacyAccepted || false,
+            agreedProfessionalTerms:
+              data.professionalTermsAccepted || false,
+            confirmAccuracy: true,
           },
         };
 
       default:
-        return null;
+        return {};
     }
   };
 
@@ -259,25 +297,19 @@ const handleChange = (e) => {
 
     try {
       setSaving(true);
-
-      const payload = getStepPayload(currentStep);
-
-      if (payload) {
-        console.log('Saving draft:', payload);
-        await saveDraft(payload.section, payload.data);
-      }
-
+      saveLocalDraft(formData);
       setCurrentStep((prev) => prev + 1);
       window.scrollTo(0, 0);
     } catch (error) {
-      console.error('Failed to save draft:', error);
-      setFormError('Failed to save draft. Please try again.');
+      console.error('Failed to continue:', error);
+      setFormError('Failed to continue. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
   const handlePrevious = () => {
+    saveLocalDraft(formData);
     setCurrentStep((prev) => prev - 1);
     setFormError('');
     window.scrollTo(0, 0);
@@ -299,24 +331,54 @@ const handleChange = (e) => {
     setLoading(true);
 
     try {
-      const result = await register({
-        name: `${formData.firstName} ${formData.lastName}`,
+      const registrationResult = await register({
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
         email: formData.email,
         password: formData.password,
         role: 'ca',
-        profile: formData,
-        termsAccepted: true,
-        privacyAccepted: true,
-        professionalTermsAccepted: true,
-        termsAcceptedAt: new Date().toISOString(),
+        userType: 'professional',
+        phoneNumber: formData.phone,
+        province:
+          formData.firmProvince ||
+          formData.provinceOfRegistration ||
+          'ON',
+        firmName: formData.firmName,
+        caNumber: formData.caNumber,
       });
 
-      if (result.success) {
-        navigate('/ca/verification-pending');
+      if (!registrationResult?.success) {
+        throw new Error(
+          registrationResult?.error ||
+            'Unable to create account before submission'
+        );
       }
+
+      const stepPayloads = [
+        buildStepPayload(1, formData),
+        buildStepPayload(2, formData),
+        buildStepPayload(3, formData),
+        buildStepPayload(4, formData),
+        buildStepPayload(5, formData),
+        buildStepPayload(6, formData),
+        buildStepPayload(7, formData),
+      ];
+
+      for (const payload of stepPayloads) {
+        await caRegistrationAPI.saveDraft(payload);
+      }
+
+      const finalPayload = buildStepPayload(8, formData);
+      await caRegistrationAPI.submit(finalPayload);
+
+      localStorage.removeItem(LOCAL_DRAFT_KEY);
+      navigate('/ca/verification-pending');
     } catch (error) {
       console.error('Registration failed:', error);
-      setFormError('Registration failed. Please try again.');
+      setFormError(
+        error?.response?.data?.message ||
+          error?.message ||
+          'Registration failed. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -403,12 +465,40 @@ const handleChange = (e) => {
           <ReviewDetails
             formData={formData}
             errors={errors}
-            termsAccepted={termsAccepted}
-            setTermsAccepted={setTermsAccepted}
-            privacyAccepted={privacyAccepted}
-            setPrivacyAccepted={setPrivacyAccepted}
-            professionalTermsAccepted={professionalTermsAccepted}
-            setProfessionalTermsAccepted={setProfessionalTermsAccepted}
+            termsAccepted={formData.termsAccepted}
+            setTermsAccepted={(value) =>
+              setFormData((prev) => {
+                const nextData = { ...prev, termsAccepted: value };
+                saveLocalDraft(nextData);
+                return nextData;
+              })
+            }
+            privacyAccepted={formData.privacyAccepted}
+            setPrivacyAccepted={(value) =>
+              setFormData((prev) => {
+                const nextData = { ...prev, privacyAccepted: value };
+                saveLocalDraft(nextData);
+                return nextData;
+              })
+            }
+            professionalTermsAccepted={formData.professionalTermsAccepted}
+            setProfessionalTermsAccepted={(value) =>
+              setFormData((prev) => {
+                const nextData = {
+                  ...prev,
+                  professionalTermsAccepted: value,
+                };
+                saveLocalDraft(nextData);
+                return nextData;
+              })
+            }
+            setConfirmAccuracy={(value) =>
+              setFormData((prev) => {
+                const nextData = { ...prev, confirmAccuracy: value };
+                saveLocalDraft(nextData);
+                return nextData;
+              })
+            }
           />
         );
 
@@ -418,31 +508,37 @@ const handleChange = (e) => {
   };
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-primary-50 to-gray-100 py-12'>
-      <div className='container max-w-4xl mx-auto px-4'>
-        <div className='text-center mb-8'>
-          <Link to='/' className='inline-block'>
-            <h1 className='text-3xl font-bold text-primary-600'>TaxVault</h1>
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-gray-100 py-12">
+      <div className="container max-w-4xl mx-auto px-4">
+        <div className="text-center mb-8">
+          <Link to="/" className="inline-block">
+            <h1 className="text-3xl font-bold text-primary-600">
+              TaxVault
+            </h1>
           </Link>
-          <h2 className='text-2xl font-semibold text-gray-800 mt-4'>CA Registration</h2>
-          <p className='text-gray-600 mt-2'>Join as a Chartered Accountant and grow your practice</p>
+          <h2 className="text-2xl font-semibold text-gray-800 mt-4">
+            CA Registration
+          </h2>
+          <p className="text-gray-600 mt-2">
+            Join as a Chartered Accountant and grow your practice
+          </p>
         </div>
 
         <VerificationNotice />
         <ProgressSteps currentStep={currentStep} />
 
-        <Card className='shadow-xl'>
-          <Card.Body className='p-8'>
+        <Card className="shadow-xl">
+          <Card.Body className="p-8">
             <form onSubmit={handleSubmit}>
               <ErrorAlert message={formError} />
               {renderStep()}
 
-              <div className='flex justify-between mt-8'>
+              <div className="flex justify-between mt-8">
                 {currentStep > 1 ? (
                   <button
-                    type='button'
+                    type="button"
                     onClick={handlePrevious}
-                    className='px-6 py-2 border rounded-lg text-gray-700 hover:bg-gray-50'
+                    className="px-6 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
                   >
                     Back
                   </button>
@@ -452,18 +548,18 @@ const handleChange = (e) => {
 
                 {currentStep < 8 ? (
                   <button
-                    type='button'
+                    type="button"
                     onClick={handleNext}
                     disabled={saving}
-                    className='ml-auto px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50'
+                    className="ml-auto px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50"
                   >
                     {saving ? 'Saving...' : 'Next'}
                   </button>
                 ) : (
                   <button
-                    type='submit'
+                    type="submit"
                     disabled={loading}
-                    className='ml-auto px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50'
+                    className="ml-auto px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                   >
                     {loading ? 'Submitting...' : 'Submit'}
                   </button>
