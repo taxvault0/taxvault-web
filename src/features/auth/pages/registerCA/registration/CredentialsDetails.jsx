@@ -246,9 +246,10 @@ const CredentialsDetails = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-200 focus:border-primary-500"
               >
                 <option value="">Select outcome</option>
-                <option value="pass">Pass</option>
-                <option value="pass-with-conditions">Pass with Conditions</option>
-                <option value="pending">Pending</option>
+                <option value="Pass">Pass</option>
+                <option value="Pass with Conditions">Pass with Conditions</option>
+                <option value="Pending">Pending</option>
+                <option value="Other">Other</option>
               </select>
             </div>
 

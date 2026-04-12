@@ -41,10 +41,10 @@ const RegisterCA = () => {
 
   const [formData, setFormData] = useState({
     ...initialValues,
-    termsAccepted: initialValues?.termsAccepted || false,
-    privacyAccepted: initialValues?.privacyAccepted || false,
-    professionalTermsAccepted:
-      initialValues?.professionalTermsAccepted || false,
+    agreedTerms: initialValues?.agreedTerms || false,
+    agreedPrivacy: initialValues?.agreedPrivacy || false,
+    agreedProfessionalTerms: initialValues?.agreedProfessionalTerms || false,
+    confirmAccuracy: initialValues?.confirmAccuracy || false,
   });
 
   useEffect(() => {
@@ -147,6 +147,11 @@ const RegisterCA = () => {
             primaryPhone: data.phone,
             alternatePhone: data.alternatePhone,
           },
+          onboarding: {
+            currentStep: 'account',
+            completedSteps: [],
+            percentComplete: 12,
+          },
         };
 
       case 2:
@@ -163,6 +168,11 @@ const RegisterCA = () => {
             languagesSpoken: data.languages || [],
             otherLanguage: data.otherLanguage || '',
           },
+          onboarding: {
+            currentStep: 'professional',
+            completedSteps: ['account'],
+            percentComplete: 25,
+          },
         };
 
       case 3:
@@ -175,10 +185,24 @@ const RegisterCA = () => {
             country: data.firmCountry,
             firmPhone: data.firmPhone,
             firmEmail: data.firmEmail,
-            firmSize: data.firmSize,
+            firmSize:
+              data.firmSize === 'small'
+                ? 'Small'
+                : data.firmSize === 'medium'
+                ? 'Medium'
+                : data.firmSize === 'large'
+                ? 'Large'
+                : data.firmSize === 'solo'
+                ? 'Solo'
+                : data.firmSize || 'Solo',
             numberOfPartners: data.numberOfPartners,
             numberOfStaff: data.numberOfStaff,
             yearEstablished: data.yearEstablished,
+          },
+          onboarding: {
+            currentStep: 'firm-details',
+            completedSteps: ['account', 'professional'],
+            percentComplete: 37,
           },
         };
 
@@ -199,7 +223,16 @@ const RegisterCA = () => {
             peerReview: {
               completedWithinLast3Years: data.peerReviewCompleted,
               reviewDate: data.peerReviewDate,
-              outcome: data.peerReviewOutcome,
+              outcome:
+                data.peerReviewOutcome === 'pass'
+                  ? 'Pass'
+                  : data.peerReviewOutcome === 'pass_with_conditions'
+                  ? 'Pass with Conditions'
+                  : data.peerReviewOutcome === 'pending'
+                  ? 'Pending'
+                  : data.peerReviewOutcome === 'other'
+                  ? 'Other'
+                  : data.peerReviewOutcome || '',
             },
             disciplinaryHistory: {
               hasHistory: data.disciplinaryHistory,
@@ -209,27 +242,53 @@ const RegisterCA = () => {
               consentGiven: data.backgroundCheckConsent,
             },
           },
-        };
-
-      case 5:
-        return {
-          practiceInformation: {
-            practiceType: data.practiceType,
-            acceptingNewClients: data.acceptNewClients ?? true,
-            primaryClientTypes: data.primaryClientType
-              ? [data.primaryClientType]
-              : [],
-            averageClientsPerYear: data.averageClientsPerYear,
-            minimumFee: data.minimumFee,
-            maximumFee: data.maximumFee,
-            serviceOfferings: [
-              ...(data.offersVirtualServices ? ['virtual'] : []),
-              ...(data.offersInPersonServices ? ['in_person'] : []),
-            ],
-            serviceRadiusKm: data.serviceRadius,
-            hoursOfOperation: data.hoursOfOperation || {},
+          onboarding: {
+            currentStep: 'credentials',
+            completedSteps: ['account', 'professional', 'firm-details'],
+            percentComplete: 50,
           },
         };
+
+        case 5:
+  return {
+    practiceInformation: {
+      practiceType: data.practiceType,
+      acceptingNewClients: data.acceptNewClients ?? true,
+      primaryClientTypes: Array.isArray(data.primaryClientTypes)
+        ? data.primaryClientTypes.filter(Boolean)
+        : [],
+      averageClientsPerYear:
+        data.averageClientsPerYear !== '' && data.averageClientsPerYear != null
+          ? Number(data.averageClientsPerYear)
+          : 0,
+      minimumFee:
+        data.minimumFee !== '' && data.minimumFee != null
+          ? Number(data.minimumFee)
+          : 0,
+      maximumFee:
+        data.maximumFee !== '' && data.maximumFee != null
+          ? Number(data.maximumFee)
+          : 0,
+      serviceOfferings: [
+        ...(data.offersVirtualServices ? ['virtual'] : []),
+        ...(data.offersInPersonServices ? ['in_person'] : []),
+      ],
+      serviceRadiusKm:
+        data.serviceRadius !== '' && data.serviceRadius != null
+          ? Number(data.serviceRadius)
+          : 50,
+    },
+    onboarding: {
+      currentStep: 'practice',
+      completedSteps: [
+        'account',
+        'professional',
+        'firm-details',
+        'credentials',
+      ],
+      percentComplete: 62,
+    },
+  };
 
       case 6:
         return {
@@ -255,26 +314,83 @@ const RegisterCA = () => {
             endToEndEncryption: data.usesEncryption || false,
             twoFactorAuthentication: data.twoFactorAuth || false,
           },
+          onboarding: {
+            currentStep: 'specialties',
+            completedSteps: [
+              'account',
+              'professional',
+              'firm-details',
+              'credentials',
+              'practice',
+            ],
+            percentComplete: 75,
+          },
         };
 
       case 7:
-        return {
-          verificationAndDocuments: {
-            professionalReferences: data.professionalReferences || [],
-            authorizeTaxVaultVerification:
-              data.authorizeVerification || false,
-            consentBackgroundCheck: data.backgroundCheckConsent || false,
-          },
-        };
+  return {
+    verificationAndDocuments: {
+      caCertificateFile: uploadedFiles.caCertificate
+        ? {
+            originalName: uploadedFiles.caCertificate.name || '',
+            fileName: uploadedFiles.caCertificate.name || '',
+            filePath: '',
+            fileUrl: '',
+            mimeType: uploadedFiles.caCertificate.type || '',
+            size: uploadedFiles.caCertificate.size || 0,
+            uploadedAt: new Date(),
+          }
+        : undefined,
+
+      professionalHeadshotFile: uploadedFiles.professionalHeadshot
+        ? {
+            originalName: uploadedFiles.professionalHeadshot.name || '',
+            fileName: uploadedFiles.professionalHeadshot.name || '',
+            filePath: '',
+            fileUrl: '',
+            mimeType: uploadedFiles.professionalHeadshot.type || '',
+            size: uploadedFiles.professionalHeadshot.size || 0,
+            uploadedAt: new Date(),
+          }
+        : undefined,
+
+      firmLogoFile: uploadedFiles.firmLogo
+        ? {
+            originalName: uploadedFiles.firmLogo.name || '',
+            fileName: uploadedFiles.firmLogo.name || '',
+            filePath: '',
+            fileUrl: '',
+            mimeType: uploadedFiles.firmLogo.type || '',
+            size: uploadedFiles.firmLogo.size || 0,
+            uploadedAt: new Date(),
+          }
+        : undefined,
+
+      professionalReferences: data.professionalReferences || [],
+      authorizeTaxVaultVerification: data.authorizeVerification || false,
+      consentBackgroundCheck: data.backgroundCheckConsent || false,
+    },
+    onboarding: {
+      currentStep: 'verification',
+      completedSteps: [
+        'account',
+        'professional',
+        'firm-details',
+        'credentials',
+        'practice',
+        'specialties',
+      ],
+      percentComplete: 87,
+    },
+  };
 
       case 8:
         return {
           reviewAndSubmit: {
-            agreedTermsAndConditions: data.termsAccepted || false,
-            agreedPrivacyPolicy: data.privacyAccepted || false,
-            agreedProfessionalTerms:
-              data.professionalTermsAccepted || false,
-            confirmAccuracy: true,
+            agreedTermsAndConditions: !!data.agreedTerms,
+            agreedPrivacyPolicy: !!data.agreedPrivacy,
+            agreedProfessionalTerms: !!data.agreedProfessionalTerms,
+            confirmAccuracy: !!data.confirmAccuracy,
           },
         };
 
@@ -316,73 +432,98 @@ const RegisterCA = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const stepErrors = validateStep(currentStep, formData);
+  const stepErrors = validateStep(currentStep, formData);
 
-    if (Object.keys(stepErrors).length > 0) {
-      setErrors(stepErrors);
-      setFormError('Please fix the errors before submitting.');
-      return;
-    }
+  if (Object.keys(stepErrors).length > 0) {
+    setErrors(stepErrors);
+    setFormError('Please fix the errors before submitting.');
+    return;
+  }
 
-    setErrors({});
-    setFormError('');
-    setLoading(true);
+  setErrors({});
+  setFormError('');
+  setLoading(true);
 
-    try {
-      const registrationResult = await register({
-        name: `${formData.firstName} ${formData.lastName}`.trim(),
-        email: formData.email,
-        password: formData.password,
-        role: 'ca',
-        userType: 'professional',
-        phoneNumber: formData.phone,
-        province:
-          formData.firmProvince ||
-          formData.provinceOfRegistration ||
-          'ON',
-        firmName: formData.firmName,
-        caNumber: formData.caNumber,
-      });
+  try {
+    const cleanPhone = (formData.phone || '').replace(/\D/g, '');
 
-      if (!registrationResult?.success) {
-        throw new Error(
-          registrationResult?.error ||
-            'Unable to create account before submission'
-        );
-      }
+    const registrationPayload = {
+      name: `${formData.firstName} ${formData.lastName}`.trim(),
+      email: formData.email,
+      password: formData.password,
+      role: 'ca',
+      userType: 'professional',
+      phoneNumber: cleanPhone,
+      province:
+        formData.firmProvince ||
+        formData.provinceOfRegistration ||
+        'ON',
+      firmName: formData.firmName || '',
+      caNumber: formData.caNumber || '',
+    };
 
-      const stepPayloads = [
-        buildStepPayload(1, formData),
-        buildStepPayload(2, formData),
-        buildStepPayload(3, formData),
-        buildStepPayload(4, formData),
-        buildStepPayload(5, formData),
-        buildStepPayload(6, formData),
-        buildStepPayload(7, formData),
-      ];
+    const registrationResult = await register(registrationPayload);
 
-      for (const payload of stepPayloads) {
-        await caRegistrationAPI.saveDraft(payload);
-      }
-
-      const finalPayload = buildStepPayload(8, formData);
-      await caRegistrationAPI.submit(finalPayload);
-
-      localStorage.removeItem(LOCAL_DRAFT_KEY);
-      navigate('/ca/verification-pending');
-    } catch (error) {
-      console.error('Registration failed:', error);
-      setFormError(
-        error?.response?.data?.message ||
-          error?.message ||
-          'Registration failed. Please try again.'
+    if (!registrationResult?.success) {
+      throw new Error(
+        registrationResult?.error ||
+          'Unable to create account before submission'
       );
-    } finally {
-      setLoading(false);
     }
-  };
+
+    // Wait until token is definitely available for authenticated draft calls
+    let attempts = 0;
+    while (!localStorage.getItem('token') && attempts < 15) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      attempts++;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('Token not set after registration');
+    }
+
+    const stepPayloads = [
+      buildStepPayload(1, formData),
+      buildStepPayload(2, formData),
+      buildStepPayload(3, formData),
+      buildStepPayload(4, formData),
+      buildStepPayload(5, formData),
+      buildStepPayload(6, formData),
+      buildStepPayload(7, formData),
+    ];
+
+    for (let i = 0; i < stepPayloads.length; i++) {
+      console.log(`SAVING STEP ${i + 1}`, stepPayloads[i]);
+
+      try {
+        await caRegistrationAPI.saveDraft(stepPayloads[i]);
+      } catch (err) {
+        console.error(`STEP ${i + 1} FAILED`, err?.response?.data || err);
+        throw err;
+      }
+    }
+
+    const finalPayload = buildStepPayload(8, formData);
+    console.log('SUBMITTING FINAL STEP', finalPayload);
+
+    await caRegistrationAPI.submit(finalPayload);
+
+    localStorage.removeItem(LOCAL_DRAFT_KEY);
+    navigate('/ca/verification-pending');
+  } catch (error) {
+    console.error('Registration failed:', error?.response?.data || error);
+    setFormError(
+      error?.response?.data?.message ||
+        error?.message ||
+        'Registration failed. Please try again.'
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   const renderStep = () => {
     switch (currentStep) {
@@ -460,47 +601,14 @@ const RegisterCA = () => {
           />
         );
 
-      case 8:
-        return (
-          <ReviewDetails
-            formData={formData}
-            errors={errors}
-            termsAccepted={formData.termsAccepted}
-            setTermsAccepted={(value) =>
-              setFormData((prev) => {
-                const nextData = { ...prev, termsAccepted: value };
-                saveLocalDraft(nextData);
-                return nextData;
-              })
-            }
-            privacyAccepted={formData.privacyAccepted}
-            setPrivacyAccepted={(value) =>
-              setFormData((prev) => {
-                const nextData = { ...prev, privacyAccepted: value };
-                saveLocalDraft(nextData);
-                return nextData;
-              })
-            }
-            professionalTermsAccepted={formData.professionalTermsAccepted}
-            setProfessionalTermsAccepted={(value) =>
-              setFormData((prev) => {
-                const nextData = {
-                  ...prev,
-                  professionalTermsAccepted: value,
-                };
-                saveLocalDraft(nextData);
-                return nextData;
-              })
-            }
-            setConfirmAccuracy={(value) =>
-              setFormData((prev) => {
-                const nextData = { ...prev, confirmAccuracy: value };
-                saveLocalDraft(nextData);
-                return nextData;
-              })
-            }
-          />
-        );
+        case 8:
+          return (
+            <ReviewDetails
+              formData={formData}
+              errors={errors}
+              handleChange={handleChange}
+            />
+          );
 
       default:
         return null;
@@ -529,7 +637,11 @@ const RegisterCA = () => {
 
         <Card className="shadow-xl">
           <Card.Body className="p-8">
-            <form onSubmit={handleSubmit}>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+              }}
+            >
               <ErrorAlert message={formError} />
               {renderStep()}
 
@@ -557,12 +669,13 @@ const RegisterCA = () => {
                   </button>
                 ) : (
                   <button
-                    type="submit"
-                    disabled={loading}
-                    className="ml-auto px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-                  >
-                    {loading ? 'Submitting...' : 'Submit'}
-                  </button>
+  type="button"
+  onClick={handleSubmit}
+  disabled={loading}
+  className="ml-auto px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+>
+  {loading ? 'Submitting...' : 'Submit'}
+</button>
                 )}
               </div>
             </form>

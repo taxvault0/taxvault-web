@@ -3,7 +3,6 @@ import toast from 'react-hot-toast';
 
 const API_URL = process.env.REACT_APP_API_URL;
 
-// Create axios instance
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -11,7 +10,6 @@ const api = axios.create({
   },
 });
 
-// Request interceptor
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -20,34 +18,60 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const url = error.config?.url || '';
+
+    const isCARegistrationRequest =
+      url.includes('/ca-registration/save-draft') ||
+      url.includes('/ca-registration/submit');
+
+    if (status === 401 && !isCARegistrationRequest) {
       localStorage.removeItem('token');
       window.location.href = '/login/user';
       toast.error('Session expired. Please login again.');
     }
+
     return Promise.reject(error);
   }
 );
 
-// Onboarding API
 export const onboardingAPI = {
   save: (data) => api.put('/onboarding', data),
   get: () => api.get('/onboarding'),
 };
 
-// Auth API
 export const authAPI = {
   login: (data) => api.post('/auth/login', data),
-  register: (data) => api.post('/auth/register', data),
+
+  register: async (data) => {
+    try {
+      console.log('=== REGISTER REQUEST ===');
+      console.log('Sending data:', data);
+
+      const response = await api.post('/auth/register', data);
+
+      console.log('=== REGISTER SUCCESS ===');
+      console.log('Response:', response.data);
+
+      return response.data;
+    } catch (error) {
+      console.error('=== REGISTER ERROR ===');
+      console.error('Message:', error.message);
+      console.error('Status:', error.response?.status);
+      console.error('Response data:', error.response?.data);
+      console.error('VALIDATION ERRORS:', error.response?.data?.errors);
+      console.error('Request data:', data);
+
+      throw error;
+    }
+  },
+
   verifyMfa: (data) => api.post('/auth/verify-mfa', data),
   setupMfa: () => api.post('/auth/setup-mfa'),
   enableMfa: (data) => api.post('/auth/enable-mfa', data),
@@ -59,7 +83,6 @@ export const authAPI = {
   logout: () => api.post('/auth/logout'),
 };
 
-// User API
 export const userAPI = {
   getProfile: () => api.get('/users/profile'),
   updateProfile: (data) => api.put('/users/profile', data),
@@ -68,7 +91,6 @@ export const userAPI = {
   getStats: () => api.get('/users/stats'),
 };
 
-// Receipt API
 export const receiptAPI = {
   getReceipts: (params) => api.get('/receipts', { params }),
   getReceipt: (id) => api.get(`/receipts/${id}`),
@@ -91,7 +113,6 @@ export const receiptAPI = {
   getSummary: (taxYear) => api.get('/receipts/summary', { params: { taxYear } }),
 };
 
-// Mileage API
 export const mileageAPI = {
   getMileage: (taxYear) => api.get('/mileage', { params: { taxYear } }),
   addTrip: (data) => api.post('/mileage/trips', data),
@@ -101,7 +122,6 @@ export const mileageAPI = {
   updateSettings: (settings) => api.put('/mileage/settings', settings),
 };
 
-// Document API
 export const documentAPI = {
   getDocuments: (params) => api.get('/documents', { params }),
   getDocument: (id) => api.get(`/documents/${id}`),
@@ -122,7 +142,6 @@ export const documentAPI = {
   getTypes: () => api.get('/documents/types'),
 };
 
-// CA Registration API
 export const caRegistrationAPI = {
   saveDraft: (data) => api.post('/ca-registration/save-draft', data),
   submit: (data) => api.post('/ca-registration/submit', data),
@@ -130,7 +149,6 @@ export const caRegistrationAPI = {
   getDashboard: () => api.get('/ca-registration/dashboard'),
 };
 
-// CA API
 export const caAPI = {
   getClients: (params) => api.get('/ca/clients', { params }),
   getClient: (id) => api.get(`/ca/clients/${id}`),
@@ -150,7 +168,6 @@ export const caAPI = {
   acceptInvitation: (token) => api.post(`/ca/accept-invitation/${token}`),
 };
 
-// Reports API
 export const reportAPI = {
   generateReport: (data) => api.post('/reports/generate', data),
   getReports: () => api.get('/reports'),

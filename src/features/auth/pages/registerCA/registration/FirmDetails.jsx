@@ -69,8 +69,8 @@ const FirmDetails = ({
           >
             <option value="">Province</option>
             {provinces.map((prov) => (
-              <option key={prov} value={prov}>
-                {prov}
+              <option key={prov.value} value={prov.value}>
+                {prov.value}
               </option>
             ))}
           </select>
@@ -169,10 +169,10 @@ const FirmDetails = ({
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-200 focus:border-primary-500"
           >
             <option value="">Select size</option>
-            <option value="solo">Solo Practitioner</option>
-            <option value="small">Small (2-5 professionals)</option>
-            <option value="medium">Medium (6-20 professionals)</option>
-            <option value="large">Large (21+ professionals)</option>
+            <option value="Solo">Solo Practitioner</option>
+            <option value="Small">Small (2-5 professionals)</option>
+            <option value="Medium">Medium (6-20 professionals)</option>
+            <option value="Large">Large (21+ professionals)</option>
           </select>
         </div>
 

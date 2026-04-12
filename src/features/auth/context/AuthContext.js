@@ -568,45 +568,49 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (userData, token = null) => {
-  try {
-    // If a token is explicitly provided, trust it and persist immediately
-    if (token) {
-      localStorage.setItem('token', token);
-      const builtUser = persistUser(userData, setUser);
+    try {
+      if (token) {
+        localStorage.setItem('token', token);
+        const builtUser = persistUser(userData, setUser);
+        toast.success('Registration successful!');
+        return { success: true, user: builtUser };
+      }
+
+      const data = await authAPI.register(userData);
+
+      const responseToken = data?.token;
+      const rawUser = data?.user || data?.data?.user || data?.data;
+
+      if (!rawUser) {
+        throw new Error(data?.message || 'Invalid registration response');
+      }
+
+      if (userData?.role === 'ca' && rawUser?.role !== 'ca') {
+        throw new Error('CA registration failed - backend returned non-CA role');
+      }
+
+      if (userData?.role === 'user' && rawUser?.role !== 'user') {
+        throw new Error('User registration failed - backend returned invalid role');
+      }
+
+      if (responseToken) {
+        localStorage.setItem('token', responseToken);
+      }
+
+      const builtUser = persistUser(rawUser, setUser);
+
       toast.success('Registration successful!');
       return { success: true, user: builtUser };
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Registration failed';
+
+      toast.error(message);
+      return { success: false, error: message };
     }
-
-    const response = await authAPI.register(userData);
-
-    const responseToken = response?.data?.token;
-    const rawUser = response?.data?.user || response?.data?.data?.user || response?.data?.data;
-
-    // Only require a user object. Some backends do not return a token on register.
-    if (!rawUser) {
-      throw new Error(
-        response?.data?.message || 'Invalid registration response'
-      );
-    }
-
-    if (responseToken) {
-      localStorage.setItem('token', responseToken);
-    }
-
-    const builtUser = persistUser(rawUser, setUser);
-
-    toast.success('Registration successful!');
-    return { success: true, user: builtUser };
-  } catch (error) {
-    const message =
-      error?.response?.data?.message ||
-      error?.message ||
-      'Registration failed';
-
-    toast.error(message);
-    return { success: false, error: message };
-  }
-};
+  };
 
   const logout = () => {
     localStorage.removeItem('user');

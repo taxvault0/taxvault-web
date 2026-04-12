@@ -19,13 +19,7 @@ const Row = ({ label, value }) => (
 const ReviewDetails = ({
   formData,
   errors,
-  termsAccepted,
-  setTermsAccepted,
-  privacyAccepted,
-  setPrivacyAccepted,
-  professionalTermsAccepted,
-  setProfessionalTermsAccepted,
-  setConfirmAccuracy,
+  handleChange,
 }) => {
   return (
     <div className="space-y-6">
@@ -136,9 +130,16 @@ const ReviewDetails = ({
         <label className="flex items-start gap-2">
           <input
             type="checkbox"
-            checked={!!termsAccepted}
-            onChange={(e) => setTermsAccepted(e.target.checked)}
-            className="mt-1"
+            checked={formData.agreedTerms || false}
+            onChange={(e) =>
+              handleChange({
+                target: {
+                  name: 'agreedTerms',
+                  type: 'checkbox',
+                  checked: e.target.checked,
+                },
+              })
+            }
           />
           <span className="text-sm text-gray-700">
             I agree to the Terms and Conditions.
@@ -149,10 +150,17 @@ const ReviewDetails = ({
         <label className="flex items-start gap-2">
           <input
             type="checkbox"
-            checked={!!privacyAccepted}
-            onChange={(e) => setPrivacyAccepted(e.target.checked)}
-            className="mt-1"
-          />
+            checked={formData.agreedPrivacy || false}
+            onChange={(e) =>
+              handleChange({
+                target: {
+                  name: 'agreedPrivacy',
+                  type: 'checkbox',
+                  checked: e.target.checked,
+                },
+              })
+            }
+          />  
           <span className="text-sm text-gray-700">
             I agree to the Privacy Policy.
           </span>
@@ -162,11 +170,16 @@ const ReviewDetails = ({
         <label className="flex items-start gap-2">
           <input
             type="checkbox"
-            checked={!!professionalTermsAccepted}
+            checked={formData.agreedProfessionalTerms || false}
             onChange={(e) =>
-              setProfessionalTermsAccepted(e.target.checked)
+              handleChange({
+                target: {
+                  name: 'agreedProfessionalTerms',
+                  type: 'checkbox',
+                  checked: e.target.checked,
+                },
+              })
             }
-            className="mt-1"
           />
           <span className="text-sm text-gray-700">
             I agree to the Professional Terms.
@@ -176,11 +189,18 @@ const ReviewDetails = ({
 
         <label className="flex items-start gap-2">
           <input
-            type="checkbox"
-            checked={!!formData.confirmAccuracy}
-            onChange={(e) => setConfirmAccuracy(e.target.checked)}
-            className="mt-1"
-          />
+  type="checkbox"
+  checked={formData.confirmAccuracy || false}
+  onChange={(e) =>
+    handleChange({
+      target: {
+        name: 'confirmAccuracy',
+        type: 'checkbox',
+        checked: e.target.checked,
+      },
+    })
+  }
+/>
           <span className="text-sm text-gray-700">
             I confirm that all information provided is accurate and complete.
           </span>

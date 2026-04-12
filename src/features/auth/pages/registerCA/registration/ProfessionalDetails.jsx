@@ -75,8 +75,8 @@ const ProfessionalDetails = ({
           >
             <option value="">Select province</option>
             {provinces.map((prov) => (
-              <option key={prov} value={prov}>
-                {prov}
+              <option key={prov.value} value={prov.value}>
+                {prov.label}
               </option>
             ))}
           </select>
