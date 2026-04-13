@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { authAPI, onboardingAPI } from '../../../../services/api';
+import { onboardingAPI } from '../../../../services/api';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -115,8 +115,9 @@ const Register = () => {
 
       const registerPayload = {
         name: `${formData.firstName || ''} ${formData.lastName || ''}`.trim(),
-        email: formData.email || '',
+        email: (formData.email || '').trim().toLowerCase(),
         password: formData.password || '',
+        role: 'user',
         userType: formData.userType || 'gig-worker',
         phoneNumber: formData.phone ? formData.phone.replace(/\D/g, '') : '',
         province:
@@ -131,16 +132,11 @@ const Register = () => {
         exceededProvincialThreshold: !!formData.exceededProvincialThreshold,
       };
 
-      const registerResponse = await authAPI.register(registerPayload);
+      const result = await register(registerPayload);
 
-      const token = registerResponse?.data?.token;
-      const backendUser = registerResponse?.data?.user;
-
-      if (!token || !backendUser) {
-        throw new Error('Registration succeeded but user/token missing.');
+      if (!result?.success || !result?.user) {
+        throw new Error(result?.error || 'Registration failed');
       }
-
-      await register(backendUser, token);
 
       const onboardingPayload = {
         employmentProfiles: Object.keys(formData.primaryProfile || {}).filter(

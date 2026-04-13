@@ -32,7 +32,6 @@ const receiptOptions = [
   'Other Receipts',
 ];
 
-const ownerOptions = ['Primary Taxpayer', 'Spouse', 'Joint'];
 const ownershipOptions = ['Owned', 'Financed', 'Leased'];
 const mainUseOptions = ['Employment', 'Gig Work', 'Self-Employment', 'Business'];
 
@@ -54,16 +53,59 @@ const CardCheckbox = ({ checked, onChange, title }) => (
 const createVehicle = () => ({
   ownerPerson: '',
   ownershipType: '',
-  mainUse: '',
+  mainUse: [],
   purchaseDate: '',
   purchasePrice: '',
   gstHstPaid: '',
 });
 
-const DeductionsDetails = ({ formData, setFormData, errors, handleChange }) => {
+const getAccountHolderName = (formData) => {
+  const fullName = `${formData.firstName || ''} ${formData.lastName || ''}`.trim();
+  return fullName || formData.name || 'Account Holder';
+};
+
+const getSpouseName = (formData) => {
+  return (
+    formData.spouseName ||
+    formData.spouseFullName ||
+    formData.spouse?.name ||
+    formData.spouse?.fullName ||
+    'Spouse'
+  );
+};
+
+const hasSpouseLikeStatus = (formData) => {
+  const status = String(formData.familyStatus || formData.maritalStatus || '')
+    .trim()
+    .toLowerCase();
+
+  return status === 'married' || status === 'common-law' || status === 'common law';
+};
+
+const buildOwnerOptions = (formData) => {
+  const accountHolderName = getAccountHolderName(formData);
+  const spouseName = getSpouseName(formData);
+  const hasSpouse = hasSpouseLikeStatus(formData);
+
+  if (!hasSpouse) {
+    return [accountHolderName];
+  }
+
+  return [
+    accountHolderName,
+    spouseName,
+    'Joint',
+  ];
+};
+
+const DeductionsDetails = ({ formData, setFormData, errors }) => {
   const deductions = formData.deductions || {};
   const receiptTypes = formData.receiptTypes || {};
   const vehicles = formData.vehicles?.length ? formData.vehicles : [createVehicle()];
+  const ownerOptions = buildOwnerOptions(formData);
+
+  const allDeductionsSelected = deductionOptions.every((item) => !!deductions[item]);
+  const allReceiptTypesSelected = receiptOptions.every((item) => !!receiptTypes[item]);
 
   const toggleDeduction = (key) => {
     setFormData((prev) => ({
@@ -73,6 +115,22 @@ const DeductionsDetails = ({ formData, setFormData, errors, handleChange }) => {
         [key]: !prev.deductions?.[key],
       },
     }));
+  };
+
+  const toggleAllDeductions = () => {
+    setFormData((prev) => {
+      const currentlyAllSelected = deductionOptions.every((item) => !!prev.deductions?.[item]);
+
+      const nextDeductions = deductionOptions.reduce((acc, item) => {
+        acc[item] = !currentlyAllSelected;
+        return acc;
+      }, {});
+
+      return {
+        ...prev,
+        deductions: nextDeductions,
+      };
+    });
   };
 
   const toggleReceiptType = (key) => {
@@ -85,6 +143,22 @@ const DeductionsDetails = ({ formData, setFormData, errors, handleChange }) => {
     }));
   };
 
+  const toggleAllReceiptTypes = () => {
+    setFormData((prev) => {
+      const currentlyAllSelected = receiptOptions.every((item) => !!prev.receiptTypes?.[item]);
+
+      const nextReceiptTypes = receiptOptions.reduce((acc, item) => {
+        acc[item] = !currentlyAllSelected;
+        return acc;
+      }, {});
+
+      return {
+        ...prev,
+        receiptTypes: nextReceiptTypes,
+      };
+    });
+  };
+
   const handleVehicleToggle = () => {
     setFormData((prev) => {
       const nextEnabled = !prev.vehiclePurchasedForWork;
@@ -94,7 +168,14 @@ const DeductionsDetails = ({ formData, setFormData, errors, handleChange }) => {
         vehiclePurchasedForWork: nextEnabled,
         vehicles: nextEnabled
           ? prev.vehicles?.length
-            ? prev.vehicles
+            ? prev.vehicles.map((vehicle) => ({
+                ...vehicle,
+                mainUse: Array.isArray(vehicle.mainUse)
+                  ? vehicle.mainUse
+                  : vehicle.mainUse
+                  ? [vehicle.mainUse]
+                  : [],
+              }))
             : [createVehicle()]
           : [],
       };
@@ -109,6 +190,32 @@ const DeductionsDetails = ({ formData, setFormData, errors, handleChange }) => {
       nextVehicles[index] = {
         ...nextVehicles[index],
         [name]: value,
+      };
+
+      return {
+        ...prev,
+        vehicles: nextVehicles,
+      };
+    });
+  };
+
+  const toggleVehicleMainUse = (index, selectedUse) => {
+    setFormData((prev) => {
+      const nextVehicles = [...(prev.vehicles || [createVehicle()])];
+      const currentVehicle = nextVehicles[index] || createVehicle();
+      const currentMainUse = Array.isArray(currentVehicle.mainUse)
+        ? currentVehicle.mainUse
+        : currentVehicle.mainUse
+        ? [currentVehicle.mainUse]
+        : [];
+
+      const exists = currentMainUse.includes(selectedUse);
+
+      nextVehicles[index] = {
+        ...currentVehicle,
+        mainUse: exists
+          ? currentMainUse.filter((item) => item !== selectedUse)
+          : [...currentMainUse, selectedUse],
       };
 
       return {
@@ -139,9 +246,22 @@ const DeductionsDetails = ({ formData, setFormData, errors, handleChange }) => {
   return (
     <div className="space-y-8">
       <div>
-        <label className="mb-3 block text-sm font-medium text-slate-700">
-          Deductions & Credits
-        </label>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <label className="block text-sm font-medium text-slate-700">
+            Deductions & Credits
+          </label>
+
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-600">
+            <input
+              type="checkbox"
+              checked={allDeductionsSelected}
+              onChange={toggleAllDeductions}
+              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            />
+            Select All
+          </label>
+        </div>
+
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {deductionOptions.map((item) => (
             <CardCheckbox
@@ -152,13 +272,27 @@ const DeductionsDetails = ({ formData, setFormData, errors, handleChange }) => {
             />
           ))}
         </div>
+
         {errors.deductions && (
           <p className="mt-2 text-xs font-medium text-red-500">{errors.deductions}</p>
         )}
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-        <h3 className="mb-4 text-base font-semibold text-slate-900">Receipt Types</h3>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h3 className="text-base font-semibold text-slate-900">Receipt Types</h3>
+
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-600">
+            <input
+              type="checkbox"
+              checked={allReceiptTypesSelected}
+              onChange={toggleAllReceiptTypes}
+              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            />
+            Select All
+          </label>
+        </div>
+
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {receiptOptions.map((item) => (
             <CardCheckbox
@@ -189,96 +323,117 @@ const DeductionsDetails = ({ formData, setFormData, errors, handleChange }) => {
               Vehicle purchased for work / business use
             </div>
             <div className="text-xs text-slate-500">
-              Check this if the vehicle was purchased primarily for work, gig, or
-              business-related use.
+              Check this if the vehicle was purchased for employment, gig work,
+              self-employment, business use, or a combination of them.
             </div>
           </div>
         </label>
 
         {formData.vehiclePurchasedForWork && (
           <div className="mt-5 space-y-5">
-            {vehicles.map((vehicle, index) => (
-              <div
-                key={index}
-                className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
-              >
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <h4 className="text-sm font-semibold text-slate-900">
-                    Vehicle {index + 1}
-                  </h4>
+            {vehicles.map((vehicle, index) => {
+              const selectedMainUse = Array.isArray(vehicle.mainUse)
+                ? vehicle.mainUse
+                : vehicle.mainUse
+                ? [vehicle.mainUse]
+                : [];
 
-                  {vehicles.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeVehicle(index)}
-                      className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50"
-                    >
-                      Remove
-                    </button>
-                  )}
+              return (
+                <div
+                  key={index}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
+                >
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <h4 className="text-sm font-semibold text-slate-900">
+                      Vehicle {index + 1}
+                    </h4>
+
+                    {vehicles.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeVehicle(index)}
+                        className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <FormField
+                      label="Vehicle Owner"
+                      name="ownerPerson"
+                      value={vehicle.ownerPerson}
+                      onChange={(e) => handleVehicleFieldChange(index, e)}
+                      error={errors[`vehicles.${index}.ownerPerson`]}
+                      isSelect
+                      options={ownerOptions}
+                    />
+
+                    <FormField
+                      label="Ownership Type"
+                      name="ownershipType"
+                      value={vehicle.ownershipType}
+                      onChange={(e) => handleVehicleFieldChange(index, e)}
+                      error={errors[`vehicles.${index}.ownershipType`]}
+                      isSelect
+                      options={ownershipOptions}
+                    />
+
+                    <div className="md:col-span-2">
+                      <label className="mb-3 block text-sm font-medium text-slate-700">
+                        Main Use
+                      </label>
+
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        {mainUseOptions.map((item) => (
+                          <CardCheckbox
+                            key={item}
+                            checked={selectedMainUse.includes(item)}
+                            onChange={() => toggleVehicleMainUse(index, item)}
+                            title={item}
+                          />
+                        ))}
+                      </div>
+
+                      {errors[`vehicles.${index}.mainUse`] && (
+                        <p className="mt-2 text-xs font-medium text-red-500">
+                          {errors[`vehicles.${index}.mainUse`]}
+                        </p>
+                      )}
+                    </div>
+
+                    <FormField
+                      label="Purchase Date"
+                      name="purchaseDate"
+                      type="date"
+                      value={vehicle.purchaseDate}
+                      onChange={(e) => handleVehicleFieldChange(index, e)}
+                      error={errors[`vehicles.${index}.purchaseDate`]}
+                      maxDate={new Date()}
+                    />
+
+                    <FormField
+                      label="Purchase Price"
+                      name="purchasePrice"
+                      value={vehicle.purchasePrice}
+                      onChange={(e) => handleVehicleFieldChange(index, e)}
+                      error={errors[`vehicles.${index}.purchasePrice`]}
+                      placeholder="0.00"
+                    />
+
+                    <FormField
+                      label="GST / HST Paid"
+                      name="gstHstPaid"
+                      value={vehicle.gstHstPaid}
+                      onChange={(e) => handleVehicleFieldChange(index, e)}
+                      error={errors[`vehicles.${index}.gstHstPaid`]}
+                      placeholder="0.00"
+                    />
+                  </div>
                 </div>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <FormField
-                    label="Vehicle Owner"
-                    name="ownerPerson"
-                    value={vehicle.ownerPerson}
-                    onChange={(e) => handleVehicleFieldChange(index, e)}
-                    error={errors[`vehicles.${index}.ownerPerson`]}
-                    isSelect
-                    options={ownerOptions}
-                  />
-
-                  <FormField
-                    label="Ownership Type"
-                    name="ownershipType"
-                    value={vehicle.ownershipType}
-                    onChange={(e) => handleVehicleFieldChange(index, e)}
-                    error={errors[`vehicles.${index}.ownershipType`]}
-                    isSelect
-                    options={ownershipOptions}
-                  />
-
-                  <FormField
-                    label="Main Use"
-                    name="mainUse"
-                    value={vehicle.mainUse}
-                    onChange={(e) => handleVehicleFieldChange(index, e)}
-                    error={errors[`vehicles.${index}.mainUse`]}
-                    isSelect
-                    options={mainUseOptions}
-                  />
-
-                  <FormField
-                    label="Purchase Date"
-                    name="purchaseDate"
-                    type="date"
-                    value={vehicle.purchaseDate}
-                    onChange={(e) => handleVehicleFieldChange(index, e)}
-                    error={errors[`vehicles.${index}.purchaseDate`]}
-                    maxDate={new Date()}
-                  />
-
-                  <FormField
-                    label="Purchase Price"
-                    name="purchasePrice"
-                    value={vehicle.purchasePrice}
-                    onChange={(e) => handleVehicleFieldChange(index, e)}
-                    error={errors[`vehicles.${index}.purchasePrice`]}
-                    placeholder="0.00"
-                  />
-
-                  <FormField
-                    label="GST / HST Paid"
-                    name="gstHstPaid"
-                    value={vehicle.gstHstPaid}
-                    onChange={(e) => handleVehicleFieldChange(index, e)}
-                    error={errors[`vehicles.${index}.gstHstPaid`]}
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
 
             <button
               type="button"
