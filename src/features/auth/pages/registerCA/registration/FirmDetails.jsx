@@ -40,17 +40,17 @@ const FirmDetails = ({
           </label>
           <input
             type="text"
-            name="firmCity"
-            value={formData.firmCity}
+            name="city"
+            value={formData.city}
             onChange={handleChange}
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-              errors.firmCity
+              errors.city
                 ? 'border-red-500 focus:ring-red-200 bg-red-50'
                 : 'border-gray-300 focus:ring-primary-200 focus:border-primary-500'
             }`}
             placeholder="Toronto"
           />
-          <ErrorField error={errors.firmCity} />
+          <ErrorField error={errors.city} />
         </div>
 
         <div>
@@ -58,11 +58,11 @@ const FirmDetails = ({
             Province <span className="text-red-500">*</span>
           </label>
           <select
-            name="firmProvince"
-            value={formData.firmProvince}
+            name="province"
+            value={formData.province}
             onChange={handleChange}
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-              errors.firmProvince
+              errors.province
                 ? 'border-red-500 focus:ring-red-200 bg-red-50'
                 : 'border-gray-300 focus:ring-primary-200 focus:border-primary-500'
             }`}
@@ -74,7 +74,7 @@ const FirmDetails = ({
               </option>
             ))}
           </select>
-          <ErrorField error={errors.firmProvince} />
+          <ErrorField error={errors.province} />
         </div>
 
         <div>
@@ -93,7 +93,8 @@ const FirmDetails = ({
                 ? 'border-red-500 focus:ring-red-200 bg-red-50'
                 : 'border-gray-300 focus:ring-primary-200 focus:border-primary-500'
             }`}
-            placeholder="A1A 1A1" />
+            placeholder="A1A 1A1"
+          />
           <ErrorField error={errors.firmPostalCode} />
         </div>
       </div>

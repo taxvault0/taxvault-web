@@ -36,7 +36,7 @@ const VerificationDetails = ({
               className="hidden"
               accept=".pdf,.jpg,.jpeg,.png"
               onChange={(e) =>
-                handleFileUpload('caCertificate', e.target.files?.[0])
+                handleFileUpload('caCertificate', e.target.files?.[0] || null)
               }
             />
             <label htmlFor="caCertificate" className="cursor-pointer">
@@ -67,7 +67,7 @@ const VerificationDetails = ({
               className="hidden"
               accept=".jpg,.jpeg,.png,.webp"
               onChange={(e) =>
-                handleFileUpload('professionalHeadshot', e.target.files?.[0])
+                handleFileUpload('professionalHeadshot', e.target.files?.[0] || null)
               }
             />
             <label htmlFor="professionalHeadshot" className="cursor-pointer">
@@ -94,7 +94,7 @@ const VerificationDetails = ({
               className="hidden"
               accept=".jpg,.jpeg,.png,.webp,.svg"
               onChange={(e) =>
-                handleFileUpload('firmLogo', e.target.files?.[0])
+                handleFileUpload('firmLogo', e.target.files?.[0] || null)
               }
             />
             <label htmlFor="firmLogo" className="cursor-pointer">

@@ -1,160 +1,256 @@
-import ErrorField from './ErrorField';
+import React from 'react';
 
-const DAYS = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
+const PRACTICE_TYPES = [
+  'Solo Practice',
+  'Partnership',
+  'Corporation',
+  'Remote Practice',
+  'Hybrid Practice',
 ];
 
-const DEFAULT_HOURS = {
-  Monday: { closed: false, start: '09:00', end: '17:00' },
-  Tuesday: { closed: false, start: '09:00', end: '17:00' },
-  Wednesday: { closed: false, start: '09:00', end: '17:00' },
-  Thursday: { closed: false, start: '09:00', end: '17:00' },
-  Friday: { closed: false, start: '09:00', end: '17:00' },
-  Saturday: { closed: true, start: '', end: '' },
-  Sunday: { closed: true, start: '', end: '' },
-};
+const PRIMARY_CLIENT_TYPES = [
+  'Individuals',
+  'Families',
+  'Self-Employed',
+  'Small Businesses',
+  'Corporations',
+  'Non-Residents',
+  'Students',
+  'Seniors',
+  'New Immigrants',
+  'Investors',
+];
 
-const PracticeDetails = ({ formData, errors, handleChange }) => {
-  const hoursOfOperation = {
-    ...DEFAULT_HOURS,
-    ...(formData.hoursOfOperation || {}),
-  };
+const SERVICE_OFFERINGS = [
+  'Personal Tax Filing',
+  'Corporate Tax Filing',
+  'Bookkeeping',
+  'Payroll Services',
+  'GST/HST Filing',
+  'Tax Planning',
+  'Financial Statements',
+  'Audit Support',
+  'CRA Representation',
+  'Business Advisory',
+];
 
-  const updateHours = (day, field, value) => {
-    const currentDay = hoursOfOperation[day] || DEFAULT_HOURS[day];
-
-    let updatedDay = {
-      ...currentDay,
-      [field]: value,
-    };
-
-    if (field === 'closed' && value === true) {
-      updatedDay = {
-        ...updatedDay,
-        start: '',
-        end: '',
-      };
+const PracticeDetails = ({
+  formData = {},
+  errors = {},
+  handleChange,
+  updateField,
+}) => {
+  const setFieldValue = (field, value) => {
+    if (typeof updateField === 'function') {
+      updateField(field, value);
+      return;
     }
 
-    if (field === 'closed' && value === false) {
-      updatedDay = {
-        ...updatedDay,
-        start: currentDay.start || '09:00',
-        end: currentDay.end || '17:00',
-      };
-    }
-
-    handleChange({
-      target: {
-        name: 'hoursOfOperation',
-        value: {
-          ...hoursOfOperation,
-          [day]: updatedDay,
+    if (typeof handleChange === 'function') {
+      handleChange({
+        target: {
+          name: field,
+          value,
+          type: typeof value === 'boolean' ? 'checkbox' : 'text',
+          checked: typeof value === 'boolean' ? value : undefined,
         },
-      },
-    });
+      });
+    }
   };
+
+  const toggleMultiValue = (field, option) => {
+    const currentValues = Array.isArray(formData[field]) ? formData[field] : [];
+    const updatedValues = currentValues.includes(option)
+      ? currentValues.filter((item) => item !== option)
+      : [...currentValues, option];
+
+    setFieldValue(field, updatedValues);
+  };
+
+  const handleNumberChange = (field) => (e) => {
+    const rawValue = e.target.value;
+
+    if (rawValue === '') {
+      setFieldValue(field, '');
+      return;
+    }
+
+    const cleanedValue = rawValue.replace(/[^\d]/g, '');
+    setFieldValue(field, cleanedValue);
+  };
+
+  const renderError = (field) =>
+    errors[field] ? (
+      <p className="text-sm text-red-600 mt-1">{errors[field]}</p>
+    ) : null;
+
+  const renderInput = (label, field, placeholder, options = {}) => (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {label}
+      </label>
+      <input
+        type={options.type || 'text'}
+        name={field}
+        value={formData[field] ?? ''}
+        onChange={
+          options.type === 'number'
+            ? handleNumberChange(field)
+            : (e) => setFieldValue(field, e.target.value)
+        }
+        min={options.min}
+        inputMode={options.inputMode}
+        placeholder={placeholder}
+        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+          errors[field]
+            ? 'border-red-500 focus:ring-red-200 bg-red-50'
+            : 'border-gray-300 focus:ring-primary-200 focus:border-primary-500'
+        }`}
+      />
+      {renderError(field)}
+    </div>
+  );
+
+  const renderSwitchRow = (label, field) => (
+    <label
+      key={field}
+      className="flex items-center justify-between border border-gray-200 rounded-lg p-4 cursor-pointer"
+    >
+      <span className="text-sm font-medium text-gray-700">{label}</span>
+      <input
+        type="checkbox"
+        name={field}
+        checked={!!formData[field]}
+        onChange={(e) => setFieldValue(field, e.target.checked)}
+        className="h-4 w-4"
+      />
+    </label>
+  );
+
+  const renderSingleChoice = (label, field, options) => (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        {label}
+      </label>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => {
+          const selected = formData[field] === option;
+
+          return (
+            <button
+              type="button"
+              key={option}
+              onClick={() => setFieldValue(field, option)}
+              className={`px-4 py-2 rounded-full border text-sm font-medium transition ${
+                selected
+                  ? 'bg-primary-600 text-white border-primary-600'
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-primary-500 hover:text-primary-600'
+              }`}
+            >
+              {option}
+            </button>
+          );
+        })}
+      </div>
+      {renderError(field)}
+    </div>
+  );
+
+  const renderMultiChoice = (label, field, options) => (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        {label}
+      </label>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => {
+          const selected =
+            Array.isArray(formData[field]) && formData[field].includes(option);
+
+          return (
+            <button
+              type="button"
+              key={option}
+              onClick={() => toggleMultiValue(field, option)}
+              className={`px-4 py-2 rounded-full border text-sm font-medium transition ${
+                selected
+                  ? 'bg-primary-600 text-white border-primary-600'
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-primary-500 hover:text-primary-600'
+              }`}
+            >
+              {option}
+            </button>
+          );
+        })}
+      </div>
+      {renderError(field)}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-xl font-semibold text-gray-800">
-          Practice Information
-        </h3>
-        <p className="mt-1 text-sm text-gray-600">
-          Set office hours clients can use to contact or book with your practice.
+      <h3 className="text-xl font-semibold text-gray-800 mb-6">
+        Practice Information
+      </h3>
+
+      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <p className="text-sm font-medium text-blue-800">
+          Practice Profile
+        </p>
+        <p className="text-xs text-blue-700 mt-1">
+          Tell clients about your services, coverage area, and availability.
         </p>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Hours of Operation
-        </label>
+      <div className="border border-gray-200 rounded-lg p-4 space-y-4">
+        {renderSingleChoice('Practice Type *', 'practiceType', PRACTICE_TYPES)}
 
-        <div className="border rounded-xl overflow-hidden">
-          <div className="hidden md:grid md:grid-cols-4 gap-4 px-4 py-3 bg-gray-50 border-b text-sm font-medium text-gray-600">
-            <div>Day</div>
-            <div>Status</div>
-            <div>Open</div>
-            <div>Close</div>
-          </div>
+        {renderMultiChoice(
+          'Services Offered *',
+          'servicesOffered',
+          SERVICE_OFFERINGS
+        )}
 
-          <div className="divide-y">
-            {DAYS.map((day) => {
-              const config = hoursOfOperation[day] || DEFAULT_HOURS[day];
+        {renderMultiChoice(
+          'Primary Client Types *',
+          'clientTypes',
+          PRIMARY_CLIENT_TYPES
+        )}
 
-              return (
-                <div
-                  key={day}
-                  className="grid grid-cols-1 md:grid-cols-4 gap-3 px-4 py-4 items-center"
-                >
-                  <div className="font-medium text-gray-800">{day}</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {renderInput('Average Clients Per Year', 'averageClientsPerYear', '150', {
+            type: 'number',
+            inputMode: 'numeric',
+            min: 0,
+          })}
 
-                  <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={config.closed}
-                      onChange={(e) =>
-                        updateHours(day, 'closed', e.target.checked)
-                      }
-                    />
-                    <span>Closed</span>
-                  </label>
+          {renderInput('Service Radius (km)', 'serviceRadius', '50', {
+            type: 'number',
+            inputMode: 'numeric',
+            min: 0,
+          })}
 
-                  <div>
-                    <label className="block md:hidden text-xs font-medium text-gray-500 mb-1">
-                      Open
-                    </label>
-                    <input
-                      type="time"
-                      value={config.start}
-                      disabled={config.closed}
-                      onChange={(e) =>
-                        updateHours(day, 'start', e.target.value)
-                      }
-                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                        config.closed
-                          ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                          : 'border-gray-300 focus:ring-primary-200 focus:border-primary-500'
-                      }`}
-                    />
-                  </div>
+          {renderInput('Minimum Fee', 'minimumFee', '150', {
+            type: 'number',
+            inputMode: 'numeric',
+            min: 0,
+          })}
 
-                  <div>
-                    <label className="block md:hidden text-xs font-medium text-gray-500 mb-1">
-                      Close
-                    </label>
-                    <input
-                      type="time"
-                      value={config.end}
-                      disabled={config.closed}
-                      onChange={(e) =>
-                        updateHours(day, 'end', e.target.value)
-                      }
-                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                        config.closed
-                          ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                          : 'border-gray-300 focus:ring-primary-200 focus:border-primary-500'
-                      }`}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {renderInput('Maximum Fee', 'maximumFee', '1500', {
+            type: 'number',
+            inputMode: 'numeric',
+            min: 0,
+          })}
         </div>
+      </div>
 
-        <p className="mt-2 text-xs text-gray-500">
-          Monday to Friday defaults to 09:00–17:00. Weekends default to closed.
-        </p>
+      <div className="border border-gray-200 rounded-lg p-4 space-y-4">
+        <h4 className="font-medium text-gray-800">Availability</h4>
 
-        <ErrorField error={errors.hoursOfOperation} />
+        <div className="space-y-3">
+          {renderSwitchRow('Accepting New Clients', 'acceptingNewClients')}
+          {renderSwitchRow('Offers Virtual Services', 'offersVirtualServices')}
+          {renderSwitchRow('Offers In-Person Services', 'offersInPersonServices')}
+        </div>
       </div>
     </div>
   );

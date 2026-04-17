@@ -41,10 +41,6 @@ const RegisterCA = () => {
 
   const [formData, setFormData] = useState({
     ...initialValues,
-    agreedTerms: initialValues?.agreedTerms || false,
-    agreedPrivacy: initialValues?.agreedPrivacy || false,
-    agreedProfessionalTerms: initialValues?.agreedProfessionalTerms || false,
-    confirmAccuracy: initialValues?.confirmAccuracy || false,
   });
 
   useEffect(() => {
@@ -52,9 +48,25 @@ const RegisterCA = () => {
       const savedDraft = localStorage.getItem(LOCAL_DRAFT_KEY);
       if (savedDraft) {
         const parsedDraft = JSON.parse(savedDraft);
+
+        const migratedDraft = {
+          ...parsedDraft,
+          city: parsedDraft.city || parsedDraft.firmCity || '',
+          province: parsedDraft.province || parsedDraft.firmProvince || '',
+          agreeToTerms: parsedDraft.agreeToTerms ?? parsedDraft.agreedTerms ?? false,
+          agreeToPrivacy: parsedDraft.agreeToPrivacy ?? parsedDraft.agreedPrivacy ?? false,
+          agreedProfessionalTerms:
+            parsedDraft.agreedProfessionalTerms ?? false,
+          confirmAccuracy: parsedDraft.confirmAccuracy ?? false,
+          acceptingNewClients:
+            parsedDraft.acceptingNewClients ?? parsedDraft.acceptNewClients ?? true,
+          clientTypes:
+            parsedDraft.clientTypes || parsedDraft.primaryClientTypes || [],
+        };
+
         setFormData((prev) => ({
           ...prev,
-          ...parsedDraft,
+          ...migratedDraft,
         }));
       }
     } catch (error) {
@@ -179,8 +191,8 @@ const RegisterCA = () => {
         return {
           firmDetails: {
             firmAddress: data.firmAddress,
-            city: data.firmCity,
-            province: data.firmProvince,
+            city: data.city,
+            province: data.province,
             postalCode: data.firmPostalCode,
             country: data.firmCountry,
             firmPhone: data.firmPhone,
@@ -249,62 +261,61 @@ const RegisterCA = () => {
           },
         };
 
-        case 5:
-  return {
-    practiceInformation: {
-      practiceType: data.practiceType,
-      acceptingNewClients: data.acceptNewClients ?? true,
-      primaryClientTypes: Array.isArray(data.primaryClientTypes)
-        ? data.primaryClientTypes.filter(Boolean)
-        : [],
-      averageClientsPerYear:
-        data.averageClientsPerYear !== '' && data.averageClientsPerYear != null
-          ? Number(data.averageClientsPerYear)
-          : 0,
-      minimumFee:
-        data.minimumFee !== '' && data.minimumFee != null
-          ? Number(data.minimumFee)
-          : 0,
-      maximumFee:
-        data.maximumFee !== '' && data.maximumFee != null
-          ? Number(data.maximumFee)
-          : 0,
-      serviceOfferings: [
-        ...(data.offersVirtualServices ? ['virtual'] : []),
-        ...(data.offersInPersonServices ? ['in_person'] : []),
-      ],
-      serviceRadiusKm:
-        data.serviceRadius !== '' && data.serviceRadius != null
-          ? Number(data.serviceRadius)
-          : 50,
-    },
-    onboarding: {
-      currentStep: 'practice',
-      completedSteps: [
-        'account',
-        'professional',
-        'firm-details',
-        'credentials',
-      ],
-      percentComplete: 62,
-    },
-  };
+      case 5:
+        return {
+          practiceInformation: {
+            practiceType: data.practiceType,
+            acceptingNewClients: data.acceptingNewClients ?? true,
+            primaryClientTypes: Array.isArray(data.clientTypes)
+              ? data.clientTypes.filter(Boolean)
+              : [],
+            averageClientsPerYear:
+              data.averageClientsPerYear !== '' && data.averageClientsPerYear != null
+                ? Number(data.averageClientsPerYear)
+                : 0,
+            minimumFee:
+              data.minimumFee !== '' && data.minimumFee != null
+                ? Number(data.minimumFee)
+                : 0,
+            maximumFee:
+              data.maximumFee !== '' && data.maximumFee != null
+                ? Number(data.maximumFee)
+                : 0,
+            serviceOfferings: Array.isArray(data.servicesOffered)
+              ? data.servicesOffered
+              : [],
+            serviceRadiusKm:
+              data.serviceRadius !== '' && data.serviceRadius != null
+                ? Number(data.serviceRadius)
+                : 50,
+          },
+          onboarding: {
+            currentStep: 'practice',
+            completedSteps: [
+              'account',
+              'professional',
+              'firm-details',
+              'credentials',
+            ],
+            percentComplete: 62,
+          },
+        };
 
       case 6:
         return {
           specialtiesAndTechnology: {
             taxSpecialties: data.taxSpecialties || [],
             provincialSpecialties: data.provincialSpecialties || [],
-            internationalSpecialties: [
-              ...(data.internationalTax ? ['international_tax'] : []),
-              ...(data.usTax ? ['us_tax'] : []),
-              ...(data.crossBorder ? ['cross_border'] : []),
-              ...(data.estatePlanning ? ['estate_planning'] : []),
-              ...(data.corporateRestructuring
-                ? ['corporate_restructuring']
-                : []),
-              ...(data.mergersAcquisitions ? ['mergers_acquisitions'] : []),
-            ],
+            internationalSpecialties: Array.isArray(data.internationalSpecialties)
+              ? data.internationalSpecialties
+              : [
+                  ...(data.internationalTax ? ['international_tax'] : []),
+                  ...(data.usTax ? ['us_tax'] : []),
+                  ...(data.crossBorder ? ['cross_border'] : []),
+                  ...(data.estatePlanning ? ['estate_planning'] : []),
+                  ...(data.corporateRestructuring ? ['corporate_restructuring'] : []),
+                  ...(data.mergersAcquisitions ? ['mergers_acquisitions'] : []),
+                ],
             accountingSoftware: data.accountingSoftware || [],
             taxSoftware: data.taxSoftware || [],
             practiceManagementSoftware:
@@ -328,67 +339,67 @@ const RegisterCA = () => {
         };
 
       case 7:
-  return {
-    verificationAndDocuments: {
-      caCertificateFile: uploadedFiles.caCertificate
-        ? {
-            originalName: uploadedFiles.caCertificate.name || '',
-            fileName: uploadedFiles.caCertificate.name || '',
-            filePath: '',
-            fileUrl: '',
-            mimeType: uploadedFiles.caCertificate.type || '',
-            size: uploadedFiles.caCertificate.size || 0,
-            uploadedAt: new Date(),
-          }
-        : undefined,
+        return {
+          verificationAndDocuments: {
+            caCertificateFile: uploadedFiles.caCertificate
+              ? {
+                  originalName: uploadedFiles.caCertificate.name || '',
+                  fileName: uploadedFiles.caCertificate.name || '',
+                  filePath: '',
+                  fileUrl: '',
+                  mimeType: uploadedFiles.caCertificate.type || '',
+                  size: uploadedFiles.caCertificate.size || 0,
+                  uploadedAt: new Date(),
+                }
+              : undefined,
 
-      professionalHeadshotFile: uploadedFiles.professionalHeadshot
-        ? {
-            originalName: uploadedFiles.professionalHeadshot.name || '',
-            fileName: uploadedFiles.professionalHeadshot.name || '',
-            filePath: '',
-            fileUrl: '',
-            mimeType: uploadedFiles.professionalHeadshot.type || '',
-            size: uploadedFiles.professionalHeadshot.size || 0,
-            uploadedAt: new Date(),
-          }
-        : undefined,
+            professionalHeadshotFile: uploadedFiles.professionalHeadshot
+              ? {
+                  originalName: uploadedFiles.professionalHeadshot.name || '',
+                  fileName: uploadedFiles.professionalHeadshot.name || '',
+                  filePath: '',
+                  fileUrl: '',
+                  mimeType: uploadedFiles.professionalHeadshot.type || '',
+                  size: uploadedFiles.professionalHeadshot.size || 0,
+                  uploadedAt: new Date(),
+                }
+              : undefined,
 
-      firmLogoFile: uploadedFiles.firmLogo
-        ? {
-            originalName: uploadedFiles.firmLogo.name || '',
-            fileName: uploadedFiles.firmLogo.name || '',
-            filePath: '',
-            fileUrl: '',
-            mimeType: uploadedFiles.firmLogo.type || '',
-            size: uploadedFiles.firmLogo.size || 0,
-            uploadedAt: new Date(),
-          }
-        : undefined,
+            firmLogoFile: uploadedFiles.firmLogo
+              ? {
+                  originalName: uploadedFiles.firmLogo.name || '',
+                  fileName: uploadedFiles.firmLogo.name || '',
+                  filePath: '',
+                  fileUrl: '',
+                  mimeType: uploadedFiles.firmLogo.type || '',
+                  size: uploadedFiles.firmLogo.size || 0,
+                  uploadedAt: new Date(),
+                }
+              : undefined,
 
-      professionalReferences: data.professionalReferences || [],
-      authorizeTaxVaultVerification: data.authorizeVerification || false,
-      consentBackgroundCheck: data.backgroundCheckConsent || false,
-    },
-    onboarding: {
-      currentStep: 'verification',
-      completedSteps: [
-        'account',
-        'professional',
-        'firm-details',
-        'credentials',
-        'practice',
-        'specialties',
-      ],
-      percentComplete: 87,
-    },
-  };
+            professionalReferences: data.professionalReferences || [],
+            authorizeTaxVaultVerification: data.authorizeVerification || false,
+            consentBackgroundCheck: data.backgroundCheckConsent || false,
+          },
+          onboarding: {
+            currentStep: 'verification',
+            completedSteps: [
+              'account',
+              'professional',
+              'firm-details',
+              'credentials',
+              'practice',
+              'specialties',
+            ],
+            percentComplete: 87,
+          },
+        };
 
       case 8:
         return {
           reviewAndSubmit: {
-            agreedTermsAndConditions: !!data.agreedTerms,
-            agreedPrivacyPolicy: !!data.agreedPrivacy,
+            agreedTermsAndConditions: !!data.agreeToTerms,
+            agreedPrivacyPolicy: !!data.agreeToPrivacy,
             agreedProfessionalTerms: !!data.agreedProfessionalTerms,
             confirmAccuracy: !!data.confirmAccuracy,
           },
@@ -432,98 +443,97 @@ const RegisterCA = () => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const stepErrors = validateStep(currentStep, formData);
+    const stepErrors = validateStep(8, formData);
 
-  if (Object.keys(stepErrors).length > 0) {
-    setErrors(stepErrors);
-    setFormError('Please fix the errors before submitting.');
-    return;
-  }
-
-  setErrors({});
-  setFormError('');
-  setLoading(true);
-
-  try {
-    const cleanPhone = (formData.phone || '').replace(/\D/g, '');
-
-    const registrationPayload = {
-      name: `${formData.firstName} ${formData.lastName}`.trim(),
-      email: formData.email,
-      password: formData.password,
-      role: 'ca',
-      userType: 'professional',
-      phoneNumber: cleanPhone,
-      province:
-        formData.firmProvince ||
-        formData.provinceOfRegistration ||
-        'ON',
-      firmName: formData.firmName || '',
-      caNumber: formData.caNumber || '',
-    };
-
-    const registrationResult = await register(registrationPayload);
-
-    if (!registrationResult?.success) {
-      throw new Error(
-        registrationResult?.error ||
-          'Unable to create account before submission'
-      );
+    if (Object.keys(stepErrors).length > 0) {
+      setErrors(stepErrors);
+      setFormError('Please fix the errors before submitting.');
+      return;
     }
 
-    // Wait until token is definitely available for authenticated draft calls
-    let attempts = 0;
-    while (!localStorage.getItem('token') && attempts < 15) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      attempts++;
-    }
+    setErrors({});
+    setFormError('');
+    setLoading(true);
 
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('Token not set after registration');
-    }
+    try {
+      const cleanPhone = (formData.phone || '').replace(/\D/g, '');
 
-    const stepPayloads = [
-      buildStepPayload(1, formData),
-      buildStepPayload(2, formData),
-      buildStepPayload(3, formData),
-      buildStepPayload(4, formData),
-      buildStepPayload(5, formData),
-      buildStepPayload(6, formData),
-      buildStepPayload(7, formData),
-    ];
+      const registrationPayload = {
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        email: formData.email,
+        password: formData.password,
+        role: 'ca',
+        userType: 'professional',
+        phoneNumber: cleanPhone,
+        province:
+          formData.province ||
+          formData.provinceOfRegistration ||
+          'ON',
+        firmName: formData.firmName || '',
+        caNumber: formData.caNumber || '',
+      };
 
-    for (let i = 0; i < stepPayloads.length; i++) {
-      console.log(`SAVING STEP ${i + 1}`, stepPayloads[i]);
+      const registrationResult = await register(registrationPayload);
 
-      try {
-        await caRegistrationAPI.saveDraft(stepPayloads[i]);
-      } catch (err) {
-        console.error(`STEP ${i + 1} FAILED`, err?.response?.data || err);
-        throw err;
+      if (!registrationResult?.success) {
+        throw new Error(
+          registrationResult?.error ||
+            'Unable to create account before submission'
+        );
       }
+
+      let attempts = 0;
+      while (!localStorage.getItem('token') && attempts < 15) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        attempts++;
+      }
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Token not set after registration');
+      }
+
+      const stepPayloads = [
+        buildStepPayload(1, formData),
+        buildStepPayload(2, formData),
+        buildStepPayload(3, formData),
+        buildStepPayload(4, formData),
+        buildStepPayload(5, formData),
+        buildStepPayload(6, formData),
+        buildStepPayload(7, formData),
+      ];
+
+      for (let i = 0; i < stepPayloads.length; i++) {
+        console.log(`SAVING STEP ${i + 1}`, stepPayloads[i]);
+
+        try {
+          await caRegistrationAPI.saveDraft(stepPayloads[i]);
+        } catch (err) {
+          console.error(`STEP ${i + 1} FAILED`, err?.response?.data || err);
+          throw err;
+        }
+      }
+
+      const finalPayload = buildStepPayload(8, formData);
+      console.log('SUBMITTING FINAL STEP', finalPayload);
+
+      await caRegistrationAPI.submit(finalPayload);
+
+      localStorage.removeItem(LOCAL_DRAFT_KEY);
+      navigate('/ca/verification-pending');
+    } catch (error) {
+      console.error('Registration failed:', error?.response?.data || error);
+      setFormError(
+        error?.response?.data?.message ||
+          error?.message ||
+          'Registration failed. Please try again.'
+      );
+    } finally {
+      setLoading(false);
     }
-
-    const finalPayload = buildStepPayload(8, formData);
-    console.log('SUBMITTING FINAL STEP', finalPayload);
-
-    await caRegistrationAPI.submit(finalPayload);
-
-    localStorage.removeItem(LOCAL_DRAFT_KEY);
-    navigate('/ca/verification-pending');
-  } catch (error) {
-    console.error('Registration failed:', error?.response?.data || error);
-    setFormError(
-      error?.response?.data?.message ||
-        error?.message ||
-        'Registration failed. Please try again.'
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const renderStep = () => {
     switch (currentStep) {
@@ -601,14 +611,14 @@ const RegisterCA = () => {
           />
         );
 
-        case 8:
-          return (
-            <ReviewDetails
-              formData={formData}
-              errors={errors}
-              handleChange={handleChange}
-            />
-          );
+      case 8:
+        return (
+          <ReviewDetails
+            formData={formData}
+            errors={errors}
+            handleChange={handleChange}
+          />
+        );
 
       default:
         return null;
@@ -669,13 +679,13 @@ const RegisterCA = () => {
                   </button>
                 ) : (
                   <button
-  type="button"
-  onClick={handleSubmit}
-  disabled={loading}
-  className="ml-auto px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
->
-  {loading ? 'Submitting...' : 'Submit'}
-</button>
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className="ml-auto px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                  >
+                    {loading ? 'Submitting...' : 'Submit'}
+                  </button>
                 )}
               </div>
             </form>

@@ -57,8 +57,8 @@ const ReviewDetails = ({
 
       <Section title="Firm Details">
         <Row label="Address" value={formData.firmAddress} />
-        <Row label="City" value={formData.firmCity} />
-        <Row label="Province" value={formData.firmProvince} />
+        <Row label="City" value={formData.city} />
+        <Row label="Province" value={formData.province} />
         <Row label="Postal Code" value={formData.firmPostalCode} />
         <Row label="Country" value={formData.firmCountry} />
         <Row label="Firm Phone" value={formData.firmPhone} />
@@ -93,7 +93,15 @@ const ReviewDetails = ({
         <Row label="Practice Type" value={formData.practiceType} />
         <Row
           label="Accepting New Clients"
-          value={formData.acceptNewClients ? 'Yes' : 'No'}
+          value={formData.acceptingNewClients ? 'Yes' : 'No'}
+        />
+        <Row
+          label="Services Offered"
+          value={(formData.servicesOffered || []).join(', ')}
+        />
+        <Row
+          label="Client Types"
+          value={(formData.clientTypes || []).join(', ')}
         />
         <Row
           label="Tax Specialties"
@@ -130,11 +138,11 @@ const ReviewDetails = ({
         <label className="flex items-start gap-2">
           <input
             type="checkbox"
-            checked={formData.agreedTerms || false}
+            checked={formData.agreeToTerms || false}
             onChange={(e) =>
               handleChange({
                 target: {
-                  name: 'agreedTerms',
+                  name: 'agreeToTerms',
                   type: 'checkbox',
                   checked: e.target.checked,
                 },
@@ -145,27 +153,27 @@ const ReviewDetails = ({
             I agree to the Terms and Conditions.
           </span>
         </label>
-        <ErrorField error={errors.terms} />
+        <ErrorField error={errors.agreeToTerms} />
 
         <label className="flex items-start gap-2">
           <input
             type="checkbox"
-            checked={formData.agreedPrivacy || false}
+            checked={formData.agreeToPrivacy || false}
             onChange={(e) =>
               handleChange({
                 target: {
-                  name: 'agreedPrivacy',
+                  name: 'agreeToPrivacy',
                   type: 'checkbox',
                   checked: e.target.checked,
                 },
               })
             }
-          />  
+          />
           <span className="text-sm text-gray-700">
             I agree to the Privacy Policy.
           </span>
         </label>
-        <ErrorField error={errors.privacy} />
+        <ErrorField error={errors.agreeToPrivacy} />
 
         <label className="flex items-start gap-2">
           <input
@@ -185,22 +193,22 @@ const ReviewDetails = ({
             I agree to the Professional Terms.
           </span>
         </label>
-        <ErrorField error={errors.professionalTerms} />
+        <ErrorField error={errors.agreedProfessionalTerms} />
 
         <label className="flex items-start gap-2">
           <input
-  type="checkbox"
-  checked={formData.confirmAccuracy || false}
-  onChange={(e) =>
-    handleChange({
-      target: {
-        name: 'confirmAccuracy',
-        type: 'checkbox',
-        checked: e.target.checked,
-      },
-    })
-  }
-/>
+            type="checkbox"
+            checked={formData.confirmAccuracy || false}
+            onChange={(e) =>
+              handleChange({
+                target: {
+                  name: 'confirmAccuracy',
+                  type: 'checkbox',
+                  checked: e.target.checked,
+                },
+              })
+            }
+          />
           <span className="text-sm text-gray-700">
             I confirm that all information provided is accurate and complete.
           </span>

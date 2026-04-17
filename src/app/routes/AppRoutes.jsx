@@ -83,6 +83,7 @@ import CACalendar from '../../features/ca/pages/CACalendar';
 import CAEarnings from '../../features/ca/pages/CAEarnings';
 import CAReviews from '../../features/ca/pages/CAReviews';
 import ClientFilingSummary from '../../features/ca/pages/ClientFilingSummary';
+import CAOfficeHoursSettings from '../../features/profile/pages/CAOfficeHoursSettings';
 
 const PublicRoutes = () => (
   <Routes>
@@ -93,8 +94,8 @@ const PublicRoutes = () => (
     <Route path="/register/user" element={<Register />} />
     <Route path="/register/ca" element={<RegisterCA />} />
     <Route path="/forgot-password" element={<ForgotPassword />} />
-    <Route path="*" element={<Navigate to="/" replace />} />
     <Route path="/receipts/:id" element={<ReceiptDetail />} />
+    <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 );
 
@@ -207,7 +208,6 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
             </PrivateRoute>
           }
         />
-
         <Route
           path="/gig/documents/:categoryId"
           element={
@@ -526,12 +526,19 @@ const ProtectedRoutes = ({ user, chatOpen, setChatOpen }) => {
             </PrivateRoute>
           }
         />
-        
         <Route
           path="/ca/pricing"
           element={
             <PrivateRoute allowedRoles={['ca']}>
               {renderWithShell(<CAPricing />)}
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/ca/profile/office-hours"
+          element={
+            <PrivateRoute allowedRoles={['ca']}>
+              {renderWithShell(<CAOfficeHoursSettings />)}
             </PrivateRoute>
           }
         />
@@ -596,5 +603,3 @@ const AppRoutes = () => {
 };
 
 export default AppRoutes;
-
-
